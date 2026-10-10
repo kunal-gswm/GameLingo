@@ -228,11 +228,17 @@ GameLingo provides a complete end-to-end command-line workflow. All commands use
    # Apply changes
    uv run python -m gamelingo import apply "translations.csv" --yes
    ```
-   *Note on CSV Editing:*
-   - Edit **only** the `translated_text` column.
-   - Do **not** modify `unit_id`, `locator`, `source_text`, or other identity columns.
-   - Excel formulas starting with `=`, `+`, `-`, `@` are safely escaped with a leading single quote (`'`). Do not remove this quote if you intend the text to be literal.
-   - Importing an edited translation resets its status to `needs_review` or `draft` (invalidating prior approval). You must still approve them using the Review workflow before patching.
+   *Note on CSV Editing and Interoperability:*
+   - **Supported CSV Format:** GameLingo exports CSV version 1.0 using standard UTF-8-BOM encoding for broad spreadsheet compatibility.
+   - **Editable Columns:** Edit **only** the `translated_text` column.
+   - **Immutable Metadata:** Do **not** modify `unit_id`, `locator`, `source_text`, `source_hash`, `project_id`, or `format_version`. The importer verifies these strictly and rejects tampered rows.
+   - **Formula Injection Safety:** GameLingo automatically protects against spreadsheet formula evaluation (e.g. `=`, `+`, `-`, `@`) by escaping dangerous values with a leading single quote (`'`). 
+   - **Handling Formula-Like Text:** If you intend to type literal formula-like text (e.g. `=SUM()`), prefix it with a single quote (`'`) in your spreadsheet application. When saving to CSV, the spreadsheet preserves the quote, and GameLingo's importer strips exactly one leading quote if present. If you fail to prefix a new formula-like value, GameLingo will reject the import to protect you from executing unexpected macros or corrupting translations.
+   - **Stale Exports:** GameLingo tracks the `source_hash` and `source_text`. If the game was updated or the source text changed in the database since your CSV export, the importer will block the stale row.
+   - **Previewing:** Always use `import preview "translations.csv"` to validate your file before applying. Preview mode is guaranteed strictly read-only.
+   - **Approval Lifecycle:** Importing an edited translation resets its status to `needs_review` or `draft` (invalidating prior approval). Approval status is intentionally not imported from CSV to enforce human review in the dedicated UI and ensure no unverified machine/bulk edits bypass quality checks.
+   - **Error Recovery:** If you encounter a malformed CSV or ambiguous formula error, either manually fix the quoted fields/prefixes in a plain text editor, or discard the CSV and export a fresh copy from GameLingo.
+   - **Tested Spreadsheets:** This implementation was directly tested and verified against Microsoft Excel for Windows. Other applications (e.g., LibreOffice Calc, Google Sheets) may have subtle differences in how they strip leading whitespace or tabs before saving. Always check the preview output.
 
 7. **Create Patch Plan**
    Generate a patch plan using approved translations:

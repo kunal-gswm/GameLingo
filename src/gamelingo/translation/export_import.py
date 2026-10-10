@@ -209,9 +209,73 @@ class ExportImportService:
         if not updates:
             return 0
 
+        import json
+        import time
+        import uuid
+
+        from gamelingo.translation.validation import validate_translation
+
         conn = self.db.connect()
-        with conn:
+        # Use a single explicit transaction to ensure atomicity
+        try:
+            conn.execute("BEGIN TRANSACTION")
+
             for u in updates:
-                self.review_service.update_translation(u["unit_id"], u["new_text"])
+                unit_id = u["unit_id"]
+                new_text = u["new_text"]
+
+                # Revalidate immediately before writing
+                unit = self.review_service.get_unit(unit_id)
+                if not unit:
+                    raise ValueError(f"Unit {unit_id} not found during apply.")
+
+                issues = validate_translation(unit["source_text"], new_text)
+                if any(i.severity == "error" for i in issues):
+                    raise ValueError(f"Validation failed during apply for {unit_id}.")
+
+                new_status = "needs_review" if issues else "draft"
+
+                quality_flags = json.dumps(
+                    [
+                        {"code": i.code, "severity": i.severity, "message": i.message}
+                        for i in issues
+                    ]
+                )
+
+                conn.execute(
+                    "UPDATE translation_units SET status = ? WHERE id = ?",
+                    (new_status, unit_id),
+                )
+
+                cur = conn.execute(
+                    "SELECT id FROM translation_records WHERE unit_id = ?", (unit_id,)
+                )
+                record = cur.fetchone()
+                now = time.time()
+                if record:
+                    conn.execute(
+                        "UPDATE translation_records SET final_text = ?, quality_flags = ?, updated_at = ? WHERE unit_id = ?",
+                        (new_text, quality_flags, now, unit_id),
+                    )
+                else:
+                    conn.execute(
+                        "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (
+                            str(uuid.uuid4()),
+                            unit_id,
+                            "manual",
+                            "human",
+                            new_text,
+                            new_text,
+                            quality_flags,
+                            now,
+                            now,
+                        ),
+                    )
+
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
 
         return len(updates)
