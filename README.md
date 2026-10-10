@@ -237,11 +237,11 @@ GameLingo provides a modern PySide6 desktop interface for users who prefer visua
 
 ### Installing Optional GUI Dependencies
 
-To keep the core application lightweight, the GUI is an optional dependency. Install it using:
+To keep the core application lightweight, the GUI is an optional dependency group called `gui`. Install it using:
 ```bash
-uv sync --group gui
-# OR: pip install .[gui]
+uv sync --extra gui
 ```
+*(Note: `--group` was changed to `--extra` per standard configuration).*
 
 ### Launching the Desktop App
 
@@ -257,5 +257,21 @@ The GUI provides complete coverage of the GameLingo translation lifecycle:
 - **Translation:** Launch, monitor, stop, or resume translation jobs with Argos Translate (assuming you've installed it).
 - **Review:** A dedicated split-pane UI where you can inspect source and translation side-by-side, view quality warnings, edit text, and approve or reject units.
 - **Patch:** Create and validate a patch plan with zero risk, preview changes, and explicitly apply them with a backup confirmation.
+
+### Testing and CI Verification
+The project features a strict continuous integration lifecycle with split dependency verification:
+- **Core Tests Job:** Verifies the CLI, project initialization, SQLite interactions, translation pipeline, and parsing services WITHOUT installing the GUI packages. This guarantees the core application never silently breaks for server environments or low-profile CLI setups.
+- **GUI Tests Job:** Installs the optional `gui` group (which installs `PySide6`) alongside headless Linux dependencies (`QT_QPA_PLATFORM: offscreen`), and safely exercises all GUI components without rendering them on-screen.
+
+#### Running Tests Locally
+To run the full suite including GUI tests (ensure you have installed the `gui` extra):
+```bash
+uv run pytest tests/integration/test_gui.py
+```
+If you omit the `gui` dependencies, the test suite will cleanly `skip` the GUI tests and execute the remaining test suite.
+
+#### Limitations
+- **Platform Limitations:** While GameLingo is primarily targeted at Windows systems, GUI tests run headlessly on Ubuntu in CI.
+- **Worker Hangs/Shutdowns:** Hard-closing the application while extraction or translation threads are running will trigger an aggressive cancellation request. Checkpointing preserves progress, but shutting down mid-task may lose the most recent unfinished batch of translations.
 
 **Note:** Just like the CLI, the GUI never connects to the internet or uploads your data. Model weights for translation must still be manually installed via the command-line steps detailed above.
