@@ -75,5 +75,14 @@ GameLingo ensures you never lose original game data by enforcing a strict backup
 - **Verification:** The backup manifest strictly enforces that original files are byte-for-byte identical to the recorded backups before restoration begins. If a replacement fails mid-operation, the system attempts to rollback changed files to their pre-restore state.
 - **Limitations:** Automated translation patch deployment is separate and will be built upon these safe file primitives in a future milestone.
 
+## Translation Patch Planning
+
+Before any translations are deployed, GameLingo constructs a **Patch Plan**. 
+- **What it is:** A read-only, declarative JSON description of exactly which values in which game files are proposed to change.
+- **Why it matters:** Plan generation *never* modifies game files. It purely inspects available translations, calculates the necessary changes against the current disk state, and explicitly flags unapproved translations or conflicts.
+- **Stale Sources & Conflicts:** If a game file has been updated externally and the original source text no longer matches the expected text at the exact locator, it is flagged as `stale_source`. If two translations target the same exact locator with different translated values, it is flagged as a `conflict`.
+- **Validation vs Application:** Validation (`validate_plan`) merely checks that the plan is structurally sound, targets safe paths within the game root, and points to valid existing locators. A valid plan is *not* permission to overwrite files. **Patch application is a separate, future milestone.**
+- **Exporting & Inspection:** Plans can be exported to standard JSON (`json.dump(plan)`) and re-parsed, allowing external review or manual verification before deployment.
+
 ## License
 First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

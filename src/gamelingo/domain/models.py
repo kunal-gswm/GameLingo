@@ -22,3 +22,16 @@ class TranslationUnit:
     tokens_json: str
     source_hash: str
     status: str = "untranslated"
+
+
+@dataclass
+class TranslationRecord:
+    id: str
+    unit_id: str
+    provider: str
+    model: str
+    draft_text: str
+    final_text: str
+    quality_flags: str
+    created_at: float
+    updated_at: float
