@@ -94,5 +94,19 @@ Applying translations to live game files is handled through a strict, multi-stag
 - **Recovery:** If any stage of replacement or post-write verification fails, the system immediately delegates to the core restoration API to revert files using the backup created moments prior. 
 - **Current Limitations:** The implementation is strictly scoped to RPG Maker MV/MZ JSON files. Patcher output depends on the Python standard `json` module, which means whitespace formatting or JSON key ordering might be reformatted relative to the original file; the adapter preserves semantic validity but does not currently guarantee byte-for-byte serialization formatting.
 
+## Translation Pipeline Core
+
+GameLingo features a robust, provider-independent orchestration pipeline that manages translation jobs safely and efficiently without immediately modifying game files:
+- **Provider Interface:** A simple, typed contract (`TranslationProvider`) separates the orchestration logic from the actual translation engine, supporting single requests, grouped batches, and explicit error handling.
+- **Translation Memory & Deduplication:** To prevent redundant work, duplicate requests within a job are grouped by a strict identity key (`hash(source_text)`, `language_pair`, `hash(context)`). Translated requests are durably persisted to SQLite and reused across future jobs automatically.
+- **Batch Processing & Checkpointing:** Jobs are split into deterministic chunks (based on the provider's batch limit). Each chunk is processed serially and committed in a single transactional step. 
+- **Resumable Jobs:** Job status (`created`, `pending`, `running`, `completed`) and chunk execution states are durable. If an API request fails, or the system is unexpectedly interrupted, users can resume the exact job—the system skips already-persisted chunks and safely retries failed ones.
+
+### Running the Synthetic Benchmark
+You can run the synthetic pipeline benchmark to observe the massive efficiency gains from in-memory deduplication and persistent caching:
+```bash
+uv run pytest -s tests/integration/test_pipeline_benchmark.py
+```
+
 ## License
 First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
