@@ -280,7 +280,9 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
         except Exception:
             raise PlanValidationError(f"Failed to read or resolve {target}")
 
-        if current_val != edit.get("original_text"):
+        if current_val != edit.get("original_text") and current_val != edit.get(
+            "translated_text"
+        ):
             raise PlanValidationError(f"Stale source for {target}")
 
     return True
