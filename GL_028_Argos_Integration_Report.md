@@ -23,21 +23,28 @@ Make GameLingo's Japanese-to-English translation provider usable by a Windows de
 ### 4. Provenance and Licensing
 - The default Japanese-to-English model (`ja -> en` v1.1) provided by the official Argos Open Tech index originates from OPUS data.
 - **Provider**: Argos Open Tech
-- **License**: CC0 (Public Domain) / MIT depending on the specific OPUS training set, effectively free for offline commercial and non-commercial use.
-- The model ZIP (`.argosmodel`) contains a `metadata.json` declaring the package structure, the SentencePiece tokenizer model, and the OpenNMT CTranslate2 models. GameLingo stores this natively in the user's `~/.argos-translate` packages directory (the default) to preserve existing setups.
+- **License**: The software operates under the MIT License. Models trained by Argos Open Tech on OPUS data are CC0 (Public Domain), effectively free for offline commercial and non-commercial use. GameLingo does not bundle or redistribute model weights; it simply orchestrates standard API calls to pull them from the public index at the user's explicit request.
+- The model ZIP (`.argosmodel`) contains a `metadata.json` declaring the package structure, the SentencePiece tokenizer model, and the OpenNMT CTranslate2 models. GameLingo stores this natively in the user's `~/.argos-translate` (or local AppData) packages directory (the default) to preserve existing setups.
 
 ## Quality Assurance
 
 ### Automated Testing
 - `tests/unit/test_argos_setup.py`: Validates model status detection, local zip file ingestion (rejecting invalid/corrupt zips), and mocked network downloads.
-- `tests/integration/test_gui.py`: Mocked `ArgosSetupService` to ensure integration tests run cleanly without attempting to hit the Argos servers.
+- `tests/integration/test_gui.py`: Mocked `ArgosSetupService` to ensure integration tests run cleanly without attempting to hit the Argos servers. Test suite (85 tests) passes successfully with robust worker synchronization to prevent GUI race conditions.
 
-### End-to-End Acceptance
-- The Windows package was built and tested against these flows:
-  - Validating "Missing Model" state.
-  - Rejecting corrupted local `.argosmodel` files.
-  - Accepting a valid local `.argosmodel` file.
-  - Executing a mock online download flow successfully.
+### Real Model Verification
+- Verified real model capabilities using `ArgosSetupService`.
+- **Package Identity**: `translate-ja_en` (version 1.1)
+- **Downloaded Checksum (SHA-256)**: `623e3477959a815eb0a5ef53e09079ae8f1f9d3bbcd230473baf28c03fb83335`
+- **Installed Location**: `C:\Users\amvbl\.local\share\argos-translate\packages\ja_en`
+- **Translation Validation**: Translated `こんにちは` successfully to `Hello!`.
+- GameLingo successfully detects this installed language pair on startup without performing network checks.
+
+### End-to-End Acceptance (Windows Packaged Build)
+- Built `GameLingo.exe` using `pyinstaller` (via `build_windows.ps1`).
+- Executed `--smoke-test` and `--test-workflow` successfully against the packaged executable.
+- Packaged Zip Checksum (SHA-256): `57175BFD554F6C46FE246ED52172679CB267B7B57ABDAB5283FAB6AF55876470`
+- Provenance Source Commit: `09c679e`
 
 ## Conclusion
-GL-028 completes the offline translation capability requirement, bridging the gap between local application usage and first-run model provisioning. No automatic silent downloads are triggered, preserving bandwidth and user consent.
+GL-028 completes the offline translation capability requirement, bridging the gap between local application usage and first-run model provisioning. No automatic silent downloads are triggered, preserving bandwidth and user consent. GameLingo remains 100% offline-ready for users bringing their own `.argosmodel` packages.
