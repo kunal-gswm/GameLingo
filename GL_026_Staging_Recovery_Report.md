@@ -38,5 +38,5 @@ A subsequent test (`test_multi_file_recovery_failure`) additionally overrides th
 - The platform limitations regarding GUI skipping locally remain present due to `PySide6`.
 
 ## Commit Details
-- **Final Commit Hash:** `<PENDING>`
-- **GitHub Actions Run:** `<PENDING>`
+- **Final Commit Hash:** `d06cd843b578a13ddd012dfb49cb95de63fe6565`
+- **GitHub Actions Run:** `https://github.com/kunal-gswm/GameLingo/actions/runs/38059739760`
