@@ -44,7 +44,7 @@ class ReviewService:
     def get_unit(self, unit_id: str) -> Optional[Dict[str, Any]]:
         conn = self.db.connect()
         query = """
-            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.status, 
+            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.status, u.source_hash,
                    r.draft_text, r.final_text as translated_text, r.quality_flags, r.provider, r.model
             FROM translation_units u
             LEFT JOIN translation_records r ON r.unit_id = u.id

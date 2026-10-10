@@ -1,7 +1,9 @@
 import json
+from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -15,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from gamelingo.gui.state import AppState
+from gamelingo.translation.export_import import ExportImportService
 from gamelingo.translation.review import ReviewService
 
 
@@ -33,9 +36,20 @@ class ReviewPage(QWidget):
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
 
+        left_header_layout = QHBoxLayout()
         self.btn_refresh = QPushButton("Refresh List")
         self.btn_refresh.clicked.connect(self.load_units)
-        left_layout.addWidget(self.btn_refresh)
+
+        self.btn_export = QPushButton("Export CSV")
+        self.btn_export.clicked.connect(self.on_export)
+
+        self.btn_import = QPushButton("Import CSV")
+        self.btn_import.clicked.connect(self.on_import)
+
+        left_header_layout.addWidget(self.btn_refresh)
+        left_header_layout.addWidget(self.btn_export)
+        left_header_layout.addWidget(self.btn_import)
+        left_layout.addLayout(left_header_layout)
 
         self.list_widget = QListWidget()
         self.list_widget.itemSelectionChanged.connect(self.on_selection_changed)
@@ -187,3 +201,58 @@ class ReviewPage(QWidget):
             items = self.list_widget.selectedItems()
             if items:
                 items[0].setText(f"[{unit['status']}] {unit['id']}")
+
+    def on_export(self):
+        if not self.state.db:
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export CSV", "", "CSV Files (*.csv)"
+        )
+        if not file_path:
+            return
+
+        try:
+            svc = ExportImportService(self.state.db)
+            count = svc.export_csv(Path(file_path))
+            QMessageBox.information(
+                self, "Export Successful", f"Exported {count} records to {file_path}"
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Export Error", str(e))
+
+    def on_import(self):
+        if not self.state.db:
+            return
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Import CSV", "", "CSV Files (*.csv)"
+        )
+        if not file_path:
+            return
+
+        try:
+            svc = ExportImportService(self.state.db)
+            prev = svc.import_csv_preview(Path(file_path))
+
+            msg = f"Preview Import:\nTotal Rows: {prev['total_rows']}\nValid Editable: {prev['valid_editable']}\nUnchanged: {prev['unchanged']}\nErrors: {prev['invalid']}"
+            if prev["invalid"] > 0:
+                msg += "\n\nCannot import due to errors in CSV. Check CLI output for details or fix the CSV."
+                QMessageBox.warning(self, "Import Blocked", msg)
+                return
+
+            reply = QMessageBox.question(
+                self,
+                "Confirm Import",
+                msg + "\n\nProceed with import?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+            if reply == QMessageBox.Yes:
+                count = svc.import_csv_apply(Path(file_path))
+                QMessageBox.information(
+                    self, "Import Successful", f"Imported {count} translations."
+                )
+                self.load_units()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Import Error", str(e))

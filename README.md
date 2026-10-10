@@ -214,6 +214,25 @@ GameLingo provides a complete end-to-end command-line workflow. All commands use
    uv run python -m gamelingo review edit <unit_id> "Better translation."
    uv run python -m gamelingo review approve <unit_id>
    ```
+   
+   Alternatively, you can edit translations in bulk using spreadsheet export/import:
+   ```bash
+   # Export to CSV
+   uv run python -m gamelingo export csv --output "translations.csv" --status draft,needs_review
+   
+   # ... Edit translations.csv in Excel/LibreOffice ...
+   
+   # Preview changes without modifying database
+   uv run python -m gamelingo import preview "translations.csv"
+   
+   # Apply changes
+   uv run python -m gamelingo import apply "translations.csv" --yes
+   ```
+   *Note on CSV Editing:*
+   - Edit **only** the `translated_text` column.
+   - Do **not** modify `unit_id`, `locator`, `source_text`, or other identity columns.
+   - Excel formulas starting with `=`, `+`, `-`, `@` are safely escaped with a leading single quote (`'`). Do not remove this quote if you intend the text to be literal.
+   - Importing an edited translation resets its status to `needs_review` or `draft` (invalidating prior approval). You must still approve them using the Review workflow before patching.
 
 7. **Create Patch Plan**
    Generate a patch plan using approved translations:

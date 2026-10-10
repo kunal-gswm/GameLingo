@@ -384,6 +384,68 @@ def cmd_plan_create(args):
     print(preview_plan(plan))
 
 
+def cmd_export_csv(args):
+    db = get_db(args.workspace)
+    from gamelingo.translation.export_import import ExportImportService
+
+    svc = ExportImportService(db)
+
+    statuses = args.status.split(",") if args.status else None
+    out_path = Path(args.output)
+    count = svc.export_csv(out_path, project_id=args.project_id, statuses=statuses)
+    print(f"Exported {count} records to {out_path.absolute()}")
+
+
+def cmd_import_preview(args):
+    db = get_db(args.workspace)
+    from gamelingo.translation.export_import import ExportImportService
+
+    svc = ExportImportService(db)
+
+    in_path = Path(args.input)
+    try:
+        preview = svc.import_csv_preview(in_path)
+    except Exception as e:
+        print(f"Import preview failed: {e}")
+        sys.exit(1)
+
+    print(f"Total Rows: {preview['total_rows']}")
+    print(f"Valid Editable: {preview['valid_editable']}")
+    print(f"Unchanged: {preview['unchanged']}")
+    print(f"Invalid/Errors: {preview['invalid']}")
+    print(f"Stale Source Conflicts: {preview['stale_source']}")
+    print(f"Duplicate Rows: {preview['duplicate_rows']}")
+    print(f"Validation Blocked: {preview['validation_blocked']}")
+    print(f"Would Need Review: {preview['would_need_review']}")
+    print(f"Approvals Invalidated: {preview['approval_invalidated']}")
+
+    if preview["invalid"] > 0:
+        print("\nInvalid Rows Details:")
+        for r in preview["rows"]:
+            if r["action"] == "error":
+                print(f"Row {r['row']} (Unit {r['unit_id']}): {r['reason']}")
+        sys.exit(1)
+
+
+def cmd_import_apply(args):
+    db = get_db(args.workspace)
+    from gamelingo.translation.export_import import ExportImportService
+
+    svc = ExportImportService(db)
+
+    in_path = Path(args.input)
+    if not args.yes:
+        print("Use --yes to confirm import.")
+        sys.exit(1)
+
+    try:
+        count = svc.import_csv_apply(in_path)
+        print(f"Successfully imported {count} translations.")
+    except Exception as e:
+        print(f"Import failed: {e}")
+        sys.exit(1)
+
+
 def cmd_plan_validate(args):
     plan_file = Path(args.plan_file)
     if not plan_file.exists():
@@ -535,6 +597,29 @@ def main() -> int:
     # Plan
     p_plan = subparsers.add_parser("plan", help="Patch planning")
     plan_sub = p_plan.add_subparsers(dest="plan_cmd", required=True)
+
+    # Export
+    p_exp = subparsers.add_parser("export", help="Export translations")
+    exp_sub = p_exp.add_subparsers(dest="exp_cmd", required=True)
+
+    c_ec = exp_sub.add_parser("csv", help="Export to CSV")
+    c_ec.add_argument("--output", required=True)
+    c_ec.add_argument("--project-id", default="default")
+    c_ec.add_argument("--status", help="Comma separated statuses")
+    c_ec.set_defaults(func=cmd_export_csv)
+
+    # Import
+    p_imp = subparsers.add_parser("import", help="Import translations")
+    imp_sub = p_imp.add_subparsers(dest="imp_cmd", required=True)
+
+    c_ip = imp_sub.add_parser("preview", help="Preview import")
+    c_ip.add_argument("input", help="CSV file path")
+    c_ip.set_defaults(func=cmd_import_preview)
+
+    c_ia = imp_sub.add_parser("apply", help="Apply import")
+    c_ia.add_argument("input", help="CSV file path")
+    c_ia.add_argument("--yes", action="store_true")
+    c_ia.set_defaults(func=cmd_import_apply)
 
     c_pc = plan_sub.add_parser("create", help="Create patch plan")
     c_pc.add_argument("--plan-file", default="patch_plan.json")
