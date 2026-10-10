@@ -33,3 +33,9 @@ dev = [
     "pytest>=8.0.0",
     "ruff>=0.3.0",
 ]
+benchmark = [
+    "ctranslate2>=4.0.0",
+    "transformers>=4.0.0",
+    "sacremoses>=0.1.0",
+    "argostranslate>=1.9.0",
+]

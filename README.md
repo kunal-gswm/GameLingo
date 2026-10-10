@@ -108,5 +108,16 @@ You can run the synthetic pipeline benchmark to observe the massive efficiency g
 uv run pytest -s tests/integration/test_pipeline_benchmark.py
 ```
 
+## Local Translation Models & Benchmarking
+GameLingo evaluates free, local-first translation models. To ensure maximum compatibility and avoid bloating the core installation with massive ML frameworks, translation providers are implemented as **optional dependencies**.
+
+You can run the translation provider benchmark harness directly to test and compare models (e.g. OPUS-MT and Argos Translate) on your own hardware using a 60-string representative game dataset:
+1. Ensure you have the `benchmark` optional dependency group installed (`uv sync --group benchmark`).
+2. Run the benchmarking tool:
+```bash
+python run_benchmark.py
+```
+3. A detailed performance and quality report will be generated in `src/gamelingo/benchmark/results/`.
+
 ## License
 First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

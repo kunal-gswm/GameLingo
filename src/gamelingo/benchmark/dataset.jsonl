@@ -1,0 +1,60 @@
+{"id": "sys_01", "category": "System", "context": "Title screen", "source_text": "ニューゲーム", "reference": "New Game"}
+{"id": "sys_02", "category": "System", "context": "Title screen", "source_text": "コンティニュー", "reference": "Continue"}
+{"id": "sys_03", "category": "System", "context": "Options menu", "source_text": "設定", "reference": "Settings"}
+{"id": "sys_04", "category": "System", "context": "Options menu", "source_text": "音量", "reference": "Volume"}
+{"id": "sys_05", "category": "System", "context": "Save menu", "source_text": "セーブ", "reference": "Save"}
+{"id": "sys_06", "category": "System", "context": "Save menu", "source_text": "ロード", "reference": "Load"}
+{"id": "sys_07", "category": "System", "context": "Game Over screen", "source_text": "ゲームオーバー", "reference": "Game Over"}
+{"id": "sys_08", "category": "System", "context": "Quit prompt", "source_text": "ゲームを終了しますか？", "reference": "Quit the game?"}
+{"id": "sys_09", "category": "System", "context": "Yes/No", "source_text": "はい", "reference": "Yes"}
+{"id": "sys_10", "category": "System", "context": "Yes/No", "source_text": "いいえ", "reference": "No"}
+{"id": "item_01", "category": "Item", "context": "Healing item", "source_text": "ポーション", "reference": "Potion"}
+{"id": "item_02", "category": "Item", "context": "Magic item", "source_text": "エーテル", "reference": "Ether"}
+{"id": "item_03", "category": "Item", "context": "Revive item", "source_text": "フェニックスの尾", "reference": "Phoenix Down"}
+{"id": "item_04", "category": "Item", "context": "Weapon", "source_text": "鉄の剣", "reference": "Iron Sword"}
+{"id": "item_05", "category": "Item", "context": "Armor", "source_text": "皮の盾", "reference": "Leather Shield"}
+{"id": "item_06", "category": "Item", "context": "Accessory", "source_text": "星のペンダント", "reference": "Star Pendant"}
+{"id": "item_07", "category": "Item", "context": "Key item", "source_text": "古びた鍵", "reference": "Old Key"}
+{"id": "item_08", "category": "Item", "context": "Consumable", "source_text": "毒消し", "reference": "Antidote"}
+{"id": "item_09", "category": "Item", "context": "Magic scroll", "source_text": "炎の巻物", "reference": "Scroll of Fire"}
+{"id": "item_10", "category": "Item", "context": "Valuable", "source_text": "金塊", "reference": "Gold Nugget"}
+{"id": "skill_01", "category": "Skill", "context": "Physical attack", "source_text": "全力斬り", "reference": "Power Slash"}
+{"id": "skill_02", "category": "Skill", "context": "Magic attack", "source_text": "ファイア", "reference": "Fire"}
+{"id": "skill_03", "category": "Skill", "context": "Healing magic", "source_text": "ケアル", "reference": "Cure"}
+{"id": "skill_04", "category": "Skill", "context": "Buff", "source_text": "攻撃力アップ", "reference": "Attack Up"}
+{"id": "skill_05", "category": "Skill", "context": "Debuff", "source_text": "防御力ダウン", "reference": "Defense Down"}
+{"id": "skill_06", "category": "Skill", "context": "Status ailment", "source_text": "毒", "reference": "Poison"}
+{"id": "skill_07", "category": "Skill", "context": "Status ailment", "source_text": "麻痺", "reference": "Paralysis"}
+{"id": "skill_08", "category": "Skill", "context": "Escape", "source_text": "逃げる", "reference": "Escape"}
+{"id": "skill_09", "category": "Skill", "context": "Defend", "source_text": "防御", "reference": "Defend"}
+{"id": "skill_10", "category": "Skill", "context": "Ultimate", "source_text": "アルテマ", "reference": "Ultima"}
+{"id": "ui_01", "category": "UI", "context": "Status screen", "source_text": "HP", "reference": "HP"}
+{"id": "ui_02", "category": "UI", "context": "Status screen", "source_text": "MP", "reference": "MP"}
+{"id": "ui_03", "category": "UI", "context": "Status screen", "source_text": "レベル", "reference": "Level"}
+{"id": "ui_04", "category": "UI", "context": "Status screen", "source_text": "経験値", "reference": "EXP"}
+{"id": "ui_05", "category": "UI", "context": "Status screen", "source_text": "お金", "reference": "Gold"}
+{"id": "ui_06", "category": "UI", "context": "Menu tab", "source_text": "アイテム", "reference": "Items"}
+{"id": "ui_07", "category": "UI", "context": "Menu tab", "source_text": "スキル", "reference": "Skills"}
+{"id": "ui_08", "category": "UI", "context": "Menu tab", "source_text": "装備", "reference": "Equip"}
+{"id": "ui_09", "category": "UI", "context": "Menu tab", "source_text": "ステータス", "reference": "Status"}
+{"id": "ui_10", "category": "UI", "context": "Menu tab", "source_text": "クエスト", "reference": "Quests"}
+{"id": "dlg_01", "category": "Dialogue", "context": "Greeting", "source_text": "こんにちは！", "reference": "Hello!"}
+{"id": "dlg_02", "category": "Dialogue", "context": "Greeting", "source_text": "おはようございます。", "reference": "Good morning."}
+{"id": "dlg_03", "category": "Dialogue", "context": "Farewell", "source_text": "さようなら。", "reference": "Goodbye."}
+{"id": "dlg_04", "category": "Dialogue", "context": "Thanks", "source_text": "ありがとうございます！", "reference": "Thank you very much!"}
+{"id": "dlg_05", "category": "Dialogue", "context": "Apology", "source_text": "ごめんなさい...", "reference": "I'm sorry..."}
+{"id": "dlg_06", "category": "Dialogue", "context": "Casual", "source_text": "やったぜ！", "reference": "We did it!"}
+{"id": "dlg_07", "category": "Dialogue", "context": "Angry", "source_text": "ふざけるな！", "reference": "Don't mess with me!"}
+{"id": "dlg_08", "category": "Dialogue", "context": "Surprised", "source_text": "えっ！？本当ですか？", "reference": "Huh!? Is that true?"}
+{"id": "dlg_09", "category": "Dialogue", "context": "Sad", "source_text": "悲しいよ...", "reference": "I'm sad..."}
+{"id": "dlg_10", "category": "Dialogue", "context": "Determined", "source_text": "絶対に諦めない！", "reference": "I will never give up!"}
+{"id": "msg_01", "category": "System Message", "context": "Battle", "source_text": "%1の攻撃！", "reference": "%1 attacks!"}
+{"id": "msg_02", "category": "System Message", "context": "Battle", "source_text": "%1は%2のダメージを受けた！", "reference": "%1 took %2 damage!"}
+{"id": "msg_03", "category": "System Message", "context": "Battle", "source_text": "しかし、効果がなかった！", "reference": "But it had no effect!"}
+{"id": "msg_04", "category": "System Message", "context": "Level up", "source_text": "%1はレベル%2に上がった！", "reference": "%1 leveled up to %2!"}
+{"id": "msg_05", "category": "System Message", "context": "Item pickup", "source_text": "「%1」を手に入れた！", "reference": "Obtained '%1'!"}
+{"id": "msg_06", "category": "System Message", "context": "Gold pickup", "source_text": "%1 Gを手に入れた！", "reference": "Obtained %1 G!"}
+{"id": "msg_07", "category": "System Message", "context": "Quest complete", "source_text": "クエスト「%1」を達成した！", "reference": "Quest '%1' completed!"}
+{"id": "msg_08", "category": "System Message", "context": "Save successful", "source_text": "セーブしました。", "reference": "Saved successfully."}
+{"id": "msg_09", "category": "System Message", "context": "Load failed", "source_text": "ロードに失敗しました。", "reference": "Failed to load."}
+{"id": "msg_10", "category": "System Message", "context": "Error", "source_text": "エラーが発生しました。", "reference": "An error occurred."}
