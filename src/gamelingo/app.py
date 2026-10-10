@@ -47,7 +47,7 @@ def cmd_show(args):
                 print("Validation Issues:")
                 for f in flags:
                     print(f" - [{f['severity'].upper()}] {f['code']}: {f['message']}")
-        except:
+        except Exception:
             pass
 
 
