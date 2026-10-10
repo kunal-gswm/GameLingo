@@ -193,7 +193,18 @@ def apply_plan(
                 report["skipped_already_applied"].append(fp)
                 continue
 
-            tmp_file = target_file.with_suffix(".tmp")
+            import os
+            import tempfile
+
+            fd, tmp_path_str = tempfile.mkstemp(
+                prefix="gamelingo_", suffix=".tmp", dir=str(target_file.parent)
+            )
+            os.close(fd)
+            tmp_file = Path(tmp_path_str)
+
+            # Register immediately for cleanup
+            staged_files[fp] = tmp_file
+
             with open(tmp_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
 
@@ -205,8 +216,6 @@ def apply_plan(
                 assert _resolve_rpgmaker_locator(
                     staged_data, edit.get("locator")
                 ) == edit.get("translated_text")
-
-            staged_files[fp] = tmp_file
 
         if report["status"] == "failed":
             return report
