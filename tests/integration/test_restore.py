@@ -125,7 +125,6 @@ def test_rollback_on_failure(backup_setup, monkeypatch):
 
     # Mock replace to raise an exception after staging
 
-
     def fake_replace(self, target):
         raise OSError("Simulated replacement failure")
 
