@@ -3,6 +3,7 @@ from typing import Optional
 
 from gamelingo.storage.database import Database
 
+
 class AppState:
     def __init__(self):
         self.workspace_path: Optional[Path] = None
@@ -13,7 +14,7 @@ class AppState:
         self.workspace_path = path
         if not path.exists():
             path.mkdir(parents=True)
-            
+
         db_path = path / "gamelingo.db"
         self.db = Database(db_path)
         self.db.migrate()
@@ -22,11 +23,11 @@ class AppState:
     def _load_project_config(self):
         if not self.db:
             return
-            
+
         conn = self.db.connect()
         cur = conn.execute("SELECT install_path FROM projects WHERE id = 'default'")
         row = cur.fetchone()
-        if row and row['install_path']:
-            p = Path(row['install_path'])
+        if row and row["install_path"]:
+            p = Path(row["install_path"])
             if p.exists():
                 self.game_path = p
