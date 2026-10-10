@@ -58,6 +58,7 @@ jobs:
           Expand-Archive -Path dist/GameLingo-Windows-x64.zip -DestinationPath $tempPath
           $exePath = "$tempPath\GameLingo\GameLingo.exe"
           & $exePath --smoke-test
+          & $exePath --test-workflow
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
