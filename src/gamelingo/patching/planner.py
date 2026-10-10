@@ -74,13 +74,14 @@ def create_plan(
     hash_cache = {}
 
     for unit in units:
+        rel_path = file_path_map.get(unit.file_id, unit.file_id) if file_path_map else unit.file_id
         record = record_map.get(unit.id)
         if not record:
             plan["edits"].append(
                 {
                     "unit_id": unit.id,
                     "file_id": unit.file_id,
-                "file_path": rel_path,
+                    "file_path": rel_path,
                     "locator": unit.locator,
                     "status": "rejected",
                     "reason": "missing_translation",
@@ -94,7 +95,7 @@ def create_plan(
                 {
                     "unit_id": unit.id,
                     "file_id": unit.file_id,
-                "file_path": rel_path,
+                    "file_path": rel_path,
                     "locator": unit.locator,
                     "status": "rejected",
                     "reason": "empty_translation",
@@ -105,7 +106,6 @@ def create_plan(
         # Optional: check if unit status is approved, etc. We'll skip strict status check unless specified,
         # but if unit.status == "rejected" we could skip. Let's assume translated_text is sufficient.
 
-        rel_path = file_path_map.get(unit.file_id, unit.file_id) if file_path_map else unit.file_id
         target_file = source_root_resolved / rel_path
         if not is_safe_path(source_root_resolved, target_file):
             plan["edits"].append(
