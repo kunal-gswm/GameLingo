@@ -20,6 +20,83 @@ class ArgosTranslateProvider(TranslationProvider):
                 "argostranslate is not installed. Please install it using `uv sync --group argos` or `pip install argostranslate`."
             )
 
+    @classmethod
+    def is_model_installed(cls, source_lang: str, target_lang: str) -> bool:
+        try:
+            import argostranslate.translate
+
+            installed_languages = argostranslate.translate.get_installed_languages()
+
+            from_lang = next(
+                (lang for lang in installed_languages if lang.code == source_lang), None
+            )
+            to_lang = next(
+                (lang for lang in installed_languages if lang.code == target_lang), None
+            )
+
+            if not from_lang or not to_lang:
+                return False
+
+            translator = from_lang.get_translation(to_lang)
+            return translator is not None
+        except Exception:
+            return False
+
+    @classmethod
+    def install_model(cls, source_lang: str, target_lang: str, progress_callback=None):
+        import argostranslate.package
+        import shutil
+
+        argostranslate.package.update_package_index()
+        available_packages = argostranslate.package.get_available_packages()
+        package = next(
+            filter(
+                lambda x: x.from_code == source_lang and x.to_code == target_lang,
+                available_packages,
+            ),
+            None,
+        )
+        if not package:
+            raise ValueError(
+                f"Language package {source_lang}->{target_lang} not found in Argos index."
+            )
+
+        import urllib.request
+        from pathlib import Path
+        import tempfile
+
+        url = package.links[0]
+
+        with urllib.request.urlopen(url) as response:
+            total_size = int(response.info().get("Content-Length", 0))
+            if total_size > 0:
+                _, _, free = shutil.disk_usage("/")
+                if free < total_size * 2:
+                    raise IOError("Not enough disk space to install the model.")
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".argosmodel") as tmp:
+                downloaded = 0
+                block_size = 8192
+                while True:
+                    buffer = response.read(block_size)
+                    if not buffer:
+                        break
+                    downloaded += len(buffer)
+                    tmp.write(buffer)
+                    if progress_callback and total_size > 0:
+                        progress_callback(int(downloaded * 100 / total_size))
+                tmp_path = tmp.name
+
+        try:
+            argostranslate.package.install_from_path(tmp_path)
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+        if not cls.is_model_installed(source_lang, target_lang):
+            raise RuntimeError(
+                "Installation completed but model is not marked as installed."
+            )
+
     @property
     def batch_limit(self) -> int:
         return self._batch_limit

@@ -46,6 +46,10 @@ class FakeProvider(TranslationProvider):
     def batch_limit(self) -> int:
         return self._batch_limit
 
+    @classmethod
+    def is_model_installed(cls, source_lang: str, target_lang: str) -> bool:
+        return True
+
     def translate_batch(
         self, requests: List[TranslationRequest]
     ) -> List[TranslationResult]:

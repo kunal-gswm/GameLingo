@@ -60,11 +60,29 @@ class TranslationWorker(QThread):
         self.is_cancelled = True
 
 
+class ModelInstallWorker(QThread):
+    progress = Signal(int)
+    finished = Signal()
+    error = Signal(str)
+
+    def run(self):
+        try:
+            from gamelingo.translation.argos_provider import ArgosTranslateProvider
+
+            ArgosTranslateProvider.install_model(
+                "ja", "en", lambda p: self.progress.emit(p)
+            )
+            self.finished.emit()
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class TranslationPage(QWidget):
     def __init__(self, state: AppState):
         super().__init__()
         self.state = state
         self.worker = None
+        self.install_worker = None
         self.setup_ui()
 
     def setup_ui(self):
@@ -73,6 +91,13 @@ class TranslationPage(QWidget):
         self.btn_start = QPushButton("Start Translation (Untranslated Units)")
         self.btn_start.clicked.connect(self.on_start_translation)
         layout.addWidget(self.btn_start)
+
+        self.btn_install_model = QPushButton(
+            "Install Japanese->English Translation Model"
+        )
+        self.btn_install_model.clicked.connect(self.on_install_model)
+        self.btn_install_model.setVisible(False)
+        layout.addWidget(self.btn_install_model)
 
         self.btn_stop = QPushButton("Stop Current Job")
         self.btn_stop.clicked.connect(self.on_stop_translation)
@@ -103,6 +128,59 @@ class TranslationPage(QWidget):
 
         if enabled:
             self.load_jobs()
+            self.check_model()
+
+    def check_model(self):
+        try:
+            from gamelingo.translation.argos_provider import ArgosTranslateProvider
+
+            if not ArgosTranslateProvider.is_model_installed("ja", "en"):
+                self.btn_install_model.setVisible(True)
+            else:
+                self.btn_install_model.setVisible(False)
+        except ImportError:
+            self.btn_install_model.setVisible(False)
+
+    def on_install_model(self):
+        reply = QMessageBox.question(
+            self,
+            "Install Language Model",
+            "GameLingo uses Argos Translate for offline translation.\n\n"
+            "This requires downloading the Japanese-to-English model (approx. 50MB) "
+            "from the official Argos package index. The model will be installed locally.\n\n"
+            "Do you want to download and install this model now?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            self.btn_install_model.setEnabled(False)
+            self.btn_start.setEnabled(False)
+            self.lbl_status.setText("Downloading model...")
+            self.progress_bar.setValue(0)
+
+            self.install_worker = ModelInstallWorker()
+            self.install_worker.progress.connect(self.progress_bar.setValue)
+            self.install_worker.finished.connect(self.on_model_installed)
+            self.install_worker.error.connect(self.on_model_error)
+            self.install_worker.start()
+
+    def on_model_installed(self):
+        self.install_worker = None
+        self.btn_install_model.setVisible(False)
+        self.btn_start.setEnabled(True)
+        self.lbl_status.setText("Model installed successfully.")
+        self.progress_bar.setValue(0)
+        QMessageBox.information(
+            self, "Success", "Japanese-to-English translation model installed."
+        )
+
+    def on_model_error(self, err_msg):
+        self.install_worker = None
+        self.btn_install_model.setEnabled(True)
+        self.btn_start.setEnabled(True)
+        self.lbl_status.setText("Error installing model.")
+        self.progress_bar.setValue(0)
+        QMessageBox.critical(self, "Error", f"Failed to install model:\n{err_msg}")
 
     def load_jobs(self):
         conn = self.state.db.connect()
@@ -120,6 +198,18 @@ class TranslationPage(QWidget):
             self.table.setItem(i, 2, QTableWidgetItem(t))
 
     def on_start_translation(self):
+        try:
+            from gamelingo.translation.argos_provider import ArgosTranslateProvider
+
+            if not ArgosTranslateProvider.is_model_installed("ja", "en"):
+                QMessageBox.warning(
+                    self, "Warning", "Please install the Japanese->English model first."
+                )
+                return
+        except ImportError:
+            QMessageBox.critical(self, "Error", "Argos provider not available.")
+            return
+
         conn = self.state.db.connect()
         cur = conn.execute(
             "SELECT * FROM translation_units WHERE status = 'untranslated'"

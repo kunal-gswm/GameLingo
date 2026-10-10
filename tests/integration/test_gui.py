@@ -91,7 +91,22 @@ def test_translation_page(qapp, app_state, monkeypatch):
 
     assert trans_page.btn_start.isEnabled()
 
-    with patch("PySide6.QtWidgets.QMessageBox.information") as mock_info:
+    with (
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+        patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit,
+        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+    ):
+        # In test environment, argos might not be installed, so we must mock the provider
+        import sys
+        from types import ModuleType
+        from gamelingo.translation.provider import FakeProvider
+
+        mock_module = ModuleType("gamelingo.translation.argos_provider")
+        mock_module.ArgosTranslateProvider = FakeProvider
+        monkeypatch.setitem(
+            sys.modules, "gamelingo.translation.argos_provider", mock_module
+        )
+
         trans_page.on_start_translation()
         mock_info.assert_called_once()
         assert "No untranslated units" in mock_info.call_args[0][2]

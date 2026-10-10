@@ -1,0 +1,25 @@
+GameLingo Third-Party Notices
+==============================
+
+GameLingo includes or depends on the following open-source software:
+
+Python (PSF License)
+https://docs.python.org/3/license.html
+
+PySide6 / Qt6 (LGPLv3)
+https://doc.qt.io/qtforpython-6/licenses.html
+Qt is a cross-platform application framework. PySide6 is the official Python binding for Qt.
+
+Argos Translate (MIT License)
+https://github.com/argosopentech/argos-translate
+Argos Translate is used for offline machine translation.
+
+CTranslate2 (MIT License)
+https://github.com/OpenNMT/CTranslate2
+Used by Argos Translate for fast model inference.
+
+SentencePiece (Apache License 2.0)
+https://github.com/google/sentencepiece
+Used for text tokenization.
+
+The Argos Translate `translate-ja_en` model (if downloaded separately via the application) is released by its authors into the Public Domain (CC0).
