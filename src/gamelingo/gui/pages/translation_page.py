@@ -2,6 +2,7 @@ import time
 
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import (
+    QFileDialog,
     QHeaderView,
     QLabel,
     QMessageBox,
@@ -11,7 +12,6 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
-    QFileDialog,
 )
 
 from gamelingo.domain.models import TranslationUnit
@@ -73,7 +73,7 @@ class ModelInstallWorker(QThread):
     def run(self):
         try:
             from gamelingo.translation.argos_setup import ArgosSetupService
-            
+
             if self.local_path:
                 ArgosSetupService.install_from_file("ja", "en", self.local_path)
             else:
@@ -187,7 +187,10 @@ class TranslationPage(QWidget):
 
     def on_install_model_local(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select Argos Model Package", "", "Argos Models (*.argosmodel);;All Files (*.*)"
+            self,
+            "Select Argos Model Package",
+            "",
+            "Argos Models (*.argosmodel);;All Files (*.*)",
         )
         if file_path:
             self.btn_install_model_online.setEnabled(False)

@@ -158,12 +158,14 @@ def cmd_extract(args):
 def cmd_translate(args):
     db = get_db(args.workspace)
     from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
+
     status = ArgosSetupService.check_status("ja", "en")
     if status["status"] != ModelStatus.READY:
         print(f"Cannot translate: {status['message']}")
         sys.exit(1)
-        
+
     from gamelingo.translation.argos_provider import ArgosTranslateProvider
+
     provider = ArgosTranslateProvider()
 
     pipeline = TranslationPipeline(db, provider)
@@ -230,12 +232,14 @@ def cmd_jobs_show(args):
 def cmd_jobs_resume(args):
     db = get_db(args.workspace)
     from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
+
     status = ArgosSetupService.check_status("ja", "en")
     if status["status"] != ModelStatus.READY:
         print(f"Cannot resume job: {status['message']}")
         sys.exit(1)
-        
+
     from gamelingo.translation.argos_provider import ArgosTranslateProvider
+
     provider = ArgosTranslateProvider()
 
     pipeline = TranslationPipeline(db, provider)

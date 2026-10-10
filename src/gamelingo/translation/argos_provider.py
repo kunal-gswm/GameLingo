@@ -23,6 +23,7 @@ class ArgosTranslateProvider(TranslationProvider):
     @classmethod
     def is_model_installed(cls, source_lang: str, target_lang: str) -> bool:
         from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
+
         status = ArgosSetupService.check_status(source_lang, target_lang)
         return status["status"] == ModelStatus.READY
 

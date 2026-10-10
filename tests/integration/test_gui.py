@@ -100,16 +100,19 @@ def test_translation_page(qapp, app_state, monkeypatch):
         import sys
         from types import ModuleType
 
-        from gamelingo.translation.provider import FakeProvider
         from gamelingo.translation.argos_setup import ModelStatus
+        from gamelingo.translation.provider import FakeProvider
 
         mock_module = ModuleType("gamelingo.translation.argos_provider")
         mock_module.ArgosTranslateProvider = FakeProvider
         monkeypatch.setitem(
             sys.modules, "gamelingo.translation.argos_provider", mock_module
         )
-        
-        with patch("gamelingo.translation.argos_setup.ArgosSetupService.check_status", return_value={"status": ModelStatus.READY, "message": "OK"}):
+
+        with patch(
+            "gamelingo.translation.argos_setup.ArgosSetupService.check_status",
+            return_value={"status": ModelStatus.READY, "message": "OK"},
+        ):
             trans_page.on_start_translation()
             mock_info.assert_called_once()
             assert "No untranslated units" in mock_info.call_args[0][2]
@@ -270,14 +273,18 @@ def test_translation_worker(qapp, app_state, monkeypatch):
     import time
 
     with (
-        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
-        patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit,
-        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+        patch("PySide6.QtWidgets.QMessageBox.information"),
+        patch("PySide6.QtWidgets.QMessageBox.critical"),
+        patch("PySide6.QtWidgets.QMessageBox.warning"),
     ):
         from gamelingo.translation.argos_setup import ModelStatus
-        with patch("gamelingo.translation.argos_setup.ArgosSetupService.check_status", return_value={"status": ModelStatus.READY, "message": "OK"}):
+
+        with patch(
+            "gamelingo.translation.argos_setup.ArgosSetupService.check_status",
+            return_value={"status": ModelStatus.READY, "message": "OK"},
+        ):
             trans_page.on_start_translation()
-            
+
             worker = trans_page.worker
             if worker:
                 t0 = time.time()
