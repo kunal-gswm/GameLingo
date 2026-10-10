@@ -144,3 +144,51 @@ python run_benchmark.py
 
 ## License
 First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Translation Workflow and Review
+
+GameLingo enforces a strict review lifecycle for translations to prevent poor machine output from accidentally ending up in your game.
+
+### Statuses
+- **untranslated**: Default state.
+- **draft**: Machine-translated or human-edited text that is structurally valid but unapproved.
+- **needs_review**: Translations that failed validation warnings or errors.
+- **approved**: Explicitly validated and approved by a human.
+- **rejected**: Explicitly rejected by a human.
+- **failed**: Provider failure during translation generation.
+
+### Quality Validation
+Before a translation can be approved, it passes through structural checks.
+**Blocking Errors (Prevent Approval):**
+- Missing or empty output.
+- Missing, duplicated, or corrupted placeholders (e.g. `%1`, `\N[1]`).
+- Leftover masking sentinels (`XXXTOKEN0XXX`).
+
+**Warnings (Flagged for Review):**
+- Output identical to source text.
+- Unusual length differences (too long/short).
+- Japanese characters remaining in output.
+
+*Note: The test `剣を装備しました。` translating to `Sword was fixed.` is mechanically valid and preserves tokens, but contextually inaccurate. Passing validation does not equal semantic quality, hence the mandatory approval step.*
+
+### The CLI Review Tool
+List units that need review:
+```bash
+uv run python -m gamelingo review list --status needs_review,draft
+```
+Show unit details:
+```bash
+uv run python -m gamelingo review show <unit_id>
+```
+Approve or reject:
+```bash
+uv run python -m gamelingo review approve <unit_id>
+uv run python -m gamelingo review reject <unit_id> --reason "Contextually wrong"
+```
+Edit translation manually (resets to draft/needs_review):
+```bash
+uv run python -m gamelingo review edit <unit_id> "Sword was equipped."
+```
+
+### Patch Planning Gate
+Only `approved` translations are eligible to be planned into a patch. If you edit an approved translation, its status resets to `draft` and it must be re-approved before it can be applied.

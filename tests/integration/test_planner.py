@@ -47,6 +47,7 @@ def plan_setup(tmp_path: Path):
         "ctx",
         "[]",
         "hash1",
+        "approved",
     )
     r1 = TranslationRecord("r1", "u1", "prov", "mod", "Hola!", "Hola!", "flag", 0, 0)
 
@@ -67,6 +68,8 @@ def plan_setup(tmp_path: Path):
 def test_create_valid_plan(plan_setup):
     source_root, units, records = plan_setup
 
+    for __u in units:
+        __u.status = "approved"
     plan = create_plan(source_root, "proj1", units, records)
 
     assert plan["version"] == "1.0"
@@ -85,6 +88,8 @@ def test_create_valid_plan(plan_setup):
 def test_missing_translation(plan_setup):
     source_root, units, records = plan_setup
 
+    for __u in units:
+        __u.status = "approved"
     plan = create_plan(source_root, "proj1", units, [records[0]])  # r2 missing
 
     edits = plan["edits"]
@@ -104,6 +109,8 @@ def test_stale_source(plan_setup):
     with open(file1, "w", encoding="utf-8") as f:
         json.dump(data, f)
 
+    for __u in units:
+        __u.status = "approved"
     plan = create_plan(source_root, "proj1", units, records)
 
     stale_edit = next(e for e in plan["edits"] if e["unit_id"] == "u1")
@@ -122,6 +129,7 @@ def test_conflict_translations(plan_setup):
         "ctx",
         "[]",
         "hash1",
+        "approved",
     )
     r3 = TranslationRecord(
         "r3",
@@ -138,6 +146,8 @@ def test_conflict_translations(plan_setup):
     units.append(u3)
     records.append(r3)
 
+    for __u in units:
+        __u.status = "approved"
     plan = create_plan(source_root, "proj1", units, records)
 
     conflicts = [e for e in plan["edits"] if e["status"] == "conflict"]
@@ -146,6 +156,8 @@ def test_conflict_translations(plan_setup):
 
 def test_validate_plan_catches_unsafe_paths(plan_setup):
     source_root, units, records = plan_setup
+    for __u in units:
+        __u.status = "approved"
     plan = create_plan(source_root, "proj1", units, records)
 
     plan["edits"][0]["file_path"] = "../unsafe.json"
@@ -156,6 +168,8 @@ def test_validate_plan_catches_unsafe_paths(plan_setup):
 
 def test_validate_plan_catches_stale_source(plan_setup):
     source_root, units, records = plan_setup
+    for __u in units:
+        __u.status = "approved"
     plan = create_plan(source_root, "proj1", units, records)
 
     # modify file after plan is created

@@ -107,8 +107,19 @@ def create_plan(
             )
             continue
 
-        # Optional: check if unit status is approved, etc. We'll skip strict status check unless specified,
-        # but if unit.status == "rejected" we could skip. Let's assume translated_text is sufficient.
+        if unit.status != "approved":
+            plan["edits"].append(
+                {
+                    "unit_id": unit.id,
+                    "file_id": unit.file_id,
+                    "file_path": rel_path,
+                    "locator": unit.locator,
+                    "status": "rejected",
+                    "reason": "unapproved",
+                    "details": f"Unit status is '{unit.status}', requires 'approved'",
+                }
+            )
+            continue
 
         target_file = source_root_resolved / rel_path
         if not is_safe_path(source_root_resolved, target_file):

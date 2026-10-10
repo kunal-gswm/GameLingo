@@ -212,6 +212,8 @@ class TranslationPipeline:
         return job_id
 
     def resume_job(self, job_id: str) -> Dict[str, Any]:
+        import json
+
         conn = self.db.connect()
 
         cur = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
@@ -269,7 +271,17 @@ class TranslationPipeline:
                         req_id = req_data["id"]
                         res = result_map.get(req_id)
 
+                        import json
+
+                        from gamelingo.translation.validation import (
+                            validate_translation,
+                        )
+
                         if res and res.target_text and not res.error:
+                            issues = validate_translation(
+                                req_data["source_text"], res.target_text
+                            )
+
                             # 1. save cache
                             self._save_cache(
                                 req_data["source_text"],
@@ -295,12 +307,37 @@ class TranslationPipeline:
                                         res.model,
                                         res.target_text,
                                         res.target_text,
-                                        "",
+                                        json.dumps(
+                                            [
+                                                {
+                                                    "code": i.code,
+                                                    "severity": i.severity,
+                                                    "message": i.message,
+                                                }
+                                                for i in issues
+                                            ]
+                                        ),
                                         time.time(),
                                         time.time(),
                                     ),
                                 )
+                                # Update unit status
+                                has_errors = any(i.severity == "error" for i in issues)
+                                new_status = (
+                                    "failed"
+                                    if has_errors
+                                    else ("needs_review" if issues else "draft")
+                                )
+                                conn.execute(
+                                    "UPDATE translation_units SET status = ? WHERE id = ?",
+                                    (new_status, unit_id),
+                                )
                         else:
+                            for unit_id in req_data["unit_ids"]:
+                                conn.execute(
+                                    "UPDATE translation_units SET status = 'failed' WHERE id = ?",
+                                    (unit_id,),
+                                )
                             raise Exception("Result missing or errored")
 
                     conn.execute(

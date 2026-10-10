@@ -43,6 +43,7 @@ def apply_setup(tmp_path: Path):
         "ctx",
         "[]",
         "hash1",
+        "approved",
     )
     r1 = TranslationRecord("r1", "u1", "prov", "mod", "Hola!", "Hola!", "flag", 0, 0)
 
