@@ -23,9 +23,10 @@ def backup_setup(tmp_path: Path):
     file2 = source_root / "System.json"
     file2.write_text("dummy data 2")
 
-    backup_dir = tmp_path / "backup_out"
+    backup_root = tmp_path / "backup_out"
 
-    create_backup(source_root, backup_dir, [file1, file2], "proj")
+    manifest = create_backup(source_root, backup_root, [file1, file2], "proj")
+    backup_dir = Path(manifest["backup_dir"])
 
     return source_root, backup_dir, ["data/Map001.json", "System.json"]
 

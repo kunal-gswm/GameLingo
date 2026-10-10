@@ -153,7 +153,7 @@ def apply_plan(
         report["errors"].append("Backup failed")
         return report
 
-    backup_dir = backup_root
+    backup_dir = Path(backup_result["backup_dir"])
     if not verify_backup(backup_dir):
         report["status"] = "failed"
         report["errors"].append("Backup verification failed")
@@ -162,116 +162,122 @@ def apply_plan(
     report["backup_id"] = backup_result["backup_id"]
     report["backup_dir"] = str(backup_dir)
 
-    # 2. Stage changes
     staged_files = {}
-    for fp, file_edits in edits_by_file.items():
-        target_file = source_root_resolved / fp
-        with open(target_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
+    try:
+        # 2. Stage changes
+        for fp, file_edits in edits_by_file.items():
+            target_file = source_root_resolved / fp
+            with open(target_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
 
-        all_applied = True
-        for edit in file_edits:
-            locator = edit.get("locator")
-            expected = edit.get("original_text")
-            translated = edit.get("translated_text")
+            all_applied = True
+            for edit in file_edits:
+                locator = edit.get("locator")
+                expected = edit.get("original_text")
+                translated = edit.get("translated_text")
 
-            current_val = _resolve_rpgmaker_locator(data, locator)
-            if current_val == translated:
-                continue  # already applied
-            if current_val != expected:
-                report["status"] = "failed"
-                report["errors"].append(
-                    f"Stale source detected dynamically during staging for {fp}::{locator}"
-                )
-                return report  # abort!
+                current_val = _resolve_rpgmaker_locator(data, locator)
+                if current_val == translated:
+                    continue  # already applied
+                if current_val != expected:
+                    report["status"] = "failed"
+                    report["errors"].append(
+                        f"Stale source detected dynamically during staging for {fp}::{locator}"
+                    )
+                    return report  # abort!
 
-            all_applied = False
-            _apply_rpgmaker_locator(data, locator, translated)
+                all_applied = False
+                _apply_rpgmaker_locator(data, locator, translated)
 
-        if all_applied:
-            report["skipped_already_applied"].append(fp)
-            continue
+            if all_applied:
+                report["skipped_already_applied"].append(fp)
+                continue
 
-        tmp_file = target_file.with_suffix(".tmp")
-        with open(tmp_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+            tmp_file = target_file.with_suffix(".tmp")
+            with open(tmp_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
 
-        # Verify staged
-        with open(tmp_file, "r", encoding="utf-8") as f:
-            staged_data = json.load(f)
+            # Verify staged
+            with open(tmp_file, "r", encoding="utf-8") as f:
+                staged_data = json.load(f)
 
-        for edit in file_edits:
-            assert _resolve_rpgmaker_locator(
-                staged_data, edit.get("locator")
-            ) == edit.get("translated_text")
+            for edit in file_edits:
+                assert _resolve_rpgmaker_locator(
+                    staged_data, edit.get("locator")
+                ) == edit.get("translated_text")
 
-        staged_files[fp] = tmp_file
+            staged_files[fp] = tmp_file
 
-    if report["status"] == "failed":
-        # cleanup tmp files
-        for fp, tmp in staged_files.items():
-            if tmp.exists():
-                tmp.unlink()
-        return report
+        if report["status"] == "failed":
+            return report
 
-    # 3. Replace files
-    replaced = []
-    replacement_failed = False
-    for fp, tmp_file in staged_files.items():
-        target_file = source_root_resolved / fp
-        try:
-            tmp_file.replace(target_file)
-            replaced.append(fp)
-        except Exception as e:
-            report["errors"].append(f"Failed to replace {fp}: {e}")
-            replacement_failed = True
-            break
-
-    # 4. Post-write verification
-    if "output_hashes" not in report:
-        report["output_hashes"] = {}
-
-    if not replacement_failed:
-        for fp in replaced:
+        # 3. Replace files
+        replaced = []
+        replacement_failed = False
+        for fp, tmp_file in staged_files.items():
             target_file = source_root_resolved / fp
             try:
-                report["output_hashes"][fp] = calculate_sha256(target_file)
-                with open(target_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                for edit in edits_by_file[fp]:
-                    if _resolve_rpgmaker_locator(data, edit.get("locator")) != edit.get(
-                        "translated_text"
-                    ):
-                        raise ValueError("Post-write verification value mismatch")
-                report["successfully_changed_files"].append(fp)
+                tmp_file.replace(target_file)
+                replaced.append(fp)
             except Exception as e:
-                report["errors"].append(f"Post-write verification failed for {fp}: {e}")
+                report["errors"].append(f"Failed to replace {fp}: {e}")
                 replacement_failed = True
                 break
 
-    if replacement_failed:
-        report["status"] = "partial_failure"
-        # 5. Recovery
-        try:
-            restore_res = execute_restore(
-                backup_dir,
-                source_root_resolved,
-                affected_files,
-                overwrite=True,
-                execute=True,
-            )
-            if restore_res["status"] == "success":
-                report["recovery_status"] = "success"
-                report["errors"].append(
-                    "Application failed but recovery succeeded completely."
-                )
-            else:
-                report["recovery_status"] = "partial"
-                report["errors"].append(
-                    f"Application failed and recovery failed partially: {restore_res.get('errors')}"
-                )
-        except Exception as e:
-            report["recovery_status"] = "failed"
-            report["errors"].append(f"Recovery threw exception: {e}")
+        # 4. Post-write verification
+        if "output_hashes" not in report:
+            report["output_hashes"] = {}
 
-    return report
+        if not replacement_failed:
+            for fp in replaced:
+                target_file = source_root_resolved / fp
+                try:
+                    report["output_hashes"][fp] = calculate_sha256(target_file)
+                    with open(target_file, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    for edit in edits_by_file[fp]:
+                        if _resolve_rpgmaker_locator(
+                            data, edit.get("locator")
+                        ) != edit.get("translated_text"):
+                            raise ValueError("Post-write verification value mismatch")
+                    report["successfully_changed_files"].append(fp)
+                except Exception as e:
+                    report["errors"].append(
+                        f"Post-write verification failed for {fp}: {e}"
+                    )
+                    replacement_failed = True
+                    break
+
+        if replacement_failed:
+            report["status"] = "partial_failure"
+            # 5. Recovery
+            try:
+                restore_res = execute_restore(
+                    backup_dir,
+                    source_root_resolved,
+                    affected_files,
+                    overwrite=True,
+                    execute=True,
+                )
+                if restore_res["status"] == "success":
+                    report["recovery_status"] = "success"
+                    report["errors"].append(
+                        "Application failed but recovery succeeded completely."
+                    )
+                else:
+                    report["recovery_status"] = "partial"
+                    report["errors"].append(
+                        f"Application failed and recovery failed partially: {restore_res.get('errors')}"
+                    )
+            except Exception as e:
+                report["recovery_status"] = "failed"
+                report["errors"].append(f"Recovery threw exception: {e}")
+
+        return report
+    finally:
+        for tmp_file in staged_files.values():
+            if tmp_file.exists():
+                try:
+                    tmp_file.unlink()
+                except OSError:
+                    pass

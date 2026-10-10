@@ -40,21 +40,24 @@ def is_safe_path(root: Path, path: Path) -> bool:
 
 
 def create_backup(
-    source_root: Path, backup_dir: Path, file_paths: List[Path], project_id: str
+    source_root: Path, backup_root: Path, file_paths: List[Path], project_id: str
 ) -> Dict[str, Any]:
     try:
         source_root_resolved = source_root.resolve(strict=True)
     except OSError:
         raise BackupValidationError("Source root does not exist.")
 
+    backup_id = str(uuid.uuid4())
+    backup_dir = backup_root / backup_id
     backup_dir.mkdir(parents=True, exist_ok=True)
 
     manifest = {
         "version": "1.0",
-        "backup_id": str(uuid.uuid4()),
+        "backup_id": backup_id,
         "project_id": project_id,
         "created_at": time.time(),
         "status": "in_progress",
+        "backup_dir": str(backup_dir),
         "files": [],
     }
 

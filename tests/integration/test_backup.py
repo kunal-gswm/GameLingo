@@ -21,17 +21,18 @@ def test_successful_backup_and_verify(tmp_path: Path):
     file2 = source_root / "System.json"
     file2.write_text("dummy data 2")
 
-    backup_dir = tmp_path / "backup_out"
+    backup_root = tmp_path / "backup_out"
 
     # Original states
     orig_hash1 = calculate_sha256(file1)
 
     manifest = create_backup(
         source_root=source_root,
-        backup_dir=backup_dir,
+        backup_root=backup_root,
         file_paths=[file1, file2],
         project_id="test_project",
     )
+    backup_dir = Path(manifest["backup_dir"])
 
     assert manifest["status"] == "completed"
     assert len(manifest["files"]) == 2
@@ -83,8 +84,9 @@ def test_verification_detects_modification(tmp_path: Path):
     file1 = source_root / "test.txt"
     file1.write_text("original")
 
-    backup_dir = tmp_path / "backup_out"
-    create_backup(source_root, backup_dir, [file1], "proj")
+    backup_root = tmp_path / "backup_out"
+    manifest = create_backup(source_root, backup_root, [file1], "proj")
+    backup_dir = Path(manifest["backup_dir"])
 
     assert verify_backup(backup_dir) is True
 
@@ -102,8 +104,9 @@ def test_verification_detects_missing_file(tmp_path: Path):
     file1 = source_root / "test.txt"
     file1.write_text("original")
 
-    backup_dir = tmp_path / "backup_out"
-    create_backup(source_root, backup_dir, [file1], "proj")
+    backup_root = tmp_path / "backup_out"
+    manifest = create_backup(source_root, backup_root, [file1], "proj")
+    backup_dir = Path(manifest["backup_dir"])
 
     backup_file = backup_dir / "test.txt"
     backup_file.unlink()

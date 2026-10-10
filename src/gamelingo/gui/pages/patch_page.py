@@ -146,17 +146,31 @@ class PatchPage(QWidget):
                     execute=True,
                     overwrite=True,
                 )
+
+                msg = f"Patch applied with status: {report['status']}\n\n"
+                if report.get("backup_id"):
+                    msg += f"Backup ID: {report['backup_id']}\n"
+                    msg += f"Backup Location: {report['backup_dir']}\n\n"
+
+                msg += f"Successfully changed {len(report.get('successfully_changed_files', []))} files.\n"
+
+                if report.get("recovery_status"):
+                    msg += f"\nRecovery Status: {report['recovery_status']}\n"
+
+                if report.get("errors"):
+                    msg += "\nErrors:\n" + "\n".join(report["errors"])
+
                 if report["status"] == "success":
                     QMessageBox.information(
                         self,
                         "Success",
-                        f"Successfully patched {len(report.get('successfully_changed_files', []))} files.",
+                        msg,
                     )
                 else:
                     QMessageBox.warning(
                         self,
                         "Warning",
-                        f"Patch applied with status: {report['status']}",
+                        msg,
                     )
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Patch application failed:\n{e}")

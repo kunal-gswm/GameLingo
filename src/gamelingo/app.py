@@ -498,11 +498,16 @@ def cmd_apply(args):
         )
         print(f"Apply status: {report['status']}")
         if execute:
+            if report.get("backup_id"):
+                print(f"Backup created: {report['backup_id']}")
+                print(f"Backup location: {report['backup_dir']}")
             print(
                 f"Successfully changed {len(report.get('successfully_changed_files', []))} files."
             )
             if report.get("failed_files"):
                 print(f"Failed to change {len(report['failed_files'])} files.")
+            if report.get("recovery_status"):
+                print(f"Recovery status: {report['recovery_status']}")
     except Exception as e:
         print(f"Apply failed: {e}")
         sys.exit(1)
