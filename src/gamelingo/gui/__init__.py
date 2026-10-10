@@ -1,0 +1,1 @@
+"""GameLingo GUI package."""

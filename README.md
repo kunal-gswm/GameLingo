@@ -230,3 +230,32 @@ GameLingo provides a complete end-to-end command-line workflow. All commands use
    ```bash
    uv run python -m gamelingo apply patch.json --execute --yes
    ```
+
+## GUI Quick Start
+
+GameLingo provides a modern PySide6 desktop interface for users who prefer visual tools over the CLI.
+
+### Installing Optional GUI Dependencies
+
+To keep the core application lightweight, the GUI is an optional dependency. Install it using:
+```bash
+uv sync --group gui
+# OR: pip install .[gui]
+```
+
+### Launching the Desktop App
+
+You can launch the GUI using the Python module:
+```bash
+uv run python -m gamelingo.gui.main
+```
+
+### Supported GUI Features
+The GUI provides complete coverage of the GameLingo translation lifecycle:
+- **Dashboard:** Create or open workspaces, and dynamically detect supported RPG Maker MV/MZ game directories.
+- **Extraction:** A dedicated progress page to safely extract game data.
+- **Translation:** Launch, monitor, stop, or resume translation jobs with Argos Translate (assuming you've installed it).
+- **Review:** A dedicated split-pane UI where you can inspect source and translation side-by-side, view quality warnings, edit text, and approve or reject units.
+- **Patch:** Create and validate a patch plan with zero risk, preview changes, and explicitly apply them with a backup confirmation.
+
+**Note:** Just like the CLI, the GUI never connects to the internet or uploads your data. Model weights for translation must still be manually installed via the command-line steps detailed above.
