@@ -44,8 +44,9 @@ class ArgosTranslateProvider(TranslationProvider):
 
     @classmethod
     def install_model(cls, source_lang: str, target_lang: str, progress_callback=None):
-        import argostranslate.package
         import shutil
+
+        import argostranslate.package
 
         argostranslate.package.update_package_index()
         available_packages = argostranslate.package.get_available_packages()
@@ -61,9 +62,9 @@ class ArgosTranslateProvider(TranslationProvider):
                 f"Language package {source_lang}->{target_lang} not found in Argos index."
             )
 
+        import tempfile
         import urllib.request
         from pathlib import Path
-        import tempfile
 
         url = package.links[0]
 

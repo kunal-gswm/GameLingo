@@ -93,12 +93,13 @@ def test_translation_page(qapp, app_state, monkeypatch):
 
     with (
         patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
-        patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit,
-        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+        patch("PySide6.QtWidgets.QMessageBox.critical"),
+        patch("PySide6.QtWidgets.QMessageBox.warning"),
     ):
         # In test environment, argos might not be installed, so we must mock the provider
         import sys
         from types import ModuleType
+
         from gamelingo.translation.provider import FakeProvider
 
         mock_module = ModuleType("gamelingo.translation.argos_provider")
