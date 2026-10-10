@@ -41,5 +41,22 @@ We use Python 3.12+ and `uv` for environment management.
    ruff format .
    ```
 
+## Continuous Integration (CI)
+
+Automated quality checks are run on every push to the `main` branch and on all pull requests via GitHub Actions.
+
+The following checks run automatically:
+1. **Tests:** Executes `pytest` to ensure unit tests pass.
+2. **Linting:** Executes `ruff check .` to check for style and quality violations.
+3. **Formatting:** Executes `ruff format --check .` to enforce consistent code formatting.
+
+To run the exact same checks locally in a reproducible environment, use:
+```bash
+uv sync --locked
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+```
+
 ## License
 First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
