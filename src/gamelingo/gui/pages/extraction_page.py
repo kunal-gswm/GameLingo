@@ -25,13 +25,15 @@ class ExtractionWorker(QThread):
 
     def run(self):
         try:
+            from gamelingo.storage.database import Database
+            local_db = Database(self.state.db.db_path)
             adapter = RPGMakerMVMZAdapter()
             game_path = self.state.game_path
 
             # Not exact progress since adapter.extract yields. We'll pulse the progress or just count.
             units = list(adapter.extract(game_path))
 
-            conn = self.state.db.connect()
+            conn = local_db.connect()
             with conn:
                 for u in units:
                     rel = (

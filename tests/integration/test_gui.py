@@ -149,3 +149,94 @@ def test_patch_page(qapp, app_state, monkeypatch):
         patch_page.on_create_plan()
         mock_info.assert_called_once()
         assert "No approved translations" in mock_info.call_args[0][2]
+
+def test_extraction_worker(qapp, app_state, monkeypatch):
+    window = MainWindow(app_state)
+    extract_page = window.pages[1]
+    
+    # We can mock the adapter so it returns dummy units
+    from gamelingo.adapters.rpgmaker_mv_mz import RPGMakerMVMZAdapter
+    from gamelingo.domain.models import TranslationUnit
+    
+    class DummyAdapter:
+        def extract(self, path):
+            yield TranslationUnit(
+                id="u1", file_id="Map001.json", locator="l1",
+                source_text="t1", context="", tokens_json="[]",
+                source_hash="h1", status="untranslated"
+            )
+            
+    monkeypatch.setattr("gamelingo.gui.pages.extraction_page.RPGMakerMVMZAdapter", DummyAdapter)
+    
+    # We need to wait for the signal or just process events
+    # We can use QEventLoop
+    from PySide6.QtCore import QEventLoop
+    
+    loop = QEventLoop()
+    
+    def on_finished(count):
+        assert count == 1
+        loop.quit()
+        
+    def on_error(msg):
+        print(f"Error: {msg}")
+        loop.quit()
+        
+    import time
+    with patch("PySide6.QtWidgets.QMessageBox.information"), patch("PySide6.QtWidgets.QMessageBox.critical"):
+        extract_page.on_extract()
+        if extract_page.worker:
+            t0 = time.time()
+            while not extract_page.worker.isFinished() and time.time() - t0 < 5.0:
+                qapp.processEvents()
+                time.sleep(0.01)
+    
+    # Verify DB insertion
+    conn = app_state.db.connect()
+    cur = conn.execute("SELECT id FROM translation_units")
+    assert len(cur.fetchall()) == 1
+
+def test_translation_worker(qapp, app_state, monkeypatch):
+    window = MainWindow(app_state)
+    trans_page = window.pages[2]
+    
+    from gamelingo.translation.provider import FakeProvider
+    import sys
+    from types import ModuleType
+    mock_module = ModuleType("gamelingo.translation.argos_provider")
+    mock_module.ArgosTranslateProvider = FakeProvider
+    monkeypatch.setitem(sys.modules, "gamelingo.translation.argos_provider", mock_module)
+    
+    # Insert units
+    conn = app_state.db.connect()
+    with conn:
+        conn.execute("INSERT OR IGNORE INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("f1.json", "default", "f1.json", "json", "hash", 0, 0))
+        conn.execute("INSERT OR IGNORE INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("u2", "f1.json", "l1", "t2", "", "[]", "h2", "untranslated"))
+            
+    trans_page.refresh()
+    
+    from PySide6.QtCore import QEventLoop
+    loop = QEventLoop()
+    
+    def on_finished(report):
+        assert report['status'] == 'completed'
+        loop.quit()
+        
+    def on_error(msg):
+        print(f"Error: {msg}")
+        loop.quit()
+        
+    import time
+    with patch("PySide6.QtWidgets.QMessageBox.information"), patch("PySide6.QtWidgets.QMessageBox.critical"):
+        trans_page.on_start_translation()
+        
+        if trans_page.worker:
+            t0 = time.time()
+            while not trans_page.worker.isFinished() and time.time() - t0 < 5.0:
+                qapp.processEvents()
+                time.sleep(0.01)
+                
+    cur = conn.execute("SELECT status FROM translation_units WHERE id='u2'")
+    assert cur.fetchone()['status'] == 'draft'

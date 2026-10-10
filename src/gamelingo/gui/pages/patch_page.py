@@ -136,6 +136,7 @@ class PatchPage(QWidget):
         )
 
         if reply == QMessageBox.Yes:
+            self.btn_apply.setEnabled(False)
             backup_root = self.state.workspace_path / "backups"
             try:
                 report = apply_plan(
@@ -159,3 +160,5 @@ class PatchPage(QWidget):
                     )
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Patch application failed:\n{e}")
+            finally:
+                self.btn_apply.setEnabled(True)

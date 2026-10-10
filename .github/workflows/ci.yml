@@ -10,7 +10,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  quality-checks:
+  core-tests:
+    name: Core Tests & Linting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -25,7 +26,7 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Install dependencies
+      - name: Install dependencies (Core only)
         run: uv sync --locked
 
       - name: Run Ruff Lint
@@ -34,5 +35,34 @@ jobs:
       - name: Run Ruff Format Check
         run: uv run ruff format --check .
 
-      - name: Run Tests
+      - name: Run Core Tests
         run: uv run pytest
+
+  gui-tests:
+    name: GUI Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies for Qt (headless)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies (with GUI)
+        run: uv sync --locked --extra gui
+
+      - name: Run GUI Tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: uv run pytest tests/integration/test_gui.py -v

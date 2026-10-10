@@ -41,7 +41,9 @@ class TranslationWorker(QThread):
                 )
                 return
 
-            pipeline = TranslationPipeline(self.state.db, provider)
+            from gamelingo.storage.database import Database
+            local_db = Database(self.state.db.db_path)
+            pipeline = TranslationPipeline(local_db, provider)
 
             while not self.is_cancelled:
                 report = pipeline.resume_job(self.job_id)
