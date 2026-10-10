@@ -3,29 +3,33 @@ import os
 from unittest.mock import patch
 
 import pytest
+
 pytest.importorskip("PySide6")
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
+import sys
+
 from gamelingo.gui.main_window import MainWindow
 from gamelingo.gui.state import AppState
-import sys
 
 try:
     from PySide6.QtWidgets import QApplication
+
     has_pyside = True
 except ImportError:
     has_pyside = False
 
 pytestmark = pytest.mark.skipif(not has_pyside, reason="PySide6 is not installed")
 
+
 @pytest.fixture(scope="session")
 def qapp():
-    if not has_pyside: return None
+    if not has_pyside:
+        return None
     app = QApplication.instance()
     if app is None:
         app = QApplication(sys.argv)
     return app
-
 
 
 @pytest.fixture
@@ -69,7 +73,7 @@ def app_state(tmp_path):
 def test_main_window_loads(qapp, app_state):
     window = MainWindow(app_state)
     window.refresh_all()
-    
+
     assert window.windowTitle() == "GameLingo"
     assert window.nav_list.count() == 5
 
@@ -81,7 +85,7 @@ def test_main_window_loads(qapp, app_state):
 def test_translation_page(qapp, app_state, monkeypatch):
     window = MainWindow(app_state)
     window.refresh_all()
-    
+
     window.nav_list.setCurrentRow(2)
     trans_page = window.pages[2]
 
@@ -112,7 +116,7 @@ def test_review_page(qapp, app_state, monkeypatch):
 
     window = MainWindow(app_state)
     window.refresh_all()
-    
+
     window.nav_list.setCurrentRow(3)
     review_page = window.pages[3]
 
@@ -135,7 +139,7 @@ def test_review_page(qapp, app_state, monkeypatch):
 def test_patch_page(qapp, app_state, monkeypatch):
     window = MainWindow(app_state)
     window.refresh_all()
-    
+
     window.nav_list.setCurrentRow(4)
     patch_page = window.pages[4]
 
