@@ -171,24 +171,62 @@ Before a translation can be approved, it passes through structural checks.
 
 *Note: The test `剣を装備しました。` translating to `Sword was fixed.` is mechanically valid and preserves tokens, but contextually inaccurate. Passing validation does not equal semantic quality, hence the mandatory approval step.*
 
-### The CLI Review Tool
-List units that need review:
-```bash
-uv run python -m gamelingo review list --status needs_review,draft
-```
-Show unit details:
-```bash
-uv run python -m gamelingo review show <unit_id>
-```
-Approve or reject:
-```bash
-uv run python -m gamelingo review approve <unit_id>
-uv run python -m gamelingo review reject <unit_id> --reason "Contextually wrong"
-```
-Edit translation manually (resets to draft/needs_review):
-```bash
-uv run python -m gamelingo review edit <unit_id> "Sword was equipped."
-```
+## CLI Quick Start
 
-### Patch Planning Gate
-Only `approved` translations are eligible to be planned into a patch. If you edit an approved translation, its status resets to `draft` and it must be re-approved before it can be applied.
+GameLingo provides a complete end-to-end command-line workflow. All commands use the `gamelingo` entry point and default to your current directory as the project workspace. To specify a different workspace, use `--workspace <path>`.
+
+1. **Initialize Project**
+   Create a new project workspace in the current directory:
+   ```bash
+   uv run python -m gamelingo project init
+   ```
+
+2. **Detect and Inspect Game**
+   Check if your game is supported:
+   ```bash
+   uv run python -m gamelingo game detect "C:/Path/To/Game"
+   ```
+
+3. **Extract Text**
+   Extract translation units safely:
+   ```bash
+   uv run python -m gamelingo extract "C:/Path/To/Game"
+   ```
+
+4. **Translate via Argos Translate (Optional Local LLM)**
+   If you have installed the optional Argos dependencies, run translation. It automatically handles batching, caching, and resumption:
+   ```bash
+   uv run python -m gamelingo translate
+   ```
+
+5. **Manage Jobs**
+   If a translation job was interrupted or needs resuming:
+   ```bash
+   uv run python -m gamelingo jobs list
+   uv run python -m gamelingo jobs resume <job-id>
+   ```
+
+6. **Review Workflow**
+   Machine translations must be approved.
+   ```bash
+   uv run python -m gamelingo review list --status needs_review,draft
+   uv run python -m gamelingo review show <unit_id>
+   uv run python -m gamelingo review edit <unit_id> "Better translation."
+   uv run python -m gamelingo review approve <unit_id>
+   ```
+
+7. **Create Patch Plan**
+   Generate a patch plan using approved translations:
+   ```bash
+   uv run python -m gamelingo plan create --plan-file patch.json
+   ```
+
+8. **Apply Patch (Safe, explicit authorization)**
+   By default, `apply` does a safe preview:
+   ```bash
+   uv run python -m gamelingo apply patch.json
+   ```
+   To explicitly execute and overwrite game files:
+   ```bash
+   uv run python -m gamelingo apply patch.json --execute --yes
+   ```
