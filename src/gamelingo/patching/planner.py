@@ -74,7 +74,11 @@ def create_plan(
     hash_cache = {}
 
     for unit in units:
-        rel_path = file_path_map.get(unit.file_id, unit.file_id) if file_path_map else unit.file_id
+        rel_path = (
+            file_path_map.get(unit.file_id, unit.file_id)
+            if file_path_map
+            else unit.file_id
+        )
         record = record_map.get(unit.id)
         if not record:
             plan["edits"].append(
@@ -112,7 +116,7 @@ def create_plan(
                 {
                     "unit_id": unit.id,
                     "file_id": unit.file_id,
-                "file_path": rel_path,
+                    "file_path": rel_path,
                     "status": "rejected",
                     "reason": "unsafe_path",
                 }
@@ -124,7 +128,7 @@ def create_plan(
                 {
                     "unit_id": unit.id,
                     "file_id": unit.file_id,
-                "file_path": rel_path,
+                    "file_path": rel_path,
                     "status": "rejected",
                     "reason": "file_not_found",
                 }
@@ -141,7 +145,7 @@ def create_plan(
                     {
                         "unit_id": unit.id,
                         "file_id": unit.file_id,
-                "file_path": rel_path,
+                        "file_path": rel_path,
                         "status": "rejected",
                         "reason": "file_read_error",
                     }
@@ -158,7 +162,7 @@ def create_plan(
                 {
                     "unit_id": unit.id,
                     "file_id": unit.file_id,
-                "file_path": rel_path,
+                    "file_path": rel_path,
                     "locator": unit.locator,
                     "status": "rejected",
                     "reason": "locator_not_found",
@@ -171,7 +175,7 @@ def create_plan(
                 {
                     "unit_id": unit.id,
                     "file_id": unit.file_id,
-                "file_path": rel_path,
+                    "file_path": rel_path,
                     "locator": unit.locator,
                     "status": "rejected",
                     "reason": "stale_source",
@@ -199,7 +203,7 @@ def create_plan(
                     {
                         "unit_id": unit.id,
                         "file_id": unit.file_id,
-                "file_path": rel_path,
+                        "file_path": rel_path,
                         "locator": unit.locator,
                         "status": "conflict",
                         "reason": "conflicting_translations",
@@ -275,7 +279,7 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
             current_val = _resolve_rpgmaker_locator(file_data, locator)
         except Exception:
             raise PlanValidationError(f"Failed to read or resolve {target}")
-            
+
         if current_val != edit.get("original_text"):
             raise PlanValidationError(f"Stale source for {target}")
 
@@ -295,7 +299,9 @@ def preview_plan(plan: Dict[str, Any]) -> str:
 
     lines.append(f"Valid Edits: {len(valid)}")
     for e in valid:
-        lines.append(f"  [VALID] {e.get('file_path', e.get('file_id'))} @ {e['locator']}")
+        lines.append(
+            f"  [VALID] {e.get('file_path', e.get('file_id'))} @ {e['locator']}"
+        )
         lines.append(f"    - {e['original_text']}")
         lines.append(f"    + {e['translated_text']}")
 
