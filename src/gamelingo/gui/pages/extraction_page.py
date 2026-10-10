@@ -26,6 +26,7 @@ class ExtractionWorker(QThread):
     def run(self):
         try:
             from gamelingo.storage.database import Database
+
             local_db = Database(self.state.db.db_path)
             adapter = RPGMakerMVMZAdapter()
             game_path = self.state.game_path

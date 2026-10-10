@@ -42,6 +42,7 @@ class TranslationWorker(QThread):
                 return
 
             from gamelingo.storage.database import Database
+
             local_db = Database(self.state.db.db_path)
             pipeline = TranslationPipeline(local_db, provider)
 
