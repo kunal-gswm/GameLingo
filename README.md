@@ -84,5 +84,15 @@ Before any translations are deployed, GameLingo constructs a **Patch Plan**.
 - **Validation vs Application:** Validation (`validate_plan`) merely checks that the plan is structurally sound, targets safe paths within the game root, and points to valid existing locators. A valid plan is *not* permission to overwrite files. **Patch application is a separate, future milestone.**
 - **Exporting & Inspection:** Plans can be exported to standard JSON (`json.dump(plan)`) and re-parsed, allowing external review or manual verification before deployment.
 
+## Patch Application
+
+Applying translations to live game files is handled through a strict, multi-stage pipeline:
+- **Preview vs Execution:** Calling the patch API without explicit authorization evaluates the plan in a dry-run context. It parses files in memory, identifies what would change, and flags conflicts, but makes zero filesystem writes.
+- **Authorization & Overwrite:** Writing files requires explicit execution authorization and an explicit overwrite policy flag.
+- **Automatic Verified Backups:** Before a single original file is touched, the system dynamically generates a backup manifest covering every affected file, executes the backup, and re-verifies the copy integrity. If backup fails, application aborts cleanly.
+- **Post-Write Validation:** Edited files are built in a staging area (temporary files), validated, swapped atomically where possible, and re-read from disk to calculate final output hashes and ensure structural integrity.
+- **Recovery:** If any stage of replacement or post-write verification fails, the system immediately delegates to the core restoration API to revert files using the backup created moments prior. 
+- **Current Limitations:** The implementation is strictly scoped to RPG Maker MV/MZ JSON files. Patcher output depends on the Python standard `json` module, which means whitespace formatting or JSON key ordering might be reformatted relative to the original file; the adapter preserves semantic validity but does not currently guarantee byte-for-byte serialization formatting.
+
 ## License
 First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
