@@ -270,16 +270,18 @@ def test_translation_worker(qapp, app_state, monkeypatch):
     import time
 
     with (
-        patch("PySide6.QtWidgets.QMessageBox.information"),
-        patch("PySide6.QtWidgets.QMessageBox.critical"),
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+        patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit,
+        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
     ):
         from gamelingo.translation.argos_setup import ModelStatus
         with patch("gamelingo.translation.argos_setup.ArgosSetupService.check_status", return_value={"status": ModelStatus.READY, "message": "OK"}):
             trans_page.on_start_translation()
-
-            if trans_page.worker:
+            
+            worker = trans_page.worker
+            if worker:
                 t0 = time.time()
-                while not trans_page.worker.isFinished() and time.time() - t0 < 5.0:
+                while not worker.isFinished() and time.time() - t0 < 5.0:
                     qapp.processEvents()
                     time.sleep(0.01)
 
