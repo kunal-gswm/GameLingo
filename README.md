@@ -69,10 +69,11 @@ The local persistence module handles storing projects, translation units, and tr
 ## Backup and Safety
 
 GameLingo ensures you never lose original game data by enforcing a strict backup protocol before any modifications.
-- **System:** `gamelingo.safety.backup` manages reliable copying and checksum generation.
+- **System:** `gamelingo.safety.backup` manages reliable copying and checksum generation. `gamelingo.safety.restore` manages safe deployment back to the target directory.
 - **Manifests:** Every backup job produces a `manifest.json` which securely records file sizes, original SHA-256 checksums, and backup checksums.
-- **Verification:** The backup manifest strictly enforces that original files are byte-for-byte identical to the recorded backups.
-- **Limitations:** Currently, this module only creates and verifies backups. A full automated restoration or patch deployment pipeline will be implemented in a future milestone.
+- **Preview & Restore:** By default, restore operations are dry-runs (`preview_restore()`). To change files on disk, explicitly call `execute_restore()` with `execute=True` and `overwrite=True` (if replacing files).
+- **Verification:** The backup manifest strictly enforces that original files are byte-for-byte identical to the recorded backups before restoration begins. If a replacement fails mid-operation, the system attempts to rollback changed files to their pre-restore state.
+- **Limitations:** Automated translation patch deployment is separate and will be built upon these safe file primitives in a future milestone.
 
 ## License
 First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
