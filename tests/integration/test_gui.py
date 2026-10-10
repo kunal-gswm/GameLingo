@@ -101,16 +101,18 @@ def test_translation_page(qapp, app_state, monkeypatch):
         from types import ModuleType
 
         from gamelingo.translation.provider import FakeProvider
+        from gamelingo.translation.argos_setup import ModelStatus
 
         mock_module = ModuleType("gamelingo.translation.argos_provider")
         mock_module.ArgosTranslateProvider = FakeProvider
         monkeypatch.setitem(
             sys.modules, "gamelingo.translation.argos_provider", mock_module
         )
-
-        trans_page.on_start_translation()
-        mock_info.assert_called_once()
-        assert "No untranslated units" in mock_info.call_args[0][2]
+        
+        with patch("gamelingo.translation.argos_setup.ArgosSetupService.check_status", return_value={"status": ModelStatus.READY, "message": "OK"}):
+            trans_page.on_start_translation()
+            mock_info.assert_called_once()
+            assert "No untranslated units" in mock_info.call_args[0][2]
 
 
 def test_review_page(qapp, app_state, monkeypatch):
@@ -271,13 +273,15 @@ def test_translation_worker(qapp, app_state, monkeypatch):
         patch("PySide6.QtWidgets.QMessageBox.information"),
         patch("PySide6.QtWidgets.QMessageBox.critical"),
     ):
-        trans_page.on_start_translation()
+        from gamelingo.translation.argos_setup import ModelStatus
+        with patch("gamelingo.translation.argos_setup.ArgosSetupService.check_status", return_value={"status": ModelStatus.READY, "message": "OK"}):
+            trans_page.on_start_translation()
 
-        if trans_page.worker:
-            t0 = time.time()
-            while not trans_page.worker.isFinished() and time.time() - t0 < 5.0:
-                qapp.processEvents()
-                time.sleep(0.01)
+            if trans_page.worker:
+                t0 = time.time()
+                while not trans_page.worker.isFinished() and time.time() - t0 < 5.0:
+                    qapp.processEvents()
+                    time.sleep(0.01)
 
     cur = conn.execute("SELECT status FROM translation_units WHERE id='u2'")
     assert cur.fetchone()["status"] == "draft"

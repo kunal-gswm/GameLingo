@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
+    QFileDialog,
 )
 
 from gamelingo.domain.models import TranslationUnit
@@ -65,13 +66,20 @@ class ModelInstallWorker(QThread):
     finished = Signal()
     error = Signal(str)
 
+    def __init__(self, local_path=None):
+        super().__init__()
+        self.local_path = local_path
+
     def run(self):
         try:
-            from gamelingo.translation.argos_provider import ArgosTranslateProvider
-
-            ArgosTranslateProvider.install_model(
-                "ja", "en", lambda p: self.progress.emit(p)
-            )
+            from gamelingo.translation.argos_setup import ArgosSetupService
+            
+            if self.local_path:
+                ArgosSetupService.install_from_file("ja", "en", self.local_path)
+            else:
+                ArgosSetupService.install_from_network(
+                    "ja", "en", lambda p: self.progress.emit(p)
+                )
             self.finished.emit()
         except Exception as e:
             self.error.emit(str(e))
@@ -92,12 +100,19 @@ class TranslationPage(QWidget):
         self.btn_start.clicked.connect(self.on_start_translation)
         layout.addWidget(self.btn_start)
 
-        self.btn_install_model = QPushButton(
-            "Install Japanese->English Translation Model"
+        self.btn_install_model_online = QPushButton(
+            "Download & Install Japanese->English Translation Model"
         )
-        self.btn_install_model.clicked.connect(self.on_install_model)
-        self.btn_install_model.setVisible(False)
-        layout.addWidget(self.btn_install_model)
+        self.btn_install_model_online.clicked.connect(self.on_install_model_online)
+        self.btn_install_model_online.setVisible(False)
+        layout.addWidget(self.btn_install_model_online)
+
+        self.btn_install_model_local = QPushButton(
+            "Install Model from Local File (.argosmodel)"
+        )
+        self.btn_install_model_local.clicked.connect(self.on_install_model_local)
+        self.btn_install_model_local.setVisible(False)
+        layout.addWidget(self.btn_install_model_local)
 
         self.btn_stop = QPushButton("Stop Current Job")
         self.btn_stop.clicked.connect(self.on_stop_translation)
@@ -132,19 +147,24 @@ class TranslationPage(QWidget):
 
     def check_model(self):
         try:
-            from gamelingo.translation.argos_provider import ArgosTranslateProvider
+            from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
 
-            if not ArgosTranslateProvider.is_model_installed("ja", "en"):
-                self.btn_install_model.setVisible(True)
+            status = ArgosSetupService.check_status("ja", "en")
+            if status["status"] != ModelStatus.READY:
+                self.btn_install_model_online.setVisible(True)
+                self.btn_install_model_local.setVisible(True)
+                self.lbl_status.setText(f"Status: {status['message']}")
             else:
-                self.btn_install_model.setVisible(False)
+                self.btn_install_model_online.setVisible(False)
+                self.btn_install_model_local.setVisible(False)
         except ImportError:
-            self.btn_install_model.setVisible(False)
+            self.btn_install_model_online.setVisible(False)
+            self.btn_install_model_local.setVisible(False)
 
-    def on_install_model(self):
+    def on_install_model_online(self):
         reply = QMessageBox.question(
             self,
-            "Install Language Model",
+            "Download Language Model",
             "GameLingo uses Argos Translate for offline translation.\n\n"
             "This requires downloading the Japanese-to-English model (approx. 50MB) "
             "from the official Argos package index. The model will be installed locally.\n\n"
@@ -153,12 +173,30 @@ class TranslationPage(QWidget):
             QMessageBox.No,
         )
         if reply == QMessageBox.Yes:
-            self.btn_install_model.setEnabled(False)
+            self.btn_install_model_online.setEnabled(False)
+            self.btn_install_model_local.setEnabled(False)
             self.btn_start.setEnabled(False)
             self.lbl_status.setText("Downloading model...")
             self.progress_bar.setValue(0)
 
-            self.install_worker = ModelInstallWorker()
+            self.install_worker = ModelInstallWorker(local_path=None)
+            self.install_worker.progress.connect(self.progress_bar.setValue)
+            self.install_worker.finished.connect(self.on_model_installed)
+            self.install_worker.error.connect(self.on_model_error)
+            self.install_worker.start()
+
+    def on_install_model_local(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Argos Model Package", "", "Argos Models (*.argosmodel);;All Files (*.*)"
+        )
+        if file_path:
+            self.btn_install_model_online.setEnabled(False)
+            self.btn_install_model_local.setEnabled(False)
+            self.btn_start.setEnabled(False)
+            self.lbl_status.setText("Installing local model...")
+            self.progress_bar.setValue(0)
+
+            self.install_worker = ModelInstallWorker(local_path=file_path)
             self.install_worker.progress.connect(self.progress_bar.setValue)
             self.install_worker.finished.connect(self.on_model_installed)
             self.install_worker.error.connect(self.on_model_error)
@@ -166,7 +204,10 @@ class TranslationPage(QWidget):
 
     def on_model_installed(self):
         self.install_worker = None
-        self.btn_install_model.setVisible(False)
+        self.btn_install_model_online.setVisible(False)
+        self.btn_install_model_local.setVisible(False)
+        self.btn_install_model_online.setEnabled(True)
+        self.btn_install_model_local.setEnabled(True)
         self.btn_start.setEnabled(True)
         self.lbl_status.setText("Model installed successfully.")
         self.progress_bar.setValue(0)
@@ -176,7 +217,8 @@ class TranslationPage(QWidget):
 
     def on_model_error(self, err_msg):
         self.install_worker = None
-        self.btn_install_model.setEnabled(True)
+        self.btn_install_model_online.setEnabled(True)
+        self.btn_install_model_local.setEnabled(True)
         self.btn_start.setEnabled(True)
         self.lbl_status.setText("Error installing model.")
         self.progress_bar.setValue(0)
@@ -199,11 +241,12 @@ class TranslationPage(QWidget):
 
     def on_start_translation(self):
         try:
-            from gamelingo.translation.argos_provider import ArgosTranslateProvider
+            from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
 
-            if not ArgosTranslateProvider.is_model_installed("ja", "en"):
+            status = ArgosSetupService.check_status("ja", "en")
+            if status["status"] != ModelStatus.READY:
                 QMessageBox.warning(
-                    self, "Warning", "Please install the Japanese->English model first."
+                    self, "Warning", f"Cannot translate: {status['message']}"
                 )
                 return
         except ImportError:

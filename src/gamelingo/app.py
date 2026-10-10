@@ -157,14 +157,14 @@ def cmd_extract(args):
 
 def cmd_translate(args):
     db = get_db(args.workspace)
-    try:
-        from gamelingo.translation.argos_provider import ArgosTranslateProvider
-
-        provider = ArgosTranslateProvider()
-    except ImportError as e:
-        print(f"Error initializing Argos: {e}")
-        print("Please install via: uv sync --group argos")
+    from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
+    status = ArgosSetupService.check_status("ja", "en")
+    if status["status"] != ModelStatus.READY:
+        print(f"Cannot translate: {status['message']}")
         sys.exit(1)
+        
+    from gamelingo.translation.argos_provider import ArgosTranslateProvider
+    provider = ArgosTranslateProvider()
 
     pipeline = TranslationPipeline(db, provider)
 
@@ -229,14 +229,14 @@ def cmd_jobs_show(args):
 
 def cmd_jobs_resume(args):
     db = get_db(args.workspace)
-    try:
-        from gamelingo.translation.argos_provider import ArgosTranslateProvider
-
-        provider = ArgosTranslateProvider()
-    except ImportError:
-        # Dummy provider for tests if argos is missing, but CLI shouldn't really fall back automatically.
-        print("Argos missing. Cannot resume job.")
+    from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
+    status = ArgosSetupService.check_status("ja", "en")
+    if status["status"] != ModelStatus.READY:
+        print(f"Cannot resume job: {status['message']}")
         sys.exit(1)
+        
+    from gamelingo.translation.argos_provider import ArgosTranslateProvider
+    provider = ArgosTranslateProvider()
 
     pipeline = TranslationPipeline(db, provider)
     report = pipeline.resume_job(args.job_id)
