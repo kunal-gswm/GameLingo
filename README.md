@@ -111,6 +111,29 @@ uv run pytest -s tests/integration/test_pipeline_benchmark.py
 ## Local Translation Models & Benchmarking
 GameLingo evaluates free, local-first translation models. To ensure maximum compatibility and avoid bloating the core installation with massive ML frameworks, translation providers are implemented as **optional dependencies**.
 
+### Using Argos Translate (Production Provider)
+Based on benchmarks, **Argos Translate** is the recommended default local provider. It uses CTranslate2 (no CUDA/PyTorch required) and runs fully offline.
+
+1. Install the `argos` optional dependency group:
+   ```bash
+   uv sync --group argos
+   # OR: pip install .[argos]
+   ```
+2. **Explicitly install the Japanese-to-English package**:
+   GameLingo will **never** download models automatically. You must install the model package manually. The verified package is `translate-ja_en` version `1.1`.
+   ```python
+   import argostranslate.package
+
+   argostranslate.package.update_package_index()
+   available_packages = argostranslate.package.get_available_packages()
+   package = next(
+       filter(lambda x: x.from_code == "ja" and x.to_code == "en", available_packages)
+   )
+   argostranslate.package.install_from_path(package.download())
+   ```
+   **License Note**: The Argos Translate Python code is licensed under the MIT License. The `translate-ja_en` model weights are released into the Public Domain (CC0).
+
+### Running Benchmarks
 You can run the translation provider benchmark harness directly to test and compare models (e.g. OPUS-MT and Argos Translate) on your own hardware using a 60-string representative game dataset:
 1. Ensure you have the `benchmark` optional dependency group installed (`uv sync --group benchmark`).
 2. Run the benchmarking tool:

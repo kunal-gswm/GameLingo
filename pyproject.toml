@@ -6,6 +6,11 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
 
+[project.optional-dependencies]
+argos = [
+    "argostranslate>=1.9.0",
+]
+
 [project.scripts]
 gamelingo = "gamelingo.app:main"
 

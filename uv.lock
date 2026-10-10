@@ -471,6 +471,11 @@ name = "gamelingo"
 version = "0.1.0"
 source = { editable = "." }
 
+[package.optional-dependencies]
+argos = [
+    { name = "argostranslate" },
+]
+
 [package.dev-dependencies]
 benchmark = [
     { name = "argostranslate" },
@@ -484,6 +489,8 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "argostranslate", marker = "extra == 'argos'", specifier = ">=1.9.0" }]
+provides-extras = ["argos"]
 
 [package.metadata.requires-dev]
 benchmark = [
