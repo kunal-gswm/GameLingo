@@ -1,8 +1,7 @@
-import os
-import sys
 import json
-from pathlib import Path
+import sys
 from unittest.mock import patch
+
 import pytest
 
 from gamelingo.app import main
