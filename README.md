@@ -58,5 +58,13 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+## Data Persistence
+
+The local persistence module handles storing projects, translation units, and translation memories.
+- **Responsibilities:** Manages SQLite connection, database initialization, and strictly ordered schema migrations.
+- **Location:** The SQLite database (`<project>.sqlite3`) should ideally be stored in the user's data directory or within the selected project workspace. The specific path is provided explicitly when initializing a `Database(Path)` instance.
+- **Migrations:** Migrations are defined in `src/gamelingo/storage/database.py`. They are transactional (where supported by SQLite) and versioned. Using `.migrate()` applies all pending schema updates in order.
+- **Testing:** Database tests use temporary SQLite files to avoid affecting real projects. Run them via `uv run pytest tests/integration/test_database.py`.
+
 ## License
 First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
