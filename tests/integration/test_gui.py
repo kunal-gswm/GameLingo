@@ -3,11 +3,29 @@ import os
 from unittest.mock import patch
 
 import pytest
-
+pytest.importorskip("PySide6")
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 from gamelingo.gui.main_window import MainWindow
 from gamelingo.gui.state import AppState
+import sys
+
+try:
+    from PySide6.QtWidgets import QApplication
+    has_pyside = True
+except ImportError:
+    has_pyside = False
+
+pytestmark = pytest.mark.skipif(not has_pyside, reason="PySide6 is not installed")
+
+@pytest.fixture(scope="session")
+def qapp():
+    if not has_pyside: return None
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+    return app
+
 
 
 @pytest.fixture
@@ -48,11 +66,10 @@ def app_state(tmp_path):
     return state
 
 
-def test_main_window_loads(qtbot, app_state):
+def test_main_window_loads(qapp, app_state):
     window = MainWindow(app_state)
     window.refresh_all()
-    qtbot.addWidget(window)
-
+    
     assert window.windowTitle() == "GameLingo"
     assert window.nav_list.count() == 5
 
@@ -61,11 +78,10 @@ def test_main_window_loads(qtbot, app_state):
     assert extract_page.btn_extract.isEnabled()
 
 
-def test_translation_page(qtbot, app_state, monkeypatch):
+def test_translation_page(qapp, app_state, monkeypatch):
     window = MainWindow(app_state)
     window.refresh_all()
-    qtbot.addWidget(window)
-
+    
     window.nav_list.setCurrentRow(2)
     trans_page = window.pages[2]
 
@@ -77,7 +93,7 @@ def test_translation_page(qtbot, app_state, monkeypatch):
         assert "No untranslated units" in mock_info.call_args[0][2]
 
 
-def test_review_page(qtbot, app_state, monkeypatch):
+def test_review_page(qapp, app_state, monkeypatch):
     # Insert dummy translation unit
     conn = app_state.db.connect()
     with conn:
@@ -96,8 +112,7 @@ def test_review_page(qtbot, app_state, monkeypatch):
 
     window = MainWindow(app_state)
     window.refresh_all()
-    qtbot.addWidget(window)
-
+    
     window.nav_list.setCurrentRow(3)
     review_page = window.pages[3]
 
@@ -117,11 +132,10 @@ def test_review_page(qtbot, app_state, monkeypatch):
     assert cur.fetchone()["final_text"] == "tgt edited"
 
 
-def test_patch_page(qtbot, app_state, monkeypatch):
+def test_patch_page(qapp, app_state, monkeypatch):
     window = MainWindow(app_state)
     window.refresh_all()
-    qtbot.addWidget(window)
-
+    
     window.nav_list.setCurrentRow(4)
     patch_page = window.pages[4]
 
