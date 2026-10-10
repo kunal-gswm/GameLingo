@@ -66,5 +66,13 @@ The local persistence module handles storing projects, translation units, and tr
 - **Migrations:** Migrations are defined in `src/gamelingo/storage/database.py`. They are transactional (where supported by SQLite) and versioned. Using `.migrate()` applies all pending schema updates in order.
 - **Testing:** Database tests use temporary SQLite files to avoid affecting real projects. Run them via `uv run pytest tests/integration/test_database.py`.
 
+## Backup and Safety
+
+GameLingo ensures you never lose original game data by enforcing a strict backup protocol before any modifications.
+- **System:** `gamelingo.safety.backup` manages reliable copying and checksum generation.
+- **Manifests:** Every backup job produces a `manifest.json` which securely records file sizes, original SHA-256 checksums, and backup checksums.
+- **Verification:** The backup manifest strictly enforces that original files are byte-for-byte identical to the recorded backups.
+- **Limitations:** Currently, this module only creates and verifies backups. A full automated restoration or patch deployment pipeline will be implemented in a future milestone.
+
 ## License
 First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
