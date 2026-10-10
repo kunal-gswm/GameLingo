@@ -1,0 +1,19 @@
+[
+  null,
+  {
+    "id": 1,
+    "name": "Potion",
+    "description": "Restores 500 \\C[3]HP\\C[0].\nA very bitter drink.",
+    "price": 50,
+    "consumable": true,
+    "note": ""
+  },
+  {
+    "id": 2,
+    "name": "Empty Item",
+    "description": "",
+    "price": 0,
+    "consumable": false,
+    "note": ""
+  }
+]

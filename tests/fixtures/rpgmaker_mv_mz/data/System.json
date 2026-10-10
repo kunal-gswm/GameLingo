@@ -1,0 +1,13 @@
+{
+  "gameTitle": "Synthetic Quest",
+  "terms": {
+    "basic": ["Level", "Lv", "HP", "HP", "MP", "MP", "TP", "TP", "EXP", "EXP"],
+    "commands": ["Fight", "Escape", "Attack", "Guard", "Item", "Skill"],
+    "messages": {
+      "actionFailure": "Action failed.",
+      "actorDamage": "%1 took %2 damage!"
+    }
+  },
+  "versionId": 12345678,
+  "windowTone": [0, 0, 0, 0]
+}

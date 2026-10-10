@@ -1,0 +1,13 @@
+[
+  null,
+  {
+    "id": 1,
+    "name": "Harold",
+    "nickname": "Hero",
+    "profile": "The brave hero of the synthetic world.\nHe seeks the true \\C[2]JSON\\C[0].",
+    "note": "<custom_tag>\nIgnored in standard extraction.",
+    "classId": 1,
+    "initialLevel": 1,
+    "maxLevel": 99
+  }
+]
