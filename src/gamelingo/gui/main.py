@@ -17,4 +17,16 @@ def run_gui():
 
 
 if __name__ == "__main__":
+    if "--smoke-test" in sys.argv:
+        print("Smoke test: Initializing dependencies...")
+        import sqlite3
+        from PySide6.QtCore import QCoreApplication
+        from pathlib import Path
+        
+        # Test Qt Init without UI
+        app = QCoreApplication(sys.argv)
+        print("Qt initialized successfully.")
+        
+        print("Smoke test passed.")
+        sys.exit(0)
     sys.exit(run_gui())

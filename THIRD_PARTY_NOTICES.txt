@@ -22,4 +22,12 @@ SentencePiece (Apache License 2.0)
 https://github.com/google/sentencepiece
 Used for text tokenization.
 
-The Argos Translate `translate-ja_en` model (if downloaded separately via the application) is released by its authors into the Public Domain (CC0).
+Stanza (Apache License 2.0)
+https://github.com/stanfordnlp/stanza
+Used by Argos Translate for sentence boundary detection.
+
+PyTorch (BSD-style License)
+https://github.com/pytorch/pytorch
+Bundled as a dependency of Stanza.
+
+The Argos Translate `translate-ja_en` model (if downloaded separately via the application) is published under CC0.

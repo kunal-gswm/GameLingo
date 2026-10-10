@@ -9,6 +9,10 @@ Welcome to GameLingo!
 4. To translate games, GameLingo supports downloading the free "Argos Translate" Japanese-to-English model (approx. 50MB). You can install it directly from the Translation page inside the GUI.
 5. Do NOT place your workspaces or translation jobs inside this `GameLingo-Windows-x64` folder.
 
-If you encounter a Windows SmartScreen warning (e.g., "Windows protected your PC"), this is normal for unsigned open-source applications. You can click "More info" and then "Run anyway".
+GameLingo is an unsigned application. You may encounter a Windows SmartScreen warning (e.g., "Windows protected your PC") on first launch.
 
-Enjoy translating your games!
+Before running the application:
+1. Ensure you downloaded this ZIP file exclusively from the official GameLingo GitHub releases page.
+2. Verify that the SHA-256 checksum of your downloaded ZIP matches the checksum published on the release page. (Note: A matching checksum confirms the file was downloaded without corruption and matches the published archive, but it is not a guarantee of safety).
+
+If you have verified the source and checksum, you can click "More info" and then "Run anyway" to proceed. Do not proceed if the download source or checksum cannot be verified.
