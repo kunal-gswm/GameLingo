@@ -121,8 +121,10 @@ Following all patch application and restoration cycles:
 - **Linter**: `uv run ruff check .` $\rightarrow$ All checks passed.
 - **Formatter**: `uv run ruff format --check .` $\rightarrow$ 65 files formatted.
 - **Diff Check**: `git diff --check` $\rightarrow$ Clean.
-- **Documentation & Fix Commit**: Pending push to `origin/main`.
-- **GitHub Actions Verification**: Run URL to be recorded upon remote completion.
+- **Documentation & Fix Commit**: [`1cd6a6a198aab469d3e1c1b32eed14efa7779aa6`](https://github.com/kunal-gswm/GameLingo/commit/1cd6a6a198aab469d3e1c1b32eed14efa7779aa6)
+- **Verified GitHub Actions Run**: [Run #43 (Success)](https://github.com/kunal-gswm/GameLingo/actions/runs/38124640358)
+  - `Core Tests & Linting`: Success
+  - `GUI Tests`: Success
 
 ---
 
