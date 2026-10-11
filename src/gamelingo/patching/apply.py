@@ -4,7 +4,11 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List
 
-from gamelingo.adapters.renpy_strings import generate_strings_rpy, parse_strings_rpy
+from gamelingo.adapters.renpy_strings import (
+    generate_activation_rpy,
+    generate_strings_rpy,
+    parse_strings_rpy,
+)
 from gamelingo.patching.planner import (
     _resolve_rpgmaker_locator,
     _tokenize_locator,
@@ -188,24 +192,31 @@ def apply_plan(
         if is_renpy:
             for fp, file_edits in edits_by_file.items():
                 target_file = source_root_resolved / fp
-                existing_content = None
-                if target_file.exists():
-                    with open(target_file, "r", encoding="utf-8") as f:
-                        existing_content = f.read()
 
-                entries = [
-                    {
-                        "old": edit.get("original_text"),
-                        "new": edit.get("translated_text"),
-                        "comment": f"{edit.get('source_file_path', edit.get('file_id'))} @ {edit.get('locator')}",
-                    }
-                    for edit in file_edits
-                ]
-                new_content = generate_strings_rpy(
-                    plan.get("target_lang", "english"),
-                    entries,
-                    existing_content=existing_content,
-                )
+                if fp.endswith("00_gamelingo_activate.rpy"):
+                    new_content = generate_activation_rpy(
+                        plan.get("target_lang", "english")
+                    )
+                else:
+                    existing_content = None
+                    if target_file.exists():
+                        with open(target_file, "r", encoding="utf-8") as f:
+                            existing_content = f.read()
+
+                    entries = [
+                        {
+                            "old": edit.get("original_text"),
+                            "new": edit.get("translated_text"),
+                            "comment": f"{edit.get('source_file_path', edit.get('file_id'))} @ {edit.get('locator')}",
+                        }
+                        for edit in file_edits
+                        if edit.get("action") != "create_activation_file"
+                    ]
+                    new_content = generate_strings_rpy(
+                        plan.get("target_lang", "english"),
+                        entries,
+                        existing_content=existing_content,
+                    )
 
                 target_file.parent.mkdir(parents=True, exist_ok=True)
                 fd, tmp_path_str = tempfile.mkstemp(
@@ -219,15 +230,25 @@ def apply_plan(
                     f.write(new_content)
 
                 # Verify staged
-                parsed_staged = parse_strings_rpy(new_content)
-                for edit in file_edits:
-                    orig = edit.get("original_text")
-                    if orig not in parsed_staged:
+                if fp.endswith("00_gamelingo_activate.rpy"):
+                    if "config.default_language" not in new_content:
                         report["status"] = "failed"
                         report["errors"].append(
-                            f"Staged Ren'Py translation missing source: {orig}"
+                            "Staged activation script missing config.default_language"
                         )
                         return report
+                else:
+                    parsed_staged = parse_strings_rpy(new_content)
+                    for edit in file_edits:
+                        if edit.get("action") == "create_activation_file":
+                            continue
+                        orig = edit.get("original_text")
+                        if orig not in parsed_staged:
+                            report["status"] = "failed"
+                            report["errors"].append(
+                                f"Staged Ren'Py translation missing source: {orig}"
+                            )
+                            return report
         else:
             for fp, file_edits in edits_by_file.items():
                 target_file = source_root_resolved / fp
@@ -302,15 +323,25 @@ def apply_plan(
                 try:
                     report["output_hashes"][fp] = calculate_sha256(target_file)
                     if is_renpy:
-                        with open(target_file, "r", encoding="utf-8") as f:
-                            written_content = f.read()
-                        parsed_written = parse_strings_rpy(written_content)
-                        for edit in edits_by_file[fp]:
-                            orig = edit.get("original_text")
-                            if orig not in parsed_written:
+                        if fp.endswith("00_gamelingo_activate.rpy"):
+                            with open(target_file, "r", encoding="utf-8") as f:
+                                written_content = f.read()
+                            if "config.default_language" not in written_content:
                                 raise ValueError(
-                                    f"Post-write verification failed: {orig} not found in {fp}"
+                                    f"Post-write verification failed: config.default_language not in {fp}"
                                 )
+                        else:
+                            with open(target_file, "r", encoding="utf-8") as f:
+                                written_content = f.read()
+                            parsed_written = parse_strings_rpy(written_content)
+                            for edit in edits_by_file[fp]:
+                                if edit.get("action") == "create_activation_file":
+                                    continue
+                                orig = edit.get("original_text")
+                                if orig not in parsed_written:
+                                    raise ValueError(
+                                        f"Post-write verification failed: {orig} not found in {fp}"
+                                    )
                     else:
                         with open(target_file, "r", encoding="utf-8") as f:
                             data = json.load(f)

@@ -4,6 +4,7 @@ import time
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFrame,
     QGroupBox,
@@ -71,7 +72,7 @@ class PatchPage(QWidget):
         target_layout.addWidget(self.lbl_target_path)
 
         notice_lbl = QLabel(
-            "Safety Warning: Patching directly modifies JSON data in the target game directory. "
+            "Safety Warning: Patching modifies data in the target game directory (RPG Maker JSON data or Ren'Py translation scripts). "
             "GameLingo performs atomic file swapping and creates an isolated backup snapshot before modifying any files."
         )
         notice_lbl.setFont(QFont("Segoe UI", 10))
@@ -101,6 +102,17 @@ class PatchPage(QWidget):
         btn_row.addWidget(self.pill_plan_status)
         btn_row.addStretch()
         patch_layout.addLayout(btn_row)
+
+        self.chk_activate_lang = QCheckBox(
+            "Include Ren'Py language activation script (00_gamelingo_activate.rpy)"
+        )
+        self.chk_activate_lang.setFont(QFont("Segoe UI", 10))
+        self.chk_activate_lang.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        self.chk_activate_lang.setChecked(False)
+        self.chk_activate_lang.setToolTip(
+            "Generates an activation script in game/ to activate translations when the visual novel has no in-game language selector."
+        )
+        patch_layout.addWidget(self.chk_activate_lang)
 
         self.txt_preview = QTextEdit()
         self.txt_preview.setReadOnly(True)
@@ -180,7 +192,7 @@ class PatchPage(QWidget):
             self.lbl_target_path.setText(str(self.state.game_path.absolute()))
         else:
             self.lbl_target_path.setText(
-                "No game selected. Select an RPG Maker game in Dashboard first."
+                "No game selected. Select a game in Dashboard first."
             )
 
         self.load_backups()
@@ -266,8 +278,14 @@ class PatchPage(QWidget):
         cur = conn.execute("SELECT id, relative_path FROM game_files")
         file_path_map = {r["id"]: r["relative_path"] for r in cur.fetchall()}
 
+        include_act = self.chk_activate_lang.isChecked()
         plan = create_plan(
-            self.state.game_path, "default", units, records, file_path_map
+            self.state.game_path,
+            "default",
+            units,
+            records,
+            file_path_map,
+            include_activation=include_act,
         )
 
         try:

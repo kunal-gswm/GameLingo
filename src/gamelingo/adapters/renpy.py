@@ -74,10 +74,21 @@ class RenPyAdapter(GameAdapter):
 
         return None
 
+    def _is_tl_file(self, game_dir: Path, file_path: Path) -> bool:
+        """
+        Returns True if file_path is located inside the game/tl translation directory.
+        """
+        try:
+            rel = file_path.relative_to(game_dir)
+            return len(rel.parts) > 0 and rel.parts[0].lower() == "tl"
+        except Exception:
+            return False
+
     def diagnose(self, install_path: Path) -> Dict[str, Any]:
         """
         Performs evidence-based diagnostics on the Ren'Py project structure.
         Distinguishes projects with accessible .rpy source files from compiled .rpyc-only games.
+        Discovers source scripts recursively while strictly excluding translation directories (tl/).
         """
         game_dir = self._get_game_dir(install_path)
         if not game_dir or not game_dir.is_dir():
@@ -90,8 +101,14 @@ class RenPyAdapter(GameAdapter):
                 "message": "No Ren'Py game directory detected.",
             }
 
-        rpy_files = [f for f in game_dir.glob("*.rpy") if "tl" not in f.parts]
-        rpyc_files = [f for f in game_dir.glob("*.rpyc") if "tl" not in f.parts]
+        rpy_files = sorted(
+            [f for f in game_dir.rglob("*.rpy") if not self._is_tl_file(game_dir, f)],
+            key=lambda p: str(p.relative_to(install_path).as_posix()),
+        )
+        rpyc_files = sorted(
+            [f for f in game_dir.rglob("*.rpyc") if not self._is_tl_file(game_dir, f)],
+            key=lambda p: str(p.relative_to(install_path).as_posix()),
+        )
 
         has_options = (game_dir / "options.rpy").exists() or (
             game_dir / "options.rpyc"
@@ -174,21 +191,26 @@ class RenPyAdapter(GameAdapter):
         if not game_dir or not game_dir.is_dir():
             return
 
+        diag = self.diagnose(install_path)
+        if not diag["is_renpy"]:
+            return
+
+        if not diag["has_source_scripts"]:
+            raise RuntimeError(
+                diag.get("message")
+                or "Readable .rpy source files were not found. Only compiled .rpyc files were detected. Decompilation is not supported."
+            )
+
+        # Discovers all .rpy source files recursively under the game directory,
+        # strictly excluding translation directories such as game/tl/
         rpy_files = sorted(
-            [f for f in game_dir.glob("*.rpy") if "tl" not in f.parts],
-            key=lambda p: p.name,
+            [f for f in game_dir.rglob("*.rpy") if not self._is_tl_file(game_dir, f)],
+            key=lambda p: str(p.relative_to(install_path).as_posix()),
         )
 
         for script_file in rpy_files:
             rel_path = str(script_file.relative_to(install_path).as_posix())
             yield from self._extract_script_file(script_file, rel_path)
-
-        # Also extract relevant existing strings.rpy entries if present
-        tl_dir = game_dir / "tl"
-        if tl_dir.is_dir():
-            for tl_file in sorted(tl_dir.glob("*/strings.rpy")):
-                rel_tl = str(tl_file.relative_to(install_path).as_posix())
-                yield from self._extract_existing_strings_file(tl_file, rel_tl)
 
     def _extract_script_file(
         self, script_path: Path, file_id: str

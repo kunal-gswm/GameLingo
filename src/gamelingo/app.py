@@ -95,6 +95,12 @@ def cmd_extract(args):
         print(f"Unsupported game path: {game_path}")
         sys.exit(1)
 
+    if hasattr(adapter, "diagnose"):
+        diag = adapter.diagnose(game_path)
+        if not diag.get("has_source_scripts", True):
+            print(f"Extraction unsupported: {diag.get('message')}")
+            sys.exit(1)
+
     conn = db.connect()
     with conn:
         cur = conn.execute("SELECT id FROM projects WHERE id = 'default'")
@@ -379,8 +385,16 @@ def cmd_plan_create(args):
     cur = conn.execute("SELECT id, relative_path FROM game_files")
     file_path_map = {r["id"]: r["relative_path"] for r in cur.fetchall()}
 
+    activate_lang = getattr(args, "activate_language", False)
     print("Creating patch plan...")
-    plan = create_plan(install_path, "default", units, records, file_path_map)
+    plan = create_plan(
+        install_path,
+        "default",
+        units,
+        records,
+        file_path_map,
+        include_activation=activate_lang,
+    )
 
     plan_file = Path(args.plan_file)
     with open(plan_file, "w", encoding="utf-8") as f:
@@ -633,6 +647,11 @@ def main() -> int:
 
     c_pc = plan_sub.add_parser("create", help="Create patch plan")
     c_pc.add_argument("--plan-file", default="patch_plan.json")
+    c_pc.add_argument(
+        "--activate-language",
+        action="store_true",
+        help="Include Ren'Py language activation script (00_gamelingo_activate.rpy)",
+    )
     c_pc.set_defaults(func=cmd_plan_create)
 
     c_pv = plan_sub.add_parser("validate", help="Validate plan")

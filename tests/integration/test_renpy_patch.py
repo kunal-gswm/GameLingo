@@ -286,3 +286,76 @@ def test_renpy_path_traversal_rejection(renpy_env):
 
     with pytest.raises(PlanValidationError):
         validate_plan(source_dir, malicious_plan)
+
+
+def test_renpy_language_activation_patch_lifecycle(renpy_env):
+    source_dir, backup_dir = renpy_env
+    u1 = TranslationUnit(
+        id="game/script.rpy::line:2",
+        file_id="game/script.rpy",
+        locator="line:2",
+        source_text="こんにちは",
+        context="Narration",
+        tokens_json="[]",
+        source_hash="h1",
+        status="approved",
+    )
+    r1 = TranslationRecord(
+        id="r1",
+        unit_id=u1.id,
+        provider="mock",
+        model="m",
+        draft_text="Hello",
+        final_text="Hello",
+        quality_flags="",
+        created_at=0.0,
+        updated_at=0.0,
+    )
+
+    # 1. Create plan with include_activation=True
+    plan = create_plan(
+        source_dir,
+        "proj1",
+        [u1],
+        [r1],
+        adapter_id="renpy",
+        target_lang="en",
+        include_activation=True,
+    )
+    assert validate_plan(source_dir, plan) is True
+
+    preview = preview_plan(plan)
+    assert "00_gamelingo_activate.rpy" in preview
+    assert "Language Activation Script for 'english'" in preview
+
+    # 2. Apply plan
+    report = apply_plan(source_dir, plan, backup_dir, execute=True, overwrite=True)
+    assert report["status"] == "success"
+
+    target_strings = source_dir / "game" / "tl" / "english" / "strings.rpy"
+    target_act = source_dir / "game" / "00_gamelingo_activate.rpy"
+
+    assert target_strings.exists()
+    assert target_act.exists()
+
+    # Verify activation content
+    act_content = target_act.read_text(encoding="utf-8")
+    assert 'config.default_language = "english"' in act_content
+    assert 'preferences.language = "english"' in act_content
+
+    # Original script must NOT be modified
+    orig_script = (source_dir / "game" / "script.rpy").read_text(encoding="utf-8")
+    assert "こんにちは" in orig_script
+
+    # 3. Restore: must delete both strings.rpy AND 00_gamelingo_activate.rpy!
+    backup_path = Path(report["backup_dir"])
+    restore_result = execute_restore(
+        backup_path,
+        source_dir,
+        ["game/tl/english/strings.rpy", "game/00_gamelingo_activate.rpy"],
+        overwrite=True,
+        execute=True,
+    )
+    assert restore_result["status"] == "success"
+    assert not target_strings.exists()
+    assert not target_act.exists()

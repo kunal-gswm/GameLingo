@@ -55,6 +55,7 @@ def create_plan(
     file_path_map: Dict[str, str] = None,
     adapter_id: Optional[str] = None,
     target_lang: str = "en",
+    include_activation: bool = False,
 ) -> Dict[str, Any]:
     try:
         source_root_resolved = source_root.resolve(strict=True)
@@ -344,6 +345,34 @@ def create_plan(
             }
         )
 
+    # For Ren'Py, if requested, add an explicit language activation script edit
+    if is_renpy and include_activation:
+        valid_trans_edits = [
+            e
+            for e in plan["edits"]
+            if e.get("status") == "valid"
+            and e.get("action") != "create_activation_file"
+        ]
+        if valid_trans_edits:
+            act_rel_path = (
+                "game/00_gamelingo_activate.rpy"
+                if (source_root_resolved / "game").is_dir()
+                else "00_gamelingo_activate.rpy"
+            )
+            plan["edits"].append(
+                {
+                    "unit_id": f"gamelingo::activation::{tl_name}",
+                    "file_id": act_rel_path,
+                    "file_path": act_rel_path,
+                    "locator": "init:activation",
+                    "status": "valid",
+                    "action": "create_activation_file",
+                    "engine": "renpy",
+                    "target_lang": tl_name,
+                    "description": f"Language activation script to activate '{tl_name}'",
+                }
+            )
+
     return plan
 
 
@@ -389,6 +418,10 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
             raise PlanValidationError(f"Path is a symlink: {file_path}")
 
         if is_renpy:
+            # Language activation file does not have an original source script
+            if edit.get("action") == "create_activation_file":
+                continue
+
             # For Ren'Py, destination file (strings.rpy) does not need to exist yet,
             # but source script must exist and be safe.
             source_file_rel = edit.get("source_file_path", edit.get("file_id"))
@@ -441,16 +474,23 @@ def preview_plan(plan: Dict[str, Any]) -> str:
 
     lines.append(f"Valid Edits: {len(valid)}")
     for e in valid:
-        if e.get("engine") == "renpy":
+        if e.get("action") == "create_activation_file":
+            lines.append(
+                f"  [VALID] {e.get('file_path')} (Language Activation Script for '{e.get('target_lang')}')"
+            )
+            lines.append(f"    + Language activation: {e.get('target_lang')}")
+        elif e.get("engine") == "renpy":
             lines.append(
                 f"  [VALID] {e.get('file_path')} (source: {e.get('source_file_path', e.get('file_id'))} @ {e['locator']})"
             )
+            lines.append(f"    - {e['original_text']}")
+            lines.append(f"    + {e['translated_text']}")
         else:
             lines.append(
                 f"  [VALID] {e.get('file_path', e.get('file_id'))} @ {e['locator']}"
             )
-        lines.append(f"    - {e['original_text']}")
-        lines.append(f"    + {e['translated_text']}")
+            lines.append(f"    - {e['original_text']}")
+            lines.append(f"    + {e['translated_text']}")
 
     lines.append(f"Rejected/Conflicted Edits: {len(rejected)}")
     for e in rejected:

@@ -218,9 +218,7 @@ class ExtractionPage(QWidget):
                     "Open or create a workspace in Dashboard first."
                 )
             else:
-                self.lbl_status.setText(
-                    "Select an RPG Maker MV/MZ game in Dashboard first."
-                )
+                self.lbl_status.setText("Select a supported game in Dashboard first.")
             self._set_pill("Disabled", "warning")
         else:
             if self.worker is None:
@@ -266,11 +264,20 @@ class ExtractionPage(QWidget):
         if not self.state.game_path or not self.state.db:
             return
 
+        adapter, _, _ = detect_adapter(self.state.game_path)
+        if adapter and hasattr(adapter, "diagnose"):
+            diag = adapter.diagnose(self.state.game_path)
+            if not diag.get("has_source_scripts", True):
+                QMessageBox.warning(
+                    self,
+                    "Extraction Unsupported",
+                    diag.get("message", "Game source scripts required for extraction."),
+                )
+                return
+
         self.btn_extract.setEnabled(False)
         self.progress_bar.setVisible(True)
-        self.lbl_status.setText(
-            "Extracting... Reading JSON files and parsing translatable strings."
-        )
+        self.lbl_status.setText("Extracting translatable strings from game files...")
         self._set_pill("Extracting", "info")
 
         self.worker = ExtractionWorker(self.state)
