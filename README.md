@@ -7,9 +7,9 @@ GameLingo is a local-first desktop translation-patch workbench for people who wa
 ## Vision and Scope
 - **Local-First:** The application will run entirely locally.
 - **Zero-Cost:** No paid API, hosted backend, cloud database, subscription, or account is required.
-- **Initial Target:** The first supported engine profile targets RPG Maker MV/MZ.
+- **Initial Target:** Supported engine profiles target RPG Maker MV/MZ and Ren'Py visual novels.
 - **MVP Workflow:** Japanese-to-English local translation, persistent progress, human review, and safe patching.
-- **Out of Scope:** Save editing, OCR/live overlays, cloud sync, universal engine support, and plugin marketplaces are explicitly outside the initial scope.
+- **Out of Scope:** Save editing, OCR/live overlays, cloud sync, decompilation of compiled-only scripts (.rpyc), and plugin marketplaces are explicitly outside scope.
 
 ## Development Setup
 
@@ -92,7 +92,7 @@ Applying translations to live game files is handled through a strict, multi-stag
 - **Automatic Verified Backups:** Before a single original file is touched, the system dynamically generates a backup manifest covering every affected file, executes the backup, and re-verifies the copy integrity. If backup fails, application aborts cleanly.
 - **Post-Write Validation:** Edited files are built in a staging area (temporary files), validated, swapped atomically where possible, and re-read from disk to calculate final output hashes and ensure structural integrity.
 - **Recovery:** If any stage of replacement or post-write verification fails, the system immediately delegates to the core restoration API to revert files using the backup created moments prior. 
-- **Current Limitations:** The implementation is strictly scoped to RPG Maker MV/MZ JSON files. Patcher output depends on the Python standard `json` module, which means whitespace formatting or JSON key ordering might be reformatted relative to the original file; the adapter preserves semantic validity but does not currently guarantee byte-for-byte serialization formatting.
+- **Supported Formats:** RPG Maker MV/MZ JSON files (`data/*.json`, `www/data/*.json`) and Ren'Py Visual Novels (`game/tl/<language>/strings.rpy`). For RPG Maker, patcher output re-serializes JSON semantics. For Ren'Py, native string translation files are generated in `game/tl/<language>/strings.rpy`, leaving original `.rpy` scripts untouched.
 
 ## Translation Pipeline Core
 
@@ -277,7 +277,7 @@ uv run python -m gamelingo.gui.main
 
 ### Supported GUI Features
 The GUI provides complete coverage of the GameLingo translation lifecycle:
-- **Dashboard:** Create or open workspaces, and dynamically detect supported RPG Maker MV/MZ game directories.
+- **Dashboard:** Create or open workspaces, and dynamically detect supported RPG Maker MV/MZ and Ren'Py game directories with structure verification and format diagnostics.
 - **Extraction:** A dedicated progress page to safely extract game data.
 - **Translation:** Launch, monitor, stop, or resume translation jobs with Argos Translate (assuming you've installed it).
 - **Review:** A dedicated split-pane UI where you can inspect source and translation side-by-side, view quality warnings, edit text, and approve or reject units.
