@@ -53,9 +53,11 @@ class ReviewPage(QWidget):
 
         # Main Splitter
         splitter = QSplitter(Qt.Horizontal)
+        splitter.setChildrenCollapsible(False)
 
         # --- Left Pane: Queue & Filters ---
         left_widget = QWidget()
+        left_widget.setMinimumWidth(220)
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(8)
@@ -109,6 +111,7 @@ class ReviewPage(QWidget):
 
         # --- Right Pane: Editor & Approval Controls ---
         right_widget = QWidget()
+        right_widget.setMinimumWidth(320)
         right_layout = QVBoxLayout(right_widget)
         right_layout.setContentsMargins(8, 0, 0, 0)
         right_layout.setSpacing(12)
@@ -197,7 +200,7 @@ class ReviewPage(QWidget):
         splitter.addWidget(right_widget)
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 2)
-        splitter.setSizes([310, 550])
+        splitter.setSizes([260, 480])
 
         page_layout.addWidget(splitter, stretch=1)
         self.set_editor_enabled(False)

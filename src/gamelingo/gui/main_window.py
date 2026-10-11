@@ -108,7 +108,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.addStretch()
 
         # Sidebar footer
-        self.footer_status = QLabel("v0.1.0 • Offline Ready")
+        self.footer_status = QLabel("v0.1.0 • Local-first")
         self.footer_status.setFont(QFont("Segoe UI", 10))
         self.footer_status.setStyleSheet(
             f"color: {TEXT_MUTED}; padding-left: 6px; padding-bottom: 4px;"
@@ -221,9 +221,9 @@ class MainWindow(QMainWindow):
             self.context_path_lbl.setText(f"Game: {disp_name}")
             self.context_path_lbl.setToolTip(full_path)
 
-            self.status_pill.setText(" Game Ready ")
+            self.status_pill.setText(" Game Selected ")
             self.status_pill.setStyleSheet(
-                "background-color: #19351e; color: #81c784; border: 1px solid #2e7d32; border-radius: 4px; padding: 2px 8px;"
+                "background-color: #162b42; color: #90caf9; border: 1px solid #3d72a4; border-radius: 4px; padding: 2px 8px;"
             )
         elif self.state.workspace_path:
             ws_name = self.state.workspace_path.name
@@ -235,9 +235,9 @@ class MainWindow(QMainWindow):
             self.context_path_lbl.setText(f"Workspace: {disp_name}")
             self.context_path_lbl.setToolTip(full_path)
 
-            self.status_pill.setText(" Select Game ")
+            self.status_pill.setText(" Workspace Open ")
             self.status_pill.setStyleSheet(
-                "background-color: #162b42; color: #90caf9; border: 1px solid #3d72a4; border-radius: 4px; padding: 2px 8px;"
+                "background-color: #27292f; color: #9ba1a6; border: 1px solid #32353d; border-radius: 4px; padding: 2px 8px;"
             )
         else:
             self.context_path_lbl.setText("No active workspace")

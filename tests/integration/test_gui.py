@@ -13,7 +13,7 @@ from gamelingo.gui.main_window import MainWindow
 from gamelingo.gui.state import AppState
 
 try:
-    from PySide6.QtWidgets import QApplication, QMessageBox
+    from PySide6.QtWidgets import QApplication, QMessageBox, QSplitter
 
     has_pyside = True
 except ImportError:
@@ -335,6 +335,8 @@ def test_main_window_theme_navigation_and_resize(qapp, app_state):
         "Default Project" in window.header_context.text()
         or "game" in window.header_context.text()
     )
+    assert window.footer_status.text() == "v0.1.0 • Local-first"
+    assert window.status_pill.text().strip() == "Game Selected"
 
 
 def test_dashboard_workflow_states(qapp, tmp_path):
@@ -347,13 +349,17 @@ def test_dashboard_workflow_states(qapp, tmp_path):
     assert "No workspace open" in dash_page.ws_label.text()
     assert "No game selected" in dash_page.game_label.text()
     assert "Open / Create Workspace" in dash_page.lbl_next_action.text()
+    assert "Not Configured" in dash_page.stage_labels[0].text()
+    assert "Not Selected" in dash_page.stage_labels[1].text()
 
-    # Now assign workspace and game
+    # Now assign workspace
     ws = tmp_path / "dash_ws"
     empty_state.open_workspace(ws)
     dash_page.refresh()
     assert str(ws) in dash_page.ws_label.text()
     assert "Select Game Directory" in dash_page.lbl_next_action.text()
+    assert "Workspace Open" in dash_page.stage_labels[0].text()
+    assert "Not Selected" in dash_page.stage_labels[1].text()
 
 
 def test_translation_model_status_display(qapp, app_state):
@@ -372,7 +378,7 @@ def test_translation_model_status_display(qapp, app_state):
         },
     ):
         trans_page.refresh()
-        assert "Missing" in trans_page.lbl_model_status.text()
+        assert "Model Not Installed" in trans_page.lbl_model_status.text()
         assert trans_page.btn_download.isEnabled()
 
     # Test ready model state
@@ -384,7 +390,18 @@ def test_translation_model_status_display(qapp, app_state):
         },
     ):
         trans_page.refresh()
-        assert "Ready" in trans_page.lbl_model_status.text()
+        assert "Model Installed" in trans_page.lbl_model_status.text()
+
+    # Test dependency missing state
+    with patch(
+        "gamelingo.translation.argos_setup.ArgosSetupService.check_status",
+        return_value={
+            "status": ModelStatus.DEPENDENCY_MISSING,
+            "message": "Argos Translate library is not installed.",
+        },
+    ):
+        trans_page.refresh()
+        assert "Dependency Missing" in trans_page.lbl_model_status.text()
 
 
 def test_review_search_filter_and_unsaved_flow(qapp, app_state):
@@ -519,3 +536,115 @@ def test_patch_restore_interaction(qapp, app_state, tmp_path):
         patch_page.on_execute_restore()
         mock_info.assert_called_once()
         assert "Restoration Complete" in mock_info.call_args[0][1]
+
+
+def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_path):
+    state = AppState()
+    dash_win = MainWindow(state)
+    dash_page = dash_win.pages[0]
+    dash_page.refresh()
+
+    # 1. Format descriptions
+    assert "RPG Maker MV" in dash_page.lbl_mv_title.text()
+    assert "RPG Maker MZ" in dash_page.lbl_mz_title.text()
+    assert "data/" in dash_page.lbl_mv_desc.text()
+    assert "data/" in dash_page.lbl_mz_desc.text()
+
+    # 2. Unsupported scope notice
+    assert "Save Files Unsupported" in dash_page.lbl_unsupported_notice.text()
+    assert "Binary Assets Unsupported" in dash_page.lbl_unsupported_notice.text()
+
+    # 3. Initial unselected state
+    assert "No Game Selected" in dash_page.lbl_structure_pill.text()
+
+    # 4. Folder with missing expected data structure
+    invalid_dir = tmp_path / "invalid_game"
+    invalid_dir.mkdir()
+    (invalid_dir / "save").mkdir()
+    (invalid_dir / "save" / "save1.rpgsave").write_text("data", encoding="utf-8")
+
+    dash_page.selected_invalid_game_path = invalid_dir
+    dash_page.refresh()
+    assert "Structure Missing" in dash_page.lbl_structure_pill.text()
+    assert "Neither 'data/' nor 'www/data/'" in dash_page.lbl_structure_desc.text()
+    assert "Save files are unsupported" in dash_page.lbl_structure_desc.text()
+
+    # 5. Valid game directory
+    valid_dir = tmp_path / "valid_game"
+    valid_dir.mkdir()
+    (valid_dir / "data").mkdir()
+    with open(valid_dir / "data" / "System.json", "w", encoding="utf-8") as f:
+        json.dump({"gameTitle": "ValidGame", "versionId": 1}, f)
+
+    dash_page.selected_invalid_game_path = None
+    dash_page.state.game_path = valid_dir
+    dash_page.refresh()
+    assert "Structure Verified" in dash_page.lbl_structure_pill.text()
+    assert (
+        "ValidGame" in dash_page.lbl_structure_desc.text()
+        or "data/" in dash_page.lbl_structure_desc.text()
+    )
+
+
+def test_selected_game_separate_from_model_state(qapp, tmp_path):
+    """Confirm game selection does not imply model readiness and uses truthful labels."""
+    state = AppState()
+    ws = tmp_path / "ws_sep"
+    state.open_workspace(ws)
+
+    game = tmp_path / "game_sep"
+    game.mkdir()
+    (game / "data").mkdir()
+    with open(game / "data" / "System.json", "w", encoding="utf-8") as f:
+        json.dump({"gameTitle": "TestSep", "versionId": 1}, f)
+    state.game_path = game
+
+    window = MainWindow(state)
+    window.refresh_all()
+
+    # Game status should say 'Game Selected' with neutral info styling, never 'Game Ready'
+    assert window.status_pill.text().strip() == "Game Selected"
+    assert "Game Ready" not in window.status_pill.text()
+
+    # Translation model status remains completely independent
+    trans_page = window.pages[2]
+    from gamelingo.translation.argos_setup import ModelStatus
+
+    with patch(
+        "gamelingo.translation.argos_setup.ArgosSetupService.check_status",
+        return_value={"status": ModelStatus.NOT_INSTALLED, "message": "Not installed"},
+    ):
+        trans_page.refresh()
+        assert "Model Not Installed" in trans_page.lbl_model_status.text()
+
+    with patch(
+        "gamelingo.translation.argos_setup.ArgosSetupService.check_status",
+        return_value={"status": ModelStatus.READY, "message": "Ready"},
+    ):
+        trans_page.refresh()
+        assert "Model Installed" in trans_page.lbl_model_status.text()
+
+
+def test_patch_and_review_layout_boundaries(qapp, app_state):
+    """Verify layout constraints at 900x600 minimum size."""
+    window = MainWindow(app_state)
+    window.refresh_all()
+    window.resize(900, 600)
+    window.show()
+    qapp.processEvents()
+
+    # Review page splitter and minimum pane widths
+    window.nav_list.setCurrentRow(3)
+    review_page = window.pages[3]
+    splitter = review_page.findChild(QSplitter)
+    assert not splitter.childrenCollapsible()
+    sizes = splitter.sizes()
+    assert sizes[0] >= 220
+    assert sizes[1] >= 300
+
+    # Patch page backup restore controls
+    window.nav_list.setCurrentRow(4)
+    patch_page = window.pages[4]
+    # Check that backup controls are laid out vertically so buttons do not exceed card width
+    assert not patch_page.btn_preview_restore.isHidden()
+    assert not patch_page.btn_restore.isHidden()

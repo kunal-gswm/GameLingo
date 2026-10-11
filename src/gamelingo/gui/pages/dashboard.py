@@ -36,6 +36,7 @@ class DashboardPage(QWidget):
     def __init__(self, state: AppState):
         super().__init__()
         self.state = state
+        self.selected_invalid_game_path = None
         self.setup_ui()
         self.refresh()
 
@@ -113,6 +114,129 @@ class DashboardPage(QWidget):
         setup_layout.addWidget(self.game_group)
 
         layout.addWidget(setup_group)
+
+        # --- Section 2: Supported Game Formats & Compatibility ---
+        self.formats_group = QGroupBox("Supported Game Formats")
+        formats_layout = QVBoxLayout(self.formats_group)
+        formats_layout.setSpacing(10)
+
+        # Engine Cards Row
+        engines_row = QHBoxLayout()
+        engines_row.setSpacing(12)
+
+        # MV Card
+        self.card_mv = QFrame()
+        self.card_mv.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        mv_layout = QVBoxLayout(self.card_mv)
+        mv_layout.setContentsMargins(12, 10, 12, 10)
+        mv_layout.setSpacing(4)
+        mv_header = QHBoxLayout()
+        self.lbl_mv_title = QLabel("RPG Maker MV")
+        self.lbl_mv_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.lbl_mv_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        mv_header.addWidget(self.lbl_mv_title)
+        mv_header.addStretch()
+        mv_pill = create_status_pill("Supported", "info")
+        mv_header.addWidget(mv_pill)
+        mv_layout.addLayout(mv_header)
+
+        self.lbl_mv_desc = QLabel(
+            "Target data: data/ or www/data/ JSON files\n"
+            "Parsed files: System.json, Actors.json, Map*.json, CommonEvents.json, Items.json, etc."
+        )
+        self.lbl_mv_desc.setFont(QFont("Segoe UI", 10))
+        self.lbl_mv_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_mv_desc.setWordWrap(True)
+        mv_layout.addWidget(self.lbl_mv_desc)
+        engines_row.addWidget(self.card_mv, stretch=1)
+
+        # MZ Card
+        self.card_mz = QFrame()
+        self.card_mz.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        mz_layout = QVBoxLayout(self.card_mz)
+        mz_layout.setContentsMargins(12, 10, 12, 10)
+        mz_layout.setSpacing(4)
+        mz_header = QHBoxLayout()
+        self.lbl_mz_title = QLabel("RPG Maker MZ")
+        self.lbl_mz_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.lbl_mz_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        mz_header.addWidget(self.lbl_mz_title)
+        mz_header.addStretch()
+        mz_pill = create_status_pill("Supported", "info")
+        mz_header.addWidget(mz_pill)
+        mz_layout.addLayout(mz_header)
+
+        self.lbl_mz_desc = QLabel(
+            "Target data: data/ JSON files\n"
+            "Parsed files: System.json, Actors.json, Map*.json, CommonEvents.json, Items.json, etc."
+        )
+        self.lbl_mz_desc.setFont(QFont("Segoe UI", 10))
+        self.lbl_mz_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_mz_desc.setWordWrap(True)
+        mz_layout.addWidget(self.lbl_mz_desc)
+        engines_row.addWidget(self.card_mz, stretch=1)
+
+        formats_layout.addLayout(engines_row)
+
+        # Unsupported Content Advisory Card
+        self.unsupported_card = QFrame()
+        self.unsupported_card.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        unsupported_layout = QVBoxLayout(self.unsupported_card)
+        unsupported_layout.setContentsMargins(12, 10, 12, 10)
+        unsupported_layout.setSpacing(4)
+
+        unsupported_title = QLabel("Unsupported Content Scope")
+        unsupported_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        unsupported_title.setStyleSheet("color: #fbbf24;")
+        unsupported_layout.addWidget(unsupported_title)
+
+        self.lbl_unsupported_notice = QLabel(
+            "• Save Files Unsupported: Runtime save states (*.rpgsave, save/, www/save/) are dynamic progress data and are not translated or modified.\n"
+            "• Binary Assets Unsupported: Media assets (images in img/, audio in audio/, movies in movies/, fonts, executables Game.exe/nw.exe, compiled plugins) are unsupported. GameLingo operates exclusively on text dialogue and database definitions in JSON data files."
+        )
+        self.lbl_unsupported_notice.setFont(QFont("Segoe UI", 10))
+        self.lbl_unsupported_notice.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_unsupported_notice.setWordWrap(True)
+        unsupported_layout.addWidget(self.lbl_unsupported_notice)
+        formats_layout.addWidget(self.unsupported_card)
+
+        # Live Data Structure Verification Status Card
+        self.structure_card = QFrame()
+        self.structure_card.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        structure_layout = QVBoxLayout(self.structure_card)
+        structure_layout.setContentsMargins(12, 10, 12, 10)
+        structure_layout.setSpacing(4)
+
+        struct_header_row = QHBoxLayout()
+        struct_title = QLabel("Selected Game Data Structure")
+        struct_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        struct_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        struct_header_row.addWidget(struct_title)
+        struct_header_row.addStretch()
+
+        self.lbl_structure_pill = create_status_pill("No Game Selected", "neutral")
+        struct_header_row.addWidget(self.lbl_structure_pill)
+        structure_layout.addLayout(struct_header_row)
+
+        self.lbl_structure_desc = QLabel(
+            "No game directory selected. Choose an RPG Maker MV or MZ installation folder above to inspect and validate its data structure."
+        )
+        self.lbl_structure_desc.setFont(QFont("Segoe UI", 10))
+        self.lbl_structure_desc.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_structure_desc.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_structure_desc.setWordWrap(True)
+        structure_layout.addWidget(self.lbl_structure_desc)
+
+        formats_layout.addWidget(self.structure_card)
+        layout.addWidget(self.formats_group)
 
         # --- Section 2: Localization Pipeline Stages ---
         pipeline_group = QGroupBox("Localization Workflow Stages")
@@ -243,26 +367,125 @@ class DashboardPage(QWidget):
                 f"background-color: {BG_SURFACE_ALT}; color: {TEXT_MUTED}; border: 1px solid {BORDER_SUBTLE}; border-radius: 4px; padding: 2px 8px;"
             )
 
+    def _update_structure_status(self, text: str, status_type: str, details: str):
+        self.lbl_structure_pill.setText(f" {text} ")
+        if status_type == "success":
+            self.lbl_structure_pill.setStyleSheet(
+                "background-color: #19351e; color: #81c784; border: 1px solid #2e7d32; border-radius: 4px; padding: 2px 8px;"
+            )
+            self.lbl_structure_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        elif status_type == "info":
+            self.lbl_structure_pill.setStyleSheet(
+                "background-color: #162b42; color: #90caf9; border: 1px solid #3d72a4; border-radius: 4px; padding: 2px 8px;"
+            )
+            self.lbl_structure_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        elif status_type == "danger":
+            self.lbl_structure_pill.setStyleSheet(
+                "background-color: #381515; color: #f87171; border: 1px solid #c53030; border-radius: 4px; padding: 2px 8px;"
+            )
+            self.lbl_structure_desc.setStyleSheet("color: #fca5a5;")
+        elif status_type == "warning":
+            self.lbl_structure_pill.setStyleSheet(
+                "background-color: #38240f; color: #fbbf24; border: 1px solid #b45309; border-radius: 4px; padding: 2px 8px;"
+            )
+            self.lbl_structure_desc.setStyleSheet("color: #fcd34d;")
+        else:
+            self.lbl_structure_pill.setStyleSheet(
+                f"background-color: {BG_SURFACE_ALT}; color: {TEXT_MUTED}; border: 1px solid {BORDER_SUBTLE}; border-radius: 4px; padding: 2px 8px;"
+            )
+            self.lbl_structure_desc.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_structure_desc.setText(details)
+
     def refresh(self):
         # 1. Workspace
         has_ws = self.state.workspace_path is not None
         if has_ws:
             self.ws_label.setText(str(self.state.workspace_path.absolute()))
             self.game_group.setEnabled(True)
-            self._update_stage_pill(0, "Ready", "success")
+            self._update_stage_pill(0, "Workspace Open", "info")
         else:
             self.ws_label.setText("No workspace open.")
             self.game_group.setEnabled(False)
-            self._update_stage_pill(0, "Pending", "warning")
+            self._update_stage_pill(0, "Not Configured", "warning")
 
         # 2. Game
         has_game = self.state.game_path is not None
         if has_game:
             self.game_label.setText(str(self.state.game_path.absolute()))
-            self._update_stage_pill(1, "Ready", "success")
+            self._update_stage_pill(1, "Game Selected", "info")
         else:
             self.game_label.setText("No game selected.")
-            self._update_stage_pill(1, "Pending", "warning")
+            self._update_stage_pill(1, "Not Selected", "warning")
+
+        # 3. Check game data structure
+        check_path = self.selected_invalid_game_path or self.state.game_path
+        if check_path is None:
+            self._update_structure_status(
+                "No Game Selected",
+                "neutral",
+                "No game directory selected. Choose an RPG Maker MV or MZ installation folder above to inspect and validate its data structure.",
+            )
+        elif not check_path.exists():
+            self._update_structure_status(
+                "Directory Missing",
+                "danger",
+                f"Selected game directory does not exist on disk: '{check_path}'. Expected an existing directory containing 'data/System.json' or 'www/data/System.json'.",
+            )
+        else:
+            adapter = RPGMakerMVMZAdapter()
+            data_dir = adapter._get_data_dir(check_path)
+            if data_dir is None:
+                missing_reasons = []
+                data_candidates = [check_path / "data", check_path / "www" / "data"]
+                has_any_data_dir = any(d.is_dir() for d in data_candidates)
+                if has_any_data_dir:
+                    missing_reasons.append(
+                        "Found data directory, but 'System.json' is missing."
+                    )
+                else:
+                    missing_reasons.append(
+                        "Neither 'data/' nor 'www/data/' directory was found."
+                    )
+
+                has_saves = (
+                    any(check_path.glob("*.rpgsave"))
+                    or (check_path / "save").is_dir()
+                    or (check_path / "www" / "save").is_dir()
+                )
+                if has_saves:
+                    missing_reasons.append(
+                        "Detected save files/folders (*.rpgsave). Save files are unsupported and cannot be translated."
+                    )
+
+                has_binaries = (
+                    (check_path / "Game.exe").exists()
+                    or (check_path / "nw.exe").exists()
+                    or (check_path / "img").is_dir()
+                    or (check_path / "audio").is_dir()
+                )
+                if has_binaries and not has_any_data_dir:
+                    missing_reasons.append(
+                        "Binary assets or executables detected without extracted JSON data files."
+                    )
+
+                reason_str = " ".join(missing_reasons)
+                self._update_structure_status(
+                    "Structure Missing",
+                    "danger",
+                    f"Expected data structure is missing from '{check_path}'. {reason_str} Ensure the game is an unpacked RPG Maker MV or MZ directory with 'System.json'. Note that save files and binary assets are unsupported.",
+                )
+            else:
+                supported, version_desc, _ = adapter.detect(check_path)
+                try:
+                    json_count = len(list(data_dir.glob("*.json")))
+                except Exception:
+                    json_count = 0
+                rel_data = data_dir.relative_to(check_path)
+                self._update_structure_status(
+                    "Structure Verified",
+                    "info",
+                    f"Valid RPG Maker data structure verified at '{rel_data}/' ({json_count} JSON data files found, System.json present). Engine detected: {version_desc}.",
+                )
 
         # 3. Database counts
         total_units = 0
@@ -314,10 +537,10 @@ class DashboardPage(QWidget):
         # Update workflow stages
         if total_units > 0:
             self._update_stage_pill(2, f"{total_units} Units", "success")
+        elif has_game:
+            self._update_stage_pill(2, "Not Extracted", "warning")
         else:
-            self._update_stage_pill(
-                2, "Ready" if has_game else "Pending", "info" if has_game else "warning"
-            )
+            self._update_stage_pill(2, "Pending", "muted")
 
         if draft_units > 0 or approved_units > 0:
             self._update_stage_pill(
@@ -388,6 +611,7 @@ class DashboardPage(QWidget):
             adapter = RPGMakerMVMZAdapter()
             supported, version, _conf = adapter.detect(path)
             if supported:
+                self.selected_invalid_game_path = None
                 self.state.game_path = path
 
                 # Update DB
@@ -418,8 +642,10 @@ class DashboardPage(QWidget):
                     self, "Success", f"Detected {version} successfully."
                 )
             else:
+                self.selected_invalid_game_path = path
+                self.refresh()
                 QMessageBox.warning(
                     self,
                     "Unsupported",
-                    "No supported game engine detected at this path. Ensure the folder contains data/System.json or www/data/System.json.",
+                    "No supported game engine detected at this path. Ensure the folder contains data/System.json or www/data/System.json. Note that save files and binary assets are unsupported.",
                 )

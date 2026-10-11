@@ -128,24 +128,31 @@ class PatchPage(QWidget):
         restore_intro.setStyleSheet(f"color: {TEXT_SECONDARY};")
         restore_layout.addWidget(restore_intro)
 
-        restore_controls = QHBoxLayout()
+        restore_controls = QVBoxLayout()
+        restore_controls.setSpacing(8)
+
         self.cmb_backups = QComboBox()
-        self.cmb_backups.setMinimumWidth(340)
         self.cmb_backups.currentIndexChanged.connect(self.on_backup_selection_changed)
         self.backup_combo = self.cmb_backups
-        restore_controls.addWidget(self.cmb_backups, stretch=1)
+        restore_controls.addWidget(self.cmb_backups)
+
+        btn_restore_row = QHBoxLayout()
+        btn_restore_row.setSpacing(8)
 
         self.btn_preview_restore = QPushButton("Preview Restore")
         self.btn_preview_restore.clicked.connect(self.on_preview_restore)
         self.btn_preview_restore.setEnabled(False)
-        restore_controls.addWidget(self.btn_preview_restore)
+        btn_restore_row.addWidget(self.btn_preview_restore)
 
         self.btn_restore = QPushButton("Restore from Backup")
         style_danger_button(self.btn_restore)
         self.btn_restore.clicked.connect(self.on_execute_restore)
         self.btn_restore.setEnabled(False)
         self.btn_execute_restore = self.btn_restore
-        restore_controls.addWidget(self.btn_restore)
+        btn_restore_row.addWidget(self.btn_restore)
+        btn_restore_row.addStretch()
+
+        restore_controls.addLayout(btn_restore_row)
         restore_layout.addLayout(restore_controls)
 
         self.txt_restore_info = QTextEdit()

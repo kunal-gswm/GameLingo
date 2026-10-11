@@ -256,31 +256,40 @@ class TranslationPage(QWidget):
             if status["status"] == ModelStatus.READY:
                 self.btn_install_model_online.setVisible(False)
                 self.btn_install_model_local.setVisible(False)
-                self._set_model_pill("Ready (Offline)", "success")
+                self._set_model_pill("Model Installed", "success")
                 self.lbl_model_detail.setText(
                     "Japanese-to-English model (v1.1) is installed locally. "
                     "Translations operate completely offline with no network requests."
                 )
-                self.lbl_status.setText("Model ready for translation.")
+                self.lbl_status.setText("Translation model is ready.")
             elif status["status"] == ModelStatus.NOT_INSTALLED:
                 self.btn_install_model_online.setVisible(True)
                 self.btn_install_model_local.setVisible(True)
-                self._set_model_pill("Model Missing", "warning")
+                self._set_model_pill("Model Not Installed", "warning")
                 self.lbl_model_detail.setText(
                     "The Japanese-to-English Argos model is not installed. "
                     "You can download the package (~50MB) or select a local .argosmodel file."
                 )
                 self.lbl_status.setText(f"Status: {status['message']}")
+            elif status["status"] == ModelStatus.DEPENDENCY_MISSING:
+                self.btn_install_model_online.setVisible(False)
+                self.btn_install_model_local.setVisible(False)
+                self._set_model_pill("Dependency Missing", "danger")
+                self.lbl_model_detail.setText(
+                    "The Argos Translate library is not installed in this environment. "
+                    "Machine translation is unavailable."
+                )
+                self.lbl_status.setText("Argos translation library unavailable.")
             else:
                 self.btn_install_model_online.setVisible(True)
                 self.btn_install_model_local.setVisible(True)
-                self._set_model_pill("Not Ready", "danger")
+                self._set_model_pill("Check Error", "danger")
                 self.lbl_model_detail.setText(f"Model status: {status['message']}")
                 self.lbl_status.setText(f"Status: {status['message']}")
         except ImportError:
             self.btn_install_model_online.setVisible(False)
             self.btn_install_model_local.setVisible(False)
-            self._set_model_pill("Dependency Unavailable", "danger")
+            self._set_model_pill("Dependency Missing", "danger")
             self.lbl_model_detail.setText(
                 "Argos Translate library is not installed in the environment."
             )
@@ -302,7 +311,7 @@ class TranslationPage(QWidget):
             self.btn_install_model_local.setEnabled(False)
             self.btn_start.setEnabled(False)
             self.lbl_status.setText("Downloading model package from Argos index...")
-            self._set_model_pill("Downloading...", "info")
+            self._set_model_pill("Downloading Model", "info")
             self.progress_bar.setValue(0)
 
             self.install_worker = ModelInstallWorker(local_path=None)
@@ -323,7 +332,7 @@ class TranslationPage(QWidget):
             self.btn_install_model_local.setEnabled(False)
             self.btn_start.setEnabled(False)
             self.lbl_status.setText(f"Installing local model from {file_path}...")
-            self._set_model_pill("Installing...", "info")
+            self._set_model_pill("Installing Model", "info")
             self.progress_bar.setValue(0)
 
             self.install_worker = ModelInstallWorker(local_path=file_path)
@@ -340,7 +349,7 @@ class TranslationPage(QWidget):
         self.btn_install_model_local.setEnabled(True)
         self.btn_start.setEnabled(True)
         self.lbl_status.setText("Model installed successfully.")
-        self._set_model_pill("Ready (Offline)", "success")
+        self._set_model_pill("Model Installed", "success")
         self.progress_bar.setValue(0)
         self.check_model()
         QMessageBox.information(
@@ -353,7 +362,7 @@ class TranslationPage(QWidget):
         self.btn_install_model_local.setEnabled(True)
         self.btn_start.setEnabled(True)
         self.lbl_status.setText("Error installing model.")
-        self._set_model_pill("Failed", "danger")
+        self._set_model_pill("Installation Failed", "danger")
         self.progress_bar.setValue(0)
         QMessageBox.critical(self, "Error", f"Failed to install model:\n{err_msg}")
 
