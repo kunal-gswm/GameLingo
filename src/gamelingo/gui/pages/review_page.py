@@ -2,10 +2,14 @@ import json
 from pathlib import Path
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
+    QComboBox,
     QFileDialog,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
@@ -17,6 +21,16 @@ from PySide6.QtWidgets import (
 )
 
 from gamelingo.gui.state import AppState
+from gamelingo.gui.theme import (
+    BG_SURFACE_ALT,
+    BORDER_SUBTLE,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    WARNING_TEXT,
+    style_danger_button,
+    style_primary_button,
+    style_success_button,
+)
 from gamelingo.translation.export_import import ExportImportService
 from gamelingo.translation.review import ReviewService
 
@@ -27,79 +41,165 @@ class ReviewPage(QWidget):
         self.state = state
         self.service = None
         self.current_unit_id = None
+        self._original_text = ""
+        self._is_switching_selection = False
+        self._prev_row = -1
         self.setup_ui()
 
     def setup_ui(self):
-        layout = QHBoxLayout(self)
+        page_layout = QVBoxLayout(self)
+        page_layout.setContentsMargins(24, 16, 24, 16)
+        page_layout.setSpacing(12)
 
-        # Left side - List of units
+        # Main Splitter
+        splitter = QSplitter(Qt.Horizontal)
+
+        # --- Left Pane: Queue & Filters ---
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(8)
 
-        left_header_layout = QHBoxLayout()
-        self.btn_refresh = QPushButton("Refresh List")
-        self.btn_refresh.clicked.connect(self.load_units)
+        # Search row with Refresh button
+        search_row = QHBoxLayout()
+        self.txt_search = QLineEdit()
+        self.txt_search.setPlaceholderText("Search source or translated text...")
+        self.txt_search.textChanged.connect(self.on_filter_changed)
+        search_row.addWidget(self.txt_search, stretch=1)
 
+        self.btn_refresh = QPushButton("Refresh")
+        self.btn_refresh.clicked.connect(self.on_refresh_clicked)
+        search_row.addWidget(self.btn_refresh)
+        left_layout.addLayout(search_row)
+
+        # Filter row: Status filter & count badge
+        filter_row = QHBoxLayout()
+        self.cmb_status = QComboBox()
+        self.cmb_status.addItem("Pending Review", "pending")
+        self.cmb_status.addItem("All Items", "all")
+        self.cmb_status.addItem("Approved Only", "approved")
+        self.cmb_status.addItem("Draft Only", "draft")
+        self.cmb_status.addItem("Rejected Only", "rejected")
+        self.cmb_status.currentIndexChanged.connect(self.on_filter_changed)
+        filter_row.addWidget(self.cmb_status, stretch=1)
+
+        self.lbl_queue_count = QLabel("0 units")
+        self.lbl_queue_count.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.lbl_queue_count.setStyleSheet(f"color: {TEXT_MUTED};")
+        filter_row.addWidget(self.lbl_queue_count)
+        left_layout.addLayout(filter_row)
+
+        # Queue List
+        self.list_widget = QListWidget()
+        self.list_widget.itemSelectionChanged.connect(self.on_selection_changed)
+        left_layout.addWidget(self.list_widget, stretch=1)
+
+        # CSV actions footer bar
+        csv_bar = QHBoxLayout()
         self.btn_export = QPushButton("Export CSV")
         self.btn_export.clicked.connect(self.on_export)
+        csv_bar.addWidget(self.btn_export)
 
         self.btn_import = QPushButton("Import CSV")
         self.btn_import.clicked.connect(self.on_import)
+        csv_bar.addWidget(self.btn_import)
+        left_layout.addLayout(csv_bar)
 
-        left_header_layout.addWidget(self.btn_refresh)
-        left_header_layout.addWidget(self.btn_export)
-        left_header_layout.addWidget(self.btn_import)
-        left_layout.addLayout(left_header_layout)
+        splitter.addWidget(left_widget)
 
-        self.list_widget = QListWidget()
-        self.list_widget.itemSelectionChanged.connect(self.on_selection_changed)
-        left_layout.addWidget(self.list_widget)
-
-        # Right side - Editor
+        # --- Right Pane: Editor & Approval Controls ---
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(8, 0, 0, 0)
+        right_layout.setSpacing(12)
 
-        self.lbl_id = QLabel("ID: ")
-        self.lbl_status = QLabel("Status: ")
-        right_layout.addWidget(self.lbl_id)
-        right_layout.addWidget(self.lbl_status)
+        # Metadata Card
+        meta_group = QGroupBox("Unit Information")
+        meta_layout = QVBoxLayout(meta_group)
+        meta_layout.setSpacing(6)
 
-        right_layout.addWidget(QLabel("Source Text:"))
+        meta_top_row = QHBoxLayout()
+        self.lbl_id = QLabel("ID: None")
+        self.lbl_id.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.lbl_id.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        meta_top_row.addWidget(self.lbl_id, stretch=1)
+
+        self.lbl_unsaved = QLabel("• Unsaved Changes")
+        self.lbl_unsaved.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.lbl_unsaved.setStyleSheet(f"color: {WARNING_TEXT};")
+        self.lbl_unsaved.setVisible(False)
+        meta_top_row.addWidget(self.lbl_unsaved)
+
+        self.lbl_status = QLabel("Status: None")
+        self.lbl_status.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        meta_top_row.addWidget(self.lbl_status)
+        meta_layout.addLayout(meta_top_row)
+
+        self.lbl_locator = QLabel("File / Locator: -")
+        self.lbl_locator.setFont(QFont("Segoe UI", 10))
+        self.lbl_locator.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_locator.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        meta_layout.addWidget(self.lbl_locator)
+
+        right_layout.addWidget(meta_group)
+
+        # Source Text Editor
+        src_group = QGroupBox("Source Text (Read-Only)")
+        src_layout = QVBoxLayout(src_group)
         self.txt_source = QTextEdit()
         self.txt_source.setReadOnly(True)
-        right_layout.addWidget(self.txt_source)
+        self.txt_source.setFont(QFont("Segoe UI", 12))
+        self.txt_source.setStyleSheet(
+            f"background-color: #17181c; border: 1px solid {BORDER_SUBTLE}; color: {TEXT_PRIMARY};"
+        )
+        src_layout.addWidget(self.txt_source)
+        right_layout.addWidget(src_group, stretch=1)
 
-        right_layout.addWidget(QLabel("Translated Text:"))
+        # Translated Text Editor
+        tgt_group = QGroupBox("Translated Text (Editable)")
+        tgt_layout = QVBoxLayout(tgt_group)
         self.txt_target = QTextEdit()
-        right_layout.addWidget(self.txt_target)
+        self.txt_target.setFont(QFont("Segoe UI", 12))
+        self.txt_target.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; color: {TEXT_PRIMARY};"
+        )
+        self.txt_target.textChanged.connect(self.on_target_text_changed)
+        tgt_layout.addWidget(self.txt_target)
+        right_layout.addWidget(tgt_group, stretch=1)
 
+        # Validation & Quality Flags
         self.lbl_validation = QLabel("")
-        self.lbl_validation.setStyleSheet("color: red;")
+        self.lbl_validation.setFont(QFont("Segoe UI", 10))
+        self.lbl_validation.setStyleSheet("color: #f87171;")
+        self.lbl_validation.setWordWrap(True)
         right_layout.addWidget(self.lbl_validation)
 
-        btn_layout = QHBoxLayout()
+        # Action Buttons
+        btn_bar = QHBoxLayout()
         self.btn_save = QPushButton("Save (Draft)")
+        style_primary_button(self.btn_save)
         self.btn_save.clicked.connect(self.on_save)
+        btn_bar.addWidget(self.btn_save)
 
         self.btn_approve = QPushButton("Approve")
+        style_success_button(self.btn_approve)
         self.btn_approve.clicked.connect(self.on_approve)
+        btn_bar.addWidget(self.btn_approve)
 
         self.btn_reject = QPushButton("Reject")
+        style_danger_button(self.btn_reject)
         self.btn_reject.clicked.connect(self.on_reject)
+        btn_bar.addWidget(self.btn_reject)
 
-        btn_layout.addWidget(self.btn_save)
-        btn_layout.addWidget(self.btn_approve)
-        btn_layout.addWidget(self.btn_reject)
-        right_layout.addLayout(btn_layout)
+        btn_bar.addStretch()
+        right_layout.addLayout(btn_bar)
 
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.addWidget(left_widget)
         splitter.addWidget(right_widget)
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 2)
+        splitter.setSizes([310, 550])
 
-        layout.addWidget(splitter)
-
+        page_layout.addWidget(splitter, stretch=1)
         self.set_editor_enabled(False)
 
     def refresh(self):
@@ -107,22 +207,97 @@ class ReviewPage(QWidget):
             self.service = ReviewService(self.state.db)
             self.load_units()
 
+    def on_refresh_clicked(self):
+        if not self._check_unsaved_discard():
+            return
+        self.load_units()
+
+    def on_filter_changed(self):
+        if not self._check_unsaved_discard():
+            return
+        self.load_units()
+
+    def _get_status_filter_list(self):
+        choice = self.cmb_status.currentData()
+        if choice == "all":
+            return None
+        elif choice == "approved":
+            return ["approved"]
+        elif choice == "draft":
+            return ["draft"]
+        elif choice == "rejected":
+            return ["rejected"]
+        else:
+            return ["draft", "needs_review", "rejected", "failed"]
+
     def load_units(self):
         if not self.service:
             return
 
         self.list_widget.clear()
-        units = self.service.list_units_for_review(
-            "default", ["draft", "needs_review", "rejected", "failed"]
-        )
+        statuses = self._get_status_filter_list()
+        units = self.service.list_units_for_review("default", statuses)
 
+        search_query = self.txt_search.text().strip().lower()
+        count = 0
         for u in units:
-            item = QListWidgetItem(f"[{u['status']}] {u['id']}")
-            item.setData(Qt.UserRole, u["id"])
-            self.list_widget.addItem(item)
+            src = u.get("source_text", "")
+            tgt = u.get("translated_text", "") or ""
+            file_id = u.get("file_id", "")
+            loc = u.get("locator", "")
 
+            if search_query:
+                combined = f"{src} {tgt} {file_id} {loc}".lower()
+                if search_query not in combined:
+                    continue
+
+            # Short snippet
+            preview = src.replace("\n", " ").strip()
+            if len(preview) > 35:
+                preview = preview[:32] + "..."
+            status_tag = u.get("status", "draft").upper()
+
+            item = QListWidgetItem(f"[{status_tag}] {u['id']}  —  {preview}")
+            item.setData(Qt.UserRole, u["id"])
+            item.setToolTip(f"ID: {u['id']}\nFile: {file_id}\nSource: {src}")
+            self.list_widget.addItem(item)
+            count += 1
+
+        self.lbl_queue_count.setText(f"{count} units")
         self.set_editor_enabled(False)
         self.current_unit_id = None
+        self._original_text = ""
+        self.lbl_unsaved.setVisible(False)
+        self._prev_row = -1
+
+    def _check_unsaved_discard(self) -> bool:
+        """Returns True if safe to continue, False if action was cancelled."""
+        if self.current_unit_id and self.lbl_unsaved.isVisible():
+            reply = QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                "You have unsaved changes in the translation editor.\n\n"
+                "Do you want to save your edits before proceeding?",
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                QMessageBox.Save,
+            )
+            if reply == QMessageBox.Save:
+                self.on_save()
+                return True
+            elif reply == QMessageBox.Discard:
+                self.lbl_unsaved.setVisible(False)
+                return True
+            else:
+                return False
+        return True
+
+    def on_target_text_changed(self):
+        if self._is_switching_selection:
+            return
+        if self.current_unit_id:
+            curr_text = self.txt_target.toPlainText()
+            is_changed = curr_text != self._original_text
+            self.lbl_unsaved.setVisible(is_changed)
 
     def on_selection_changed(self):
         items = self.list_widget.selectedItems()
@@ -130,15 +305,49 @@ class ReviewPage(QWidget):
             self.set_editor_enabled(False)
             return
 
+        curr_row = self.list_widget.currentRow()
+
+        # Check for unsaved changes before switching away from current record
+        if (
+            self.current_unit_id
+            and self.lbl_unsaved.isVisible()
+            and self._prev_row != -1
+            and curr_row != self._prev_row
+        ):
+            reply = QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                "You have unsaved changes in the translation editor.\n\n"
+                "Do you want to save your edits before switching records?",
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                QMessageBox.Save,
+            )
+            if reply == QMessageBox.Save:
+                self.on_save()
+            elif reply == QMessageBox.Cancel:
+                self._is_switching_selection = True
+                self.list_widget.setCurrentRow(self._prev_row)
+                self._is_switching_selection = False
+                return
+
+        self._prev_row = curr_row
         unit_id = items[0].data(Qt.UserRole)
         self.current_unit_id = unit_id
 
         unit = self.service.get_unit(unit_id)
         if unit:
+            self._is_switching_selection = True
             self.lbl_id.setText(f"ID: {unit['id']}")
-            self.lbl_status.setText(f"Status: {unit['status']}")
-            self.txt_source.setPlainText(unit["source_text"])
-            self.txt_target.setPlainText(unit.get("translated_text") or "")
+            self.lbl_status.setText(f"Status: {unit['status'].upper()}")
+            self.lbl_locator.setText(
+                f"File: {unit.get('file_id', '')}   Locator: {unit.get('locator', '')}"
+            )
+            self.txt_source.setPlainText(unit.get("source_text", ""))
+
+            tgt_text = unit.get("translated_text") or ""
+            self.txt_target.setPlainText(tgt_text)
+            self._original_text = tgt_text
+            self.lbl_unsaved.setVisible(False)
 
             flags_text = ""
             if unit.get("quality_flags"):
@@ -146,113 +355,95 @@ class ReviewPage(QWidget):
                     flags = json.loads(unit["quality_flags"])
                     if flags:
                         flags_text = "\n".join(
-                            [f"[{f.get('severity')}] {f.get('message')}" for f in flags]
+                            [
+                                f"[{f.get('severity', 'warning').upper()}] {f.get('message', '')}"
+                                for f in flags
+                            ]
                         )
                 except Exception:
-                    pass
+                    flags_text = str(unit["quality_flags"])
+
             self.lbl_validation.setText(flags_text)
-
             self.set_editor_enabled(True)
+            self._is_switching_selection = False
 
-    def set_editor_enabled(self, enabled):
+    def set_editor_enabled(self, enabled: bool):
         self.txt_target.setEnabled(enabled)
         self.btn_save.setEnabled(enabled)
         self.btn_approve.setEnabled(enabled)
         self.btn_reject.setEnabled(enabled)
+        if not enabled:
+            self.lbl_id.setText("ID: None")
+            self.lbl_status.setText("Status: None")
+            self.lbl_locator.setText("File / Locator: -")
+            self.txt_source.clear()
+            self.txt_target.clear()
+            self.lbl_validation.setText("")
+            self.lbl_unsaved.setVisible(False)
 
     def on_save(self):
-        if not self.current_unit_id:
+        if not self.current_unit_id or not self.service:
             return
-
-        try:
-            self.service.update_translation(
-                self.current_unit_id, self.txt_target.toPlainText()
-            )
-            self.on_selection_changed()  # Reload details
-            self.update_list_item_status()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+        new_text = self.txt_target.toPlainText()
+        self.service.update_translation(self.current_unit_id, new_text)
+        self._original_text = new_text
+        self.lbl_unsaved.setVisible(False)
+        self._refresh_current_item_display("DRAFT")
 
     def on_approve(self):
-        if not self.current_unit_id:
+        if not self.current_unit_id or not self.service:
             return
-
+        if not self.lbl_unsaved.isHidden():
+            self.on_save()
         try:
             self.service.approve(self.current_unit_id)
-            self.on_selection_changed()
-            self.update_list_item_status()
+            self.lbl_status.setText("Status: APPROVED")
+            self._refresh_current_item_display("APPROVED")
         except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+            QMessageBox.critical(self, "Approval Error", str(e))
 
     def on_reject(self):
-        if not self.current_unit_id:
+        if not self.current_unit_id or not self.service:
             return
-
         try:
-            self.service.reject(self.current_unit_id, "")
-            self.on_selection_changed()
-            self.update_list_item_status()
+            self.service.reject(self.current_unit_id)
+            self.lbl_status.setText("Status: REJECTED")
+            self._refresh_current_item_display("REJECTED")
         except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+            QMessageBox.critical(self, "Rejection Error", str(e))
 
-    def update_list_item_status(self):
-        unit = self.service.get_unit(self.current_unit_id)
-        if unit:
-            items = self.list_widget.selectedItems()
-            if items:
-                items[0].setText(f"[{unit['status']}] {unit['id']}")
+    def _refresh_current_item_display(self, new_status: str):
+        items = self.list_widget.selectedItems()
+        if items:
+            u_id = self.current_unit_id
+            src = self.txt_source.toPlainText().replace("\n", " ").strip()
+            if len(src) > 35:
+                src = src[:32] + "..."
+            items[0].setText(f"[{new_status}] {u_id}  —  {src}")
 
     def on_export(self):
         if not self.state.db:
             return
-
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export CSV", "", "CSV Files (*.csv)"
+            self, "Export CSV", "export.csv", "CSV Files (*.csv)"
         )
-        if not file_path:
-            return
-
-        try:
-            svc = ExportImportService(self.state.db)
-            count = svc.export_csv(Path(file_path))
-            QMessageBox.information(
-                self, "Export Successful", f"Exported {count} records to {file_path}"
-            )
-        except Exception as e:
-            QMessageBox.critical(self, "Export Error", str(e))
+        if file_path:
+            service = ExportImportService(self.state.db)
+            service.export_csv(Path(file_path), "default")
+            QMessageBox.information(self, "Export Complete", f"Exported to {file_path}")
 
     def on_import(self):
         if not self.state.db:
             return
-
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Import CSV", "", "CSV Files (*.csv)"
         )
-        if not file_path:
-            return
-
-        try:
-            svc = ExportImportService(self.state.db)
-            prev = svc.import_csv_preview(Path(file_path))
-
-            msg = f"Preview Import:\nTotal Rows: {prev['total_rows']}\nValid Editable: {prev['valid_editable']}\nUnchanged: {prev['unchanged']}\nErrors: {prev['invalid']}"
-            if prev["invalid"] > 0:
-                msg += "\n\nCannot import due to errors in CSV. Check CLI output for details or fix the CSV."
-                QMessageBox.warning(self, "Import Blocked", msg)
-                return
-
-            reply = QMessageBox.question(
+        if file_path:
+            service = ExportImportService(self.state.db)
+            report = service.import_csv(Path(file_path), "default")
+            self.load_units()
+            QMessageBox.information(
                 self,
-                "Confirm Import",
-                msg + "\n\nProceed with import?",
-                QMessageBox.Yes | QMessageBox.No,
+                "Import Complete",
+                f"Imported: {report['updated_count']} updated, {report['skipped_count']} skipped.",
             )
-            if reply == QMessageBox.Yes:
-                count = svc.import_csv_apply(Path(file_path))
-                QMessageBox.information(
-                    self, "Import Successful", f"Imported {count} translations."
-                )
-                self.load_units()
-
-        except Exception as e:
-            QMessageBox.critical(self, "Import Error", str(e))

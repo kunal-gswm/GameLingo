@@ -1,7 +1,11 @@
 import time
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
     QLabel,
     QMessageBox,
     QProgressBar,
@@ -12,6 +16,15 @@ from PySide6.QtWidgets import (
 
 from gamelingo.adapters.rpgmaker_mv_mz import RPGMakerMVMZAdapter
 from gamelingo.gui.state import AppState
+from gamelingo.gui.theme import (
+    BG_SURFACE_ALT,
+    BORDER_SUBTLE,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    create_status_pill,
+    style_primary_button,
+)
 
 
 class ExtractionWorker(QThread):
@@ -31,7 +44,6 @@ class ExtractionWorker(QThread):
             adapter = RPGMakerMVMZAdapter()
             game_path = self.state.game_path
 
-            # Not exact progress since adapter.extract yields. We'll pulse the progress or just count.
             units = list(adapter.extract(game_path))
 
             conn = local_db.connect()
@@ -75,36 +87,162 @@ class ExtractionPage(QWidget):
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(16)
 
-        self.lbl_info = QLabel("Extract translatable text from the game files.")
-        layout.addWidget(self.lbl_info)
+        # Source Game Info Card
+        source_group = QGroupBox("Target Game Source")
+        source_layout = QVBoxLayout(source_group)
+        source_layout.setSpacing(8)
 
+        self.lbl_game_path = QLabel("No game selected.")
+        self.lbl_game_path.setFont(QFont("Segoe UI", 11))
+        self.lbl_game_path.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        self.lbl_game_path.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        source_layout.addWidget(self.lbl_game_path)
+
+        self.lbl_info = QLabel(
+            "Supports RPG Maker MV (`www/data/`) and MZ (`data/`) JSON formats: "
+            "Map dialogue (code 401), Choices (code 102), System terms, Actors, Enemies, Skills, Items, and Map names."
+        )
+        self.lbl_info.setFont(QFont("Segoe UI", 10))
+        self.lbl_info.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_info.setWordWrap(True)
+        source_layout.addWidget(self.lbl_info)
+        layout.addWidget(source_group)
+
+        # Extraction Actions & Progress Card
+        action_group = QGroupBox("Extraction Execution")
+        action_layout = QVBoxLayout(action_group)
+        action_layout.setSpacing(12)
+
+        btn_row = QHBoxLayout()
         self.btn_extract = QPushButton("Extract Text")
+        style_primary_button(self.btn_extract)
         self.btn_extract.clicked.connect(self.on_extract)
-        layout.addWidget(self.btn_extract)
+        btn_row.addWidget(self.btn_extract)
+
+        self.pill_state = create_status_pill("Idle", "info")
+        btn_row.addWidget(self.pill_state)
+        btn_row.addStretch()
+        action_layout.addLayout(btn_row)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 0)  # Indeterminate
         self.progress_bar.setVisible(False)
-        layout.addWidget(self.progress_bar)
+        action_layout.addWidget(self.progress_bar)
 
-        self.lbl_status = QLabel("")
-        layout.addWidget(self.lbl_status)
+        self.lbl_status = QLabel("Select a game in Dashboard to begin extraction.")
+        self.lbl_status.setFont(QFont("Segoe UI", 11))
+        self.lbl_status.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        action_layout.addWidget(self.lbl_status)
 
+        layout.addWidget(action_group)
+
+        # Results Summary Card
+        self.results_group = QGroupBox("Extraction Results")
+        results_layout = QHBoxLayout(self.results_group)
+        results_layout.setSpacing(16)
+
+        self.box_count = self._create_summary_box("Extracted Units", "0")
+        results_layout.addWidget(self.box_count)
+
+        self.box_db = self._create_summary_box("Database Status", "Not Initialized")
+        results_layout.addWidget(self.box_db)
+
+        layout.addWidget(self.results_group)
         layout.addStretch()
 
+    def _create_summary_box(self, label: str, val: str) -> QFrame:
+        frame = QFrame()
+        frame.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        vbox = QVBoxLayout(frame)
+        vbox.setContentsMargins(14, 10, 14, 10)
+        vbox.setSpacing(4)
+
+        t_lbl = QLabel(label)
+        t_lbl.setFont(QFont("Segoe UI", 10))
+        t_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
+        vbox.addWidget(t_lbl)
+
+        v_lbl = QLabel(val)
+        v_lbl.setObjectName("val_label")
+        v_lbl.setFont(QFont("Segoe UI", 14, QFont.Bold))
+        v_lbl.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        vbox.addWidget(v_lbl)
+        return frame
+
     def refresh(self):
-        enabled = self.state.game_path is not None
-        self.btn_extract.setEnabled(enabled)
-        if not enabled:
-            self.lbl_status.setText("Select a game in the Dashboard first.")
+        enabled = self.state.game_path is not None and self.state.db is not None
+        self.btn_extract.setEnabled(enabled and self.worker is None)
+
+        if self.state.game_path:
+            self.lbl_game_path.setText(str(self.state.game_path.absolute()))
         else:
-            self.lbl_status.setText("")
+            self.lbl_game_path.setText("No game selected.")
+
+        if not enabled:
+            if not self.state.workspace_path:
+                self.lbl_status.setText(
+                    "Open or create a workspace in Dashboard first."
+                )
+            else:
+                self.lbl_status.setText(
+                    "Select an RPG Maker MV/MZ game in Dashboard first."
+                )
+            self._set_pill("Disabled", "warning")
+        else:
+            if self.worker is None:
+                self.lbl_status.setText("Ready to extract translatable strings.")
+                self._set_pill("Ready", "info")
+
+        # Refresh existing count from DB if available
+        if self.state.db:
+            try:
+                conn = self.state.db.connect()
+                cur = conn.execute("SELECT COUNT(*) as c FROM translation_units")
+                c = cur.fetchone()["c"]
+                val_lbl = self.box_count.findChild(QLabel, "val_label")
+                if val_lbl:
+                    val_lbl.setText(str(c))
+
+                db_lbl = self.box_db.findChild(QLabel, "val_label")
+                if db_lbl:
+                    db_lbl.setText("Connected")
+            except Exception:
+                pass
+
+    def _set_pill(self, text: str, status_type: str):
+        self.pill_state.setText(f" {text} ")
+        if status_type == "success":
+            self.pill_state.setStyleSheet(
+                "background-color: #19351e; color: #81c784; border: 1px solid #2e7d32; border-radius: 4px; padding: 2px 8px;"
+            )
+        elif status_type == "info":
+            self.pill_state.setStyleSheet(
+                "background-color: #162b42; color: #90caf9; border: 1px solid #3d72a4; border-radius: 4px; padding: 2px 8px;"
+            )
+        elif status_type == "warning":
+            self.pill_state.setStyleSheet(
+                "background-color: #38240f; color: #fbbf24; border: 1px solid #b45309; border-radius: 4px; padding: 2px 8px;"
+            )
+        elif status_type == "danger":
+            self.pill_state.setStyleSheet(
+                "background-color: #381515; color: #f87171; border: 1px solid #c53030; border-radius: 4px; padding: 2px 8px;"
+            )
 
     def on_extract(self):
+        if not self.state.game_path or not self.state.db:
+            return
+
         self.btn_extract.setEnabled(False)
         self.progress_bar.setVisible(True)
-        self.lbl_status.setText("Extracting...")
+        self.lbl_status.setText(
+            "Extracting... Reading JSON files and parsing translatable strings."
+        )
+        self._set_pill("Extracting", "info")
 
         self.worker = ExtractionWorker(self.state)
         self.worker.finished.connect(self.on_finished)
@@ -112,15 +250,28 @@ class ExtractionPage(QWidget):
         self.worker.start()
 
     def on_finished(self, count):
+        self.worker = None
         self.progress_bar.setVisible(False)
         self.btn_extract.setEnabled(True)
-        self.lbl_status.setText(f"Successfully extracted {count} units.")
+        self.lbl_status.setText(
+            f"Extraction completed successfully. {count} units imported into project database."
+        )
+        self._set_pill("Success", "success")
+
+        val_lbl = self.box_count.findChild(QLabel, "val_label")
+        if val_lbl:
+            val_lbl.setText(str(count))
+
         QMessageBox.information(
-            self, "Extraction Complete", f"Extracted {count} translation units."
+            self,
+            "Extraction Complete",
+            f"Extracted {count} translation units from game files.",
         )
 
     def on_error(self, err_msg):
+        self.worker = None
         self.progress_bar.setVisible(False)
         self.btn_extract.setEnabled(True)
-        self.lbl_status.setText("Extraction failed.")
-        QMessageBox.critical(self, "Error", f"Extraction failed: {err_msg}")
+        self.lbl_status.setText(f"Extraction failed: {err_msg}")
+        self._set_pill("Failed", "danger")
+        QMessageBox.critical(self, "Error", f"Extraction failed:\n{err_msg}")

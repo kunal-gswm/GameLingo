@@ -7,9 +7,10 @@ from gamelingo.gui.main_window import MainWindow
 
 def run_gui():
     app = QApplication(sys.argv)
-
-    # Simple dark mode styling (rudimentary)
     app.setStyle("Fusion")
+    from gamelingo.gui.theme import APP_STYLESHEET
+
+    app.setStyleSheet(APP_STYLESHEET)
 
     window = MainWindow()
     window.show()
