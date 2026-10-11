@@ -164,16 +164,23 @@ def create_plan(
                 continue
 
             if not source_file.exists():
-                plan["edits"].append(
-                    {
-                        "unit_id": unit.id,
-                        "file_id": unit.file_id,
-                        "file_path": target_rel_path,
-                        "status": "rejected",
-                        "reason": "file_not_found",
-                    }
-                )
-                continue
+                # For Ren'Py, scripts may reside inside .rpa archive packages
+                game_sub = source_root_resolved / "game"
+                rpa_exists = any(game_sub.glob("*.rpa")) if game_sub.is_dir() else False
+                if not rpa_exists:
+                    rpa_exists = any(source_root_resolved.glob("*.rpa"))
+
+                if not rpa_exists:
+                    plan["edits"].append(
+                        {
+                            "unit_id": unit.id,
+                            "file_id": unit.file_id,
+                            "file_path": target_rel_path,
+                            "status": "rejected",
+                            "reason": "file_not_found",
+                        }
+                    )
+                    continue
 
             # Check target destination safety
             target_dest = source_root_resolved / target_rel_path
@@ -435,7 +442,14 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
                     f"Source script outside source root: {source_file_rel}"
                 )
             if not source_file.exists():
-                raise PlanValidationError(f"Source script not found: {source_file_rel}")
+                game_sub = source_root_resolved / "game"
+                rpa_exists = any(game_sub.glob("*.rpa")) if game_sub.is_dir() else False
+                if not rpa_exists:
+                    rpa_exists = any(source_root_resolved.glob("*.rpa"))
+                if not rpa_exists:
+                    raise PlanValidationError(
+                        f"Source script not found: {source_file_rel}"
+                    )
             continue
 
         if not target_file.exists():

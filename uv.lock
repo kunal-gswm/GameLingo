@@ -479,6 +479,9 @@ wheels = [
 name = "gamelingo"
 version = "0.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "rpycdec" },
+]
 
 [package.optional-dependencies]
 argos = [
@@ -507,6 +510,7 @@ dev = [
 requires-dist = [
     { name = "argostranslate", marker = "extra == 'argos'", specifier = ">=1.9.0" },
     { name = "pyside6", marker = "extra == 'gui'", specifier = ">=6.12.0" },
+    { name = "rpycdec", specifier = ">=0.2.0" },
 ]
 provides-extras = ["argos", "gui"]
 
@@ -1703,6 +1707,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c0/8f/0722ca900cc807c13a6a0c696dacf35430f72e0ec571c4275d2371fca3e9/rich-15.0.0.tar.gz", hash = "sha256:edd07a4824c6b40189fb7ac9bc4c52536e9780fbbfbddf6f1e2502c31b068c36", size = 230680, upload-time = "2026-04-12T08:24:00.75Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/82/3b/64d4899d73f91ba49a8c18a8ff3f0ea8f1c1d75481760df8c68ef5235bf5/rich-15.0.0-py3-none-any.whl", hash = "sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb", size = 310654, upload-time = "2026-04-12T08:24:02.83Z" },
+]
+
+[[package]]
+name = "rpycdec"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/86/58/68c5af0fe7f510ea597dc9407328de7a770e19bfb7ff20306ce0623bd057/rpycdec-0.2.0.tar.gz", hash = "sha256:2226ba7ce2f37efe0f27f879cfef12546be9c02e0a92624b64c9eff40c9b9248", size = 72230, upload-time = "2026-09-20T12:29:57.994Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/21/89ec8a5b20a76d601a60cbd8ff7d5f7133461ff93cf09dc087c70032eab1/rpycdec-0.2.0-py3-none-any.whl", hash = "sha256:5354959b7881c67ed87bcbd29a954bf44df10defd200314379a4cad3b98a89ec", size = 68041, upload-time = "2026-09-20T12:29:56.756Z" },
 ]
 
 [[package]]

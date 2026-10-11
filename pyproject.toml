@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "A local-first game translation patch workbench"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "rpycdec>=0.2.0",
+]
 
 [project.optional-dependencies]
 argos = [

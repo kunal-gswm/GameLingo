@@ -1,9 +1,18 @@
 import hashlib
 import re
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from gamelingo.adapters.base import GameAdapter
+from gamelingo.adapters.renpy_decompiler import (
+    decompile_rpyc_file,
+    is_decompiler_available,
+)
+from gamelingo.adapters.renpy_rpa import (
+    diagnose_archives,
+    inspect_game_archives,
+)
 from gamelingo.adapters.renpy_strings import parse_strings_rpy, renpy_unescape_string
 from gamelingo.domain.models import TranslationUnit
 
@@ -111,19 +120,24 @@ class RenPyAdapter(GameAdapter):
     def diagnose(self, install_path: Path) -> Dict[str, Any]:
         """
         Performs evidence-based diagnostics on the Ren'Py project structure.
-        Distinguishes projects with accessible .rpy source files from compiled .rpyc-only
-        or archived .rpa games. Discovers source scripts recursively while strictly
+        Distinguishes projects with accessible .rpy source files, compiled .rpyc-only
+        scripts, and archived .rpa games. Discovers scripts recursively while strictly
         excluding translation directories (tl/).
         """
         if not install_path.exists():
             return {
                 "is_renpy": False,
                 "has_source_scripts": False,
+                "has_extractable_scripts": False,
+                "extraction_mode": "none",
                 "rpy_count": 0,
                 "rpyc_count": 0,
                 "rpa_count": 0,
+                "archive_rpy_count": 0,
+                "archive_rpyc_count": 0,
                 "game_dir": None,
                 "message": f"Path does not exist: {install_path}",
+                "archive_details": [],
             }
 
         game_dir = self._get_game_dir(install_path)
@@ -131,11 +145,16 @@ class RenPyAdapter(GameAdapter):
             return {
                 "is_renpy": False,
                 "has_source_scripts": False,
+                "has_extractable_scripts": False,
+                "extraction_mode": "none",
                 "rpy_count": 0,
                 "rpyc_count": 0,
                 "rpa_count": 0,
+                "archive_rpy_count": 0,
+                "archive_rpyc_count": 0,
                 "game_dir": None,
                 "message": "No Ren'Py game directory detected.",
+                "archive_details": [],
             }
 
         # Resolve root installation directory (either install_path itself or parent of game_dir)
@@ -199,53 +218,99 @@ class RenPyAdapter(GameAdapter):
             return {
                 "is_renpy": False,
                 "has_source_scripts": False,
+                "has_extractable_scripts": False,
+                "extraction_mode": "none",
                 "rpy_count": 0,
                 "rpyc_count": 0,
                 "rpa_count": 0,
+                "archive_rpy_count": 0,
+                "archive_rpyc_count": 0,
                 "game_dir": game_dir,
                 "message": "Insufficient Ren'Py project evidence.",
+                "archive_details": [],
             }
 
-        if len(rpy_files) == 0:
-            if len(rpyc_files) > 0:
-                msg = (
-                    f"Ren'Py game detected with {len(rpyc_files)} compiled .rpyc script(s), "
-                    "but no readable .rpy source files were found. Readable source scripts are required "
-                    "for text extraction. Decompilation of .rpyc files is not supported."
-                )
-            elif len(rpa_files) > 0:
-                rpa_names = ", ".join(f.name for f in rpa_files[:3])
-                if len(rpa_files) > 3:
-                    rpa_names += f" and {len(rpa_files) - 3} more"
-                msg = (
-                    f"Ren'Py game detected with archived package(s) ({rpa_names}), "
-                    "but no readable .rpy source files were found. Readable .rpy source scripts are required "
-                    "for text extraction. Archive extraction or decompilation is not supported."
-                )
-            else:
-                msg = (
-                    "Ren'Py game installation detected, but no readable .rpy source files were found. "
-                    "Readable .rpy source scripts are required for text extraction."
-                )
-
-            return {
-                "is_renpy": True,
-                "has_source_scripts": False,
-                "rpy_count": 0,
-                "rpyc_count": len(rpyc_files),
-                "rpa_count": len(rpa_files),
-                "game_dir": game_dir,
-                "message": msg,
+        # Inspect archives in game_dir if present
+        arc_diag = (
+            diagnose_archives(game_dir)
+            if len(rpa_files) > 0
+            else {
+                "archives_count": 0,
+                "total_members_count": 0,
+                "total_rpy_count": 0,
+                "total_rpyc_count": 0,
+                "archives": [],
             }
+        )
+        archive_rpy_count = arc_diag["total_rpy_count"]
+        archive_rpyc_count = arc_diag["total_rpyc_count"]
+
+        has_source = len(rpy_files) > 0
+        has_arc_source = archive_rpy_count > 0
+        total_compiled = len(rpyc_files) + archive_rpyc_count
+        decompiler_ok = is_decompiler_available()
+
+        if has_source:
+            has_extractable = True
+            mode = "source"
+            msg = f"Valid Ren'Py visual novel project verified ({len(rpy_files)} source script files found)."
+        elif has_arc_source:
+            has_extractable = True
+            mode = "archive_source"
+            msg = (
+                f"Ren'Py game verified with {archive_rpy_count} readable source script(s) "
+                f"in archive(s). Text extraction available."
+            )
+        elif total_compiled > 0 and decompiler_ok:
+            has_extractable = True
+            mode = "compiled_decompile"
+            loc_desc = (
+                f"in {rpa_files[0].name}"
+                if len(rpyc_files) == 0 and len(rpa_files) == 1
+                else (
+                    "in archive(s)"
+                    if len(rpyc_files) == 0
+                    else "in directory / archive"
+                )
+            )
+            msg = (
+                f"Ren'Py game detected with {total_compiled} compiled .rpyc script(s) ({loc_desc}). "
+                "Decompilation and text extraction available."
+            )
+        elif total_compiled > 0 and not decompiler_ok:
+            has_extractable = False
+            mode = "decompiler_required"
+            msg = (
+                f"Ren'Py game detected with {total_compiled} compiled .rpyc script(s), but "
+                "decompiler is not installed or available. Decompilation of .rpyc files is not supported without decompiler."
+            )
+        elif len(rpa_files) > 0 and arc_diag["archives_count"] == 0:
+            has_extractable = False
+            mode = "unsupported_archive"
+            arc_names = ", ".join(p.name for p in rpa_files)
+            msg = (
+                f"Ren'Py archive package detected ({arc_names}), "
+                "but archive format is unsupported or corrupt. "
+                "Readable .rpy source scripts are required."
+            )
+        else:
+            has_extractable = False
+            mode = "no_scripts"
+            msg = "Ren'Py game installation detected, but no readable or compiled script files were found."
 
         return {
             "is_renpy": True,
-            "has_source_scripts": True,
+            "has_source_scripts": has_source,
+            "has_extractable_scripts": has_extractable,
+            "extraction_mode": mode,
             "rpy_count": len(rpy_files),
             "rpyc_count": len(rpyc_files),
             "rpa_count": len(rpa_files),
+            "archive_rpy_count": archive_rpy_count,
+            "archive_rpyc_count": archive_rpyc_count,
             "game_dir": game_dir,
-            "message": f"Valid Ren'Py visual novel project verified ({len(rpy_files)} source script files found).",
+            "message": msg,
+            "archive_details": arc_diag.get("archives", []),
         }
 
     def detect(self, install_path: Path) -> Tuple[bool, str, float]:
@@ -253,20 +318,31 @@ class RenPyAdapter(GameAdapter):
         if not diag["is_renpy"]:
             return False, "", 0.0
 
-        if not diag["has_source_scripts"]:
-            if diag.get("rpyc_count", 0) > 0 and diag.get("rpa_count", 0) == 0:
-                desc = "Ren'Py Visual Novel (Compiled .rpyc only - source scripts required)"
-            elif diag.get("rpa_count", 0) > 0 and diag.get("rpyc_count", 0) == 0:
-                desc = "Ren'Py Visual Novel (Archived .rpa - source scripts required)"
-            else:
-                desc = "Ren'Py Visual Novel (Compiled / archived - source scripts required)"
-            return (
-                True,
-                desc,
-                0.5,
-            )
+        if diag["has_source_scripts"]:
+            return True, f"Ren'Py Visual Novel ({diag['rpy_count']} script files)", 1.0
 
-        return True, f"Ren'Py Visual Novel ({diag['rpy_count']} script files)", 1.0
+        if diag.get("has_extractable_scripts"):
+            total_count = (
+                diag.get("rpy_count", 0)
+                + diag.get("archive_rpy_count", 0)
+                + diag.get("rpyc_count", 0)
+                + diag.get("archive_rpyc_count", 0)
+            )
+            mode = diag.get("extraction_mode", "")
+            if "decompile" in mode:
+                desc = f"Ren'Py Visual Novel ({total_count} compiled scripts - decompiler ready)"
+            else:
+                desc = f"Ren'Py Visual Novel ({total_count} scripts in archive)"
+            return True, desc, 1.0
+
+        if diag.get("rpyc_count", 0) > 0 or diag.get("archive_rpyc_count", 0) > 0:
+            desc = "Ren'Py Visual Novel (Compiled .rpyc only - decompiler required)"
+        elif diag.get("rpa_count", 0) > 0:
+            desc = "Ren'Py Visual Novel (Archived - source scripts required)"
+        else:
+            desc = "Ren'Py Visual Novel (Scripts required)"
+
+        return True, desc, 0.5
 
     def _hash_text(self, text: str) -> str:
         return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -283,7 +359,22 @@ class RenPyAdapter(GameAdapter):
         except Exception:
             return file_id
 
-    def extract(self, install_path: Path) -> Iterator[TranslationUnit]:
+    def extract(
+        self,
+        install_path: Path,
+        cache_dir: Optional[Path] = None,
+    ) -> Iterator[TranslationUnit]:
+        """
+        Extracts translatable text units from Ren'Py games.
+        Supports:
+        - Loose .rpy source files (highest precedence)
+        - Loose .rpyc compiled files (decompiled in working cache)
+        - .rpy source scripts inside .rpa archives
+        - .rpyc compiled scripts inside .rpa archives (decompiled in working cache)
+
+        Applies deterministic precedence so loose files supersede archived members.
+        The original game directory and archives remain strictly read-only.
+        """
         game_dir = self._get_game_dir(install_path)
         if not game_dir or not game_dir.is_dir():
             return
@@ -292,25 +383,158 @@ class RenPyAdapter(GameAdapter):
         if not diag["is_renpy"]:
             return
 
-        if not diag["has_source_scripts"]:
+        if not (diag.get("has_source_scripts") or diag.get("has_extractable_scripts")):
             raise RuntimeError(
                 diag.get("message")
-                or "Readable .rpy source files were not found. Only compiled or archived files were detected. Decompilation is not supported."
+                or "Readable or extractable Ren'Py script files were not found."
             )
 
-        # Discovers all .rpy source files recursively under the game directory,
-        # strictly excluding translation directories such as game/tl/
-        rpy_files = sorted(
-            [f for f in game_dir.rglob("*.rpy") if not self._is_tl_file(game_dir, f)],
-            key=lambda p: str(p.relative_to(install_path).as_posix()),
-        )
+        # Prepare dedicated working cache outside the game installation
+        temp_dir_obj = None
+        if cache_dir is None:
+            temp_dir_obj = tempfile.TemporaryDirectory(prefix="gamelingo_renpy_cache_")
+            working_cache = Path(temp_dir_obj.name)
+        else:
+            working_cache = Path(cache_dir)
+            working_cache.mkdir(parents=True, exist_ok=True)
 
-        for script_file in rpy_files:
-            rel_path = str(script_file.relative_to(install_path).as_posix())
-            yield from self._extract_script_file(script_file, rel_path)
+        try:
+            # Map canonical relative path -> resolved script metadata
+            # Priority levels: 4 = loose .rpy, 3 = loose .rpyc, 2 = archive .rpy, 1 = archive .rpyc
+            resolved_scripts: Dict[str, Dict[str, Any]] = {}
+
+            # 1. Scan loose .rpy scripts
+            loose_rpy_files = sorted(
+                [
+                    f
+                    for f in game_dir.rglob("*.rpy")
+                    if not self._is_tl_file(game_dir, f)
+                ],
+                key=lambda p: str(p.relative_to(install_path).as_posix()),
+            )
+            for f in loose_rpy_files:
+                rel_path = str(f.relative_to(install_path).as_posix())
+                resolved_scripts[rel_path] = {
+                    "path": f,
+                    "priority": 4,
+                    "archive_name": None,
+                }
+
+            # 2. Scan loose .rpyc scripts if corresponding .rpy not already resolved
+            loose_rpyc_files = sorted(
+                [
+                    f
+                    for f in game_dir.rglob("*.rpyc")
+                    if not self._is_tl_file(game_dir, f)
+                ],
+                key=lambda p: str(p.relative_to(install_path).as_posix()),
+            )
+            for f in loose_rpyc_files:
+                rel_canon = str(f.relative_to(install_path).as_posix())[:-1]
+                if rel_canon not in resolved_scripts:
+                    decompile_target = (
+                        working_cache / "loose_decompiled" / Path(rel_canon)
+                    )
+                    res = decompile_rpyc_file(f, decompile_target)
+                    if res.success and res.output_path and res.output_path.is_file():
+                        resolved_scripts[rel_canon] = {
+                            "path": res.output_path,
+                            "priority": 3,
+                            "archive_name": None,
+                        }
+
+            # 3. Inspect archives in game_dir
+            archives = inspect_game_archives(game_dir)
+            for arc in archives:
+                for member in arc.list_members():
+                    if not member.is_script or self._is_tl_file(
+                        game_dir, Path(member.path)
+                    ):
+                        continue
+
+                    # Construct canonical relative path (e.g., game/script.rpy)
+                    if (install_path / "game").is_dir():
+                        canon_rel = f"game/{member.path}"
+                    else:
+                        canon_rel = member.path
+
+                    if member.is_source_script:
+                        curr = resolved_scripts.get(canon_rel)
+                        if curr is None or curr["priority"] < 2:
+                            extract_dest = (
+                                working_cache
+                                / "archive_extracted"
+                                / arc.archive_path.name
+                                / member.path
+                            )
+                            arc.extract_member_to_file(member.path, extract_dest)
+                            resolved_scripts[canon_rel] = {
+                                "path": extract_dest,
+                                "priority": 2,
+                                "archive_name": arc.archive_path.name,
+                            }
+                    elif member.is_compiled_script:
+                        canon_rpy = canon_rel[:-1]
+                        curr = resolved_scripts.get(canon_rpy)
+                        if curr is None or curr["priority"] < 1:
+                            extract_dest = (
+                                working_cache
+                                / "archive_extracted"
+                                / arc.archive_path.name
+                                / member.path
+                            )
+                            arc.extract_member_to_file(member.path, extract_dest)
+                            decompile_dest = (
+                                working_cache
+                                / "archive_decompiled"
+                                / arc.archive_path.name
+                                / (member.path[:-1])
+                            )
+                            res = decompile_rpyc_file(extract_dest, decompile_dest)
+                            if (
+                                res.success
+                                and res.output_path
+                                and res.output_path.is_file()
+                            ):
+                                resolved_scripts[canon_rpy] = {
+                                    "path": res.output_path,
+                                    "priority": 1,
+                                    "archive_name": arc.archive_path.name,
+                                }
+
+            # 4. Extract translation units from all resolved scripts deterministically
+            if not resolved_scripts:
+                total_rpyc = len(loose_rpyc_files)
+                if total_rpyc > 0:
+                    raise RuntimeError(
+                        f"Found {total_rpyc} compiled .rpyc script(s), but decompilation was unsuccessful or unsupported. "
+                        "Readable source scripts are required for extraction."
+                    )
+                raise RuntimeError(
+                    "No readable or extractable Ren'Py scripts found. "
+                    "Readable source scripts are required for extraction."
+                )
+
+            for canon_path in sorted(resolved_scripts.keys()):
+                info = resolved_scripts[canon_path]
+                yield from self._extract_script_file(
+                    info["path"],
+                    canon_path,
+                    archive_name=info["archive_name"],
+                )
+
+        finally:
+            if temp_dir_obj is not None:
+                try:
+                    temp_dir_obj.cleanup()
+                except Exception:
+                    pass
 
     def _extract_script_file(
-        self, script_path: Path, file_id: str
+        self,
+        script_path: Path,
+        file_id: str,
+        archive_name: Optional[str] = None,
     ) -> Iterator[TranslationUnit]:
         try:
             with open(script_path, "r", encoding="utf-8") as f:
@@ -350,6 +574,7 @@ class RenPyAdapter(GameAdapter):
                             f"line:{multiline_start_line}",
                             unescaped,
                             multiline_context,
+                            archive_name=archive_name,
                         )
                         if unit:
                             yield unit
@@ -372,7 +597,9 @@ class RenPyAdapter(GameAdapter):
                     in_python_block = False
                 else:
                     # Inside python block: only extract _("...") marked strings
-                    yield from self._extract_marked_strings(line, line_num, file_id)
+                    yield from self._extract_marked_strings(
+                        line, line_num, file_id, archive_name=archive_name
+                    )
                     i += 1
                     continue
 
@@ -384,7 +611,9 @@ class RenPyAdapter(GameAdapter):
 
             # Single-line python statement
             if stripped.startswith("$"):
-                yield from self._extract_marked_strings(line, line_num, file_id)
+                yield from self._extract_marked_strings(
+                    line, line_num, file_id, archive_name=archive_name
+                )
                 i += 1
                 continue
 
@@ -394,7 +623,9 @@ class RenPyAdapter(GameAdapter):
                 continue
 
             # Extract any explicit marked translatable strings _("...") on any line
-            yield from self._extract_marked_strings(line, line_num, file_id)
+            yield from self._extract_marked_strings(
+                line, line_num, file_id, archive_name=archive_name
+            )
 
             # Strip inline comment (if outside quotes)
             clean_line = self._strip_inline_comment(line).strip()
@@ -422,6 +653,7 @@ class RenPyAdapter(GameAdapter):
                             f"line:{line_num}:choice",
                             text,
                             "Menu Choice",
+                            archive_name=archive_name,
                         )
                         if unit:
                             yield unit
@@ -442,7 +674,11 @@ class RenPyAdapter(GameAdapter):
                         text = renpy_unescape_string(raw_str)
                         if text and text.strip():
                             unit = self._create_unit(
-                                file_id, f"line:{line_num}", text, "Narration"
+                                file_id,
+                                f"line:{line_num}",
+                                text,
+                                "Narration",
+                                archive_name=archive_name,
                             )
                             if unit:
                                 yield unit
@@ -471,6 +707,7 @@ class RenPyAdapter(GameAdapter):
                                 f"line:{line_num}",
                                 dialogue,
                                 f"Character: {who}",
+                                archive_name=archive_name,
                             )
                             if unit:
                                 yield unit
@@ -478,7 +715,11 @@ class RenPyAdapter(GameAdapter):
                         text = renpy_unescape_string(raw_str)
                         if text and text.strip():
                             unit = self._create_unit(
-                                file_id, f"line:{line_num}", text, "Narration"
+                                file_id,
+                                f"line:{line_num}",
+                                text,
+                                "Narration",
+                                archive_name=archive_name,
                             )
                             if unit:
                                 yield unit
@@ -506,6 +747,7 @@ class RenPyAdapter(GameAdapter):
                                 f"line:{line_num}",
                                 text,
                                 f"Character: {who}",
+                                archive_name=archive_name,
                             )
                             if unit:
                                 yield unit
@@ -523,6 +765,7 @@ class RenPyAdapter(GameAdapter):
                             f"line:{line_num}",
                             text,
                             f"Character: {who}",
+                            archive_name=archive_name,
                         )
                         if unit:
                             yield unit
@@ -532,7 +775,11 @@ class RenPyAdapter(GameAdapter):
             i += 1
 
     def _extract_marked_strings(
-        self, line: str, line_num: int, file_id: str
+        self,
+        line: str,
+        line_num: int,
+        file_id: str,
+        archive_name: Optional[str] = None,
     ) -> Iterator[TranslationUnit]:
         """
         Extracts explicitly marked translatable strings _("...") on any line.
@@ -546,6 +793,7 @@ class RenPyAdapter(GameAdapter):
                     f"line:{line_num}:str:{idx}",
                     text,
                     "Explicit String _()",
+                    archive_name=archive_name,
                 )
                 if unit:
                     yield unit
@@ -604,16 +852,26 @@ class RenPyAdapter(GameAdapter):
         return line
 
     def _create_unit(
-        self, file_id: str, locator: str, text: str, context: str = ""
+        self,
+        file_id: str,
+        locator: str,
+        text: str,
+        context: str = "",
+        archive_name: Optional[str] = None,
     ) -> Optional[TranslationUnit]:
         if not text or not text.strip():
             return None
+        full_context = context
+        if archive_name:
+            tag = f"[archive: {archive_name}]"
+            full_context = f"{context} {tag}".strip() if context else tag
+
         return TranslationUnit(
             id=f"{file_id}::{locator}",
             file_id=file_id,
             locator=locator,
             source_text=text,
-            context=context,
+            context=full_context,
             tokens_json="[]",
             source_hash=self._hash_text(text),
         )

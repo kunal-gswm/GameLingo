@@ -177,6 +177,26 @@ if __name__ == "__main__":
             tmp_files = list(game_data.glob("gamelingo_*.tmp"))
             assert len(tmp_files) == 0, "Staging files left behind!"
 
+            # 10. Verify Ren'Py RPA archive extraction
+            from gamelingo.adapters.renpy import RenPyAdapter
+            from gamelingo.adapters.renpy_rpa import create_synthetic_rpa
+
+            renpy_game = temp_path / "renpy_game"
+            (renpy_game / "game").mkdir(parents=True)
+            create_synthetic_rpa(
+                renpy_game / "game" / "archive.rpa",
+                {
+                    "script.rpy": b'label start:\n    "Hello RenPy"\n',
+                },
+                version="RPA-3.0",
+            )
+            renpy_adapter = RenPyAdapter()
+            r_units = list(renpy_adapter.extract(renpy_game))
+            assert len(r_units) == 1, (
+                "Failed to extract Ren'Py unit in packaged workflow!"
+            )
+            assert r_units[0].source_text == "Hello RenPy"
+
             print("Synthetic workflow test passed.")
         sys.exit(0)
 

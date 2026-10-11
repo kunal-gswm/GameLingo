@@ -11,7 +11,7 @@ Write-Host "Building with PyInstaller..."
 if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
 if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
 
-uv run pyinstaller --name GameLingo --onedir --noconfirm --noconsole --clean --hidden-import argostranslate src/gamelingo/gui/main.py
+uv run pyinstaller GameLingo.spec --noconfirm
 
 Write-Host "Build complete! Preparing distribution..."
 Copy-Item README.md dist/GameLingo/

@@ -200,9 +200,9 @@ class DashboardPage(QWidget):
 
         self.lbl_renpy_desc = QLabel(
             "Engine: Ren'Py Visual Novel\n"
-            "Supported input: Accessible game/*.rpy source scripts\n"
-            "Output: game/tl/<language>/strings.rpy native string translations\n"
-            "Limitation: .rpa archive extraction and .rpyc decompilation are not supported (source scripts required)."
+            "Supported input: Accessible game/*.rpy scripts or archived .rpa / compiled .rpyc scripts\n"
+            "Output: game/tl/<language>/strings.rpy native translation patches\n"
+            "Features: Safe read-only RPA archive reading, isolated .rpyc script decompilation, and patch generation."
         )
         self.lbl_renpy_desc.setFont(QFont("Segoe UI", 10))
         self.lbl_renpy_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
@@ -500,12 +500,19 @@ class DashboardPage(QWidget):
                 diag = detected_adapter.diagnose(check_path)
                 self._update_pill(self.pill_mv, "Not Detected", "neutral")
                 self._update_pill(self.pill_mz, "Not Detected", "neutral")
-                if diag["has_source_scripts"]:
+                if diag.get("has_source_scripts"):
                     self._update_pill(self.pill_renpy, "Supported", "info")
                     self._update_structure_status(
                         "Structure Verified",
                         "info",
                         f"Valid Ren'Py visual novel structure verified ({diag['rpy_count']} .rpy source scripts found). Engine detected: {version_desc}. Native translation target: game/tl/<language>/strings.rpy.",
+                    )
+                elif diag.get("has_extractable_scripts"):
+                    self._update_pill(self.pill_renpy, "Supported", "info")
+                    self._update_structure_status(
+                        "Structure Verified",
+                        "info",
+                        diag["message"],
                     )
                 else:
                     self._update_pill(self.pill_renpy, "Source Required", "warning")

@@ -31,3 +31,7 @@ https://github.com/pytorch/pytorch
 Bundled as a dependency of Stanza.
 
 The Argos Translate `translate-ja_en` model (if downloaded separately via the application) is published under CC0.
+
+rpycdec (MIT License)
+https://github.com/JulianW/rpycdec
+Used for isolated read-only decompilation of compiled Ren'Py script files (.rpyc/.rpymc).

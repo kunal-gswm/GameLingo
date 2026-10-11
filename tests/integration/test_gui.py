@@ -556,11 +556,9 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
     assert "data/" in dash_page.lbl_mz_desc.text()
     assert "game/*.rpy" in dash_page.lbl_renpy_desc.text()
     assert "strings.rpy" in dash_page.lbl_renpy_desc.text()
-    assert "Accessible game/*.rpy source scripts" in dash_page.lbl_renpy_desc.text()
-    assert (
-        ".rpa archive extraction and .rpyc decompilation are not supported"
-        in dash_page.lbl_renpy_desc.text()
-    )
+    assert "game/*.rpy scripts or archived .rpa" in dash_page.lbl_renpy_desc.text()
+    assert "archive reading" in dash_page.lbl_renpy_desc.text().lower()
+    assert "decompilation" in dash_page.lbl_renpy_desc.text().lower()
 
     # 3. Unsupported scope notice
     assert "Save Files Unsupported" in dash_page.lbl_unsupported_notice.text()
@@ -620,7 +618,7 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
     assert "Not Detected" in dash_page.pill_mv.text()
     assert "Not Detected" in dash_page.pill_mz.text()
 
-    # 7. Ren'Py with compiled .rpyc only
+    # 7. Ren'Py with compiled .rpyc only (decompilation supported when decompiler is available)
     rpyc_dir = tmp_path / "rpyc_game"
     rpyc_dir.mkdir()
     (rpyc_dir / "game").mkdir()
@@ -629,11 +627,18 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
 
     dash_page.state.game_path = rpyc_dir
     dash_page.refresh()
-    assert "Source Missing" in dash_page.lbl_structure_pill.text()
+    assert "Structure Verified" in dash_page.lbl_structure_pill.text()
     assert ".rpyc" in dash_page.lbl_structure_desc.text()
-    assert "Source Required" in dash_page.pill_renpy.text()
+    assert "Supported" in dash_page.pill_renpy.text()
     assert "Not Detected" in dash_page.pill_mv.text()
     assert "Not Detected" in dash_page.pill_mz.text()
+
+    # When decompiler is unavailable, verify fallback to Source Missing and Source Required
+    with patch("gamelingo.adapters.renpy.is_decompiler_available", return_value=False):
+        dash_page.refresh()
+        assert "Source Missing" in dash_page.lbl_structure_pill.text()
+        assert ".rpyc" in dash_page.lbl_structure_desc.text()
+        assert "Source Required" in dash_page.pill_renpy.text()
 
 
 def test_selected_game_separate_from_model_state(qapp, tmp_path):

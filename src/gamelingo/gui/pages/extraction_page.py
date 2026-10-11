@@ -215,16 +215,35 @@ class ExtractionPage(QWidget):
             if adapter and adapter.adapter_id == "renpy":
                 if hasattr(adapter, "diagnose"):
                     diag = adapter.diagnose(self.state.game_path)
-                    if not diag.get("has_source_scripts", True):
+                    if not (
+                        diag.get("has_source_scripts")
+                        or diag.get("has_extractable_scripts")
+                    ):
                         can_extract = False
                         source_limitation_msg = diag.get(
                             "message",
-                            "Readable source scripts are required for extraction. Compiled or archived scripts cannot be extracted.",
+                            "Readable or extractable scripts are required for extraction.",
                         )
                     else:
-                        self.lbl_info.setText(
-                            f"Detected Ren'Py Visual Novel: Ready to extract dialogue, menus, and marked strings from {diag.get('rpy_count', 0)} .rpy source scripts."
+                        mode = diag.get("extraction_mode", "source")
+                        total_s = (
+                            diag.get("rpy_count", 0)
+                            + diag.get("archive_rpy_count", 0)
+                            + diag.get("rpyc_count", 0)
+                            + diag.get("archive_rpyc_count", 0)
                         )
+                        if "decompile" in mode:
+                            self.lbl_info.setText(
+                                f"Detected Ren'Py Visual Novel: Ready to decompile and extract text from {total_s} script(s)."
+                            )
+                        elif "archive" in mode:
+                            self.lbl_info.setText(
+                                f"Detected Ren'Py Visual Novel: Ready to extract text from {total_s} archived script(s)."
+                            )
+                        else:
+                            self.lbl_info.setText(
+                                f"Detected Ren'Py Visual Novel: Ready to extract dialogue, menus, and marked strings from {diag.get('rpy_count', 0)} .rpy source scripts."
+                            )
             elif adapter and adapter.adapter_id == "rpgmaker_mv_mz":
                 self.lbl_info.setText(
                     "Detected RPG Maker MV/MZ: Ready to extract dialogue, choices, and database terms from JSON data files."
@@ -237,7 +256,7 @@ class ExtractionPage(QWidget):
         else:
             self.lbl_game_path.setText("No game selected.")
             self.lbl_info.setText(
-                "Supports RPG Maker MV/MZ (JSON data files) and Ren'Py Visual Novel (accessible game/*.rpy source scripts)."
+                "Supports RPG Maker MV/MZ (JSON data files) and Ren'Py Visual Novel (.rpy scripts or .rpa archives)."
             )
 
         self.btn_extract.setEnabled(can_extract)
@@ -313,7 +332,9 @@ class ExtractionPage(QWidget):
 
         if hasattr(adapter, "diagnose"):
             diag = adapter.diagnose(self.state.game_path)
-            if not diag.get("has_source_scripts", True):
+            if not (
+                diag.get("has_source_scripts") or diag.get("has_extractable_scripts")
+            ):
                 QMessageBox.warning(
                     self,
                     "Extraction Unsupported",

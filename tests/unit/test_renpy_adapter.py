@@ -51,17 +51,23 @@ def test_detect_rejects_random_folder_with_single_rpy(tmp_path: Path):
     assert conf == 0.0
 
 
-def test_detect_compiled_rpyc_only_reports_limitation(tmp_path: Path):
+def test_detect_compiled_rpyc_only_reports_limitation(tmp_path: Path, monkeypatch):
     game_dir = tmp_path / "game"
     game_dir.mkdir()
     (game_dir / "options.rpyc").write_bytes(b"\x00\x00RENPYC")
     (game_dir / "script.rpyc").write_bytes(b"\x00\x00RENPYC")
 
     adapter = RenPyAdapter()
+
+    # When decompiler is unavailable, report limitation
+    monkeypatch.setattr(
+        "gamelingo.adapters.renpy.is_decompiler_available", lambda: False
+    )
     diag = adapter.diagnose(tmp_path)
 
     assert diag["is_renpy"] is True
     assert diag["has_source_scripts"] is False
+    assert diag["has_extractable_scripts"] is False
     assert diag["rpyc_count"] == 2
     assert "compiled .rpyc" in diag["message"]
     assert "Decompilation of .rpyc files is not supported" in diag["message"]
@@ -70,6 +76,19 @@ def test_detect_compiled_rpyc_only_reports_limitation(tmp_path: Path):
     assert supported is True
     assert "Compiled .rpyc only" in version
     assert conf == 0.5
+
+    # When decompiler is available (default with rpycdec), report decompile capability
+    monkeypatch.setattr(
+        "gamelingo.adapters.renpy.is_decompiler_available", lambda: True
+    )
+    diag_avail = adapter.diagnose(tmp_path)
+    assert diag_avail["has_extractable_scripts"] is True
+    assert "Decompilation and text extraction available" in diag_avail["message"]
+
+    supported_avail, version_avail, conf_avail = adapter.detect(tmp_path)
+    assert "compiled scripts" in version_avail.lower()
+    assert "decompiler ready" in version_avail.lower()
+    assert conf_avail == 1.0
 
 
 def test_extract_renpy_dialogue_narration_menus(tmp_path: Path):
