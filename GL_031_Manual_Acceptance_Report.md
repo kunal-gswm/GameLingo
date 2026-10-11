@@ -172,3 +172,7 @@ External beta testing is **JUSTIFIED WITH QUALIFICATIONS**:
 - **Automated Tests**: 95 passed, 0 skipped, 0 failed.
 - **Packaged Smoke & Workflow**: PASS.
 - **Manual Interactive Acceptance**: Documented with full Runbook and pending live human session.
+- **Documentation Commit**: [`26718ef557f300c0293077e6822c6085a5a1f6a1`](https://github.com/kunal-gswm/GameLingo/commit/26718ef557f300c0293077e6822c6085a5a1f6a1)
+- **Verified GitHub Actions Run**: [Run #45 (Success)](https://github.com/kunal-gswm/GameLingo/actions/runs/38126715529)
+  - `Core Tests & Linting`: Success
+  - `GUI Tests`: Success
