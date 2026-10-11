@@ -5,8 +5,10 @@
 This report documents the verification, rebuild, and acceptance testing of the GameLingo Windows x64 release candidate distribution package, ensuring all latest safety and offline Argos setup fixes from GL-028 and GL-028.1 are incorporated into the distributable artifact.
 
 - **Target Repository**: `https://github.com/kunal-gswm/GameLingo`
-- **Source Commit**: `ba2cf0dbd83c732c7cb490960fc6497b4603cd63`
-- **Verified CI Run**: `https://github.com/kunal-gswm/GameLingo/actions/runs/38112737871` (Run 40, Conclusion: Success)
+- **Source Commit Rebuilt**: `ba2cf0dbd83c732c7cb490960fc6497b4603cd63`
+- **Verified Source CI Run**: `https://github.com/kunal-gswm/GameLingo/actions/runs/38112737871` (Run 40, Conclusion: Success)
+- **Report & Documentation Commit**: `5733f6bb7de3e4cd02b9fb01a54d51a82cec00b3`
+- **Verified Documentation CI Run**: `https://github.com/kunal-gswm/GameLingo/actions/runs/38114583853` (Run 41, Conclusion: Success)
 
 ---
 
