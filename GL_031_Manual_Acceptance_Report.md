@@ -30,15 +30,24 @@ The Windows x64 binary was rebuilt using `build_windows.ps1` from a clean reposi
 | **Package Size** | 273,214,225 bytes |
 | **Package SHA-256** | `28787D87098FAFD90DC22D3D9302021CFFFA64BABD77183B5FB454A15A400B92` |
 
-### 1.2 Historical Checksum Archive
+### 1.2 Historical Checksum Archive & Reconciliation
 
-To preserve clear historical records rather than overwriting provenance logs:
+To preserve clear historical records rather than overwriting provenance logs, each milestone's artifact records have been reconciled directly against committed reports and build evidence:
 
-| Milestone / Artifact | Commit SHA | Archive Size | SHA-256 Checksum |
-| :--- | :--- | :--- | :--- |
-| **GL-028 / GL-029** | `ba2cf0d` | 273,158,111 bytes | `8029584347719600D76DC5FF3E62F1E4085489CD762A4E0B49FE4490B6577D53` |
-| **GL-030 Initial** | `1cd6a6a` | 273,214,376 bytes | `549611E3B68E574E32B38021E46E3F579E9EA77A04DBEE40A1C1F5201D823DE0` |
-| **GL-031 Verified** | `6459f53` | 273,214,225 bytes | `28787D87098FAFD90DC22D3D9302021CFFFA64BABD77183B5FB454A15A400B92` |
+| Milestone / Artifact | Source Commit SHA | Archive Size | SHA-256 Checksum | Supporting Evidence / Provenance Source |
+| :--- | :--- | :--- | :--- | :--- |
+| **GL-027 Release Candidate** | `5849436` | 273,209,329 bytes | `6B70739FD3FB348418C2752E627BB92B1032A9FF062A88BD1FD9193B8A61B0D5` | `GL_027_Release_Candidate_Report.md` (Lines 21-25) |
+| **GL-028 Interim Build** | `3efb2bc` | *Unrecorded* | `7DF88CA1F7B34A5AFFC4517970AF1DBC21D56F703495E7402FA5FF86CC6E3197` | `GL_028_Argos_Integration_Report.md` (Lines 52-55) |
+| **GL-029 Verified Rebuild** | `ba2cf0d` | 273,214,028 bytes | `418E11509FE9DE5FD662E47269352E09F546A14097FC1F719608347BEFF3B309` | `GL_029_Release_Verification_Report.md` (Lines 53-56) |
+| **GL-030 Initial Rebuild** | `1cd6a6a` | 273,214,376 bytes | `549611E3B68E574E32B38021E46E3F579E9EA77A04DBEE40A1C1F5201D823DE0` | `GL_030_Real_Game_Pilot_Report.md` (Lines 9-11) |
+| **GL-031 Verified Build** | `6459f53` | 273,214,225 bytes | `28787D87098FAFD90DC22D3D9302021CFFFA64BABD77183B5FB454A15A400B92` | `dist\GameLingo-Windows-x64.zip.sha256` (Verified Clean Source) |
+
+#### Investigation & Reconciliation of Unverified Artifact Entry
+- **Erroneous Entry Investigated**: The draft GL-031 table contained an entry citing SHA-256 `8029584347719600D76DC5FF3E62F1E4085489CD762A4E0B49FE4490B6577D53` and size `273,158,111 bytes` for source commit `ba2cf0d`.
+- **Findings**:
+  1. An exhaustive audit of committed historical reports (`GL_028_Argos_Integration_Report.md` and `GL_029_Release_Verification_Report.md`) confirms that the actual artifact built and verified from commit `ba2cf0dbd83c732c7cb490960fc6497b4603cd63` had an archive size of `273,214,028 bytes` and SHA-256 `418E11509FE9DE5FD662E47269352E09F546A14097FC1F719608347BEFF3B309`.
+  2. No build artifact corresponding to hash `80295843...` or size `273,158,111 bytes` exists in any committed report, build log, or checksum file.
+  3. Consequently, that entry has been **labeled UNVERIFIED and removed** from the verified artifact register, and GL-028 and GL-029 have been separated into distinct, evidence-backed records.
 
 ### 1.3 Archive Contents & Exclusions Audit
 
