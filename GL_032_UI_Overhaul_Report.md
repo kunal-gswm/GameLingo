@@ -183,5 +183,11 @@ UI screenshots were rendered and inspected across both reference window sizes:
 
 ## 7. GitHub Actions CI Verification
 
-- **Final Commit SHA**: *Recorded upon push*
-- **CI Run URL**: *Recorded upon workflow completion*
+- **Verified Commit SHA**: [`96ab735fed444e106b1f4417bd7c572e0475f191`](https://github.com/kunal-gswm/GameLingo/commit/96ab735fed444e106b1f4417bd7c572e0475f191)
+- **CI Run Number**: 49
+- **CI Run URL**: [`https://github.com/kunal-gswm/GameLingo/actions/runs/38134067920`](https://github.com/kunal-gswm/GameLingo/actions/runs/38134067920)
+- **Workflow Status**: `completed`
+- **Conclusion**: `success`
+- **Job Results**:
+  - `Core Tests & Linting`: **PASS** (Job ID: `114454210918`)
+  - `GUI Tests`: **PASS** (Job ID: `114454211088`)
