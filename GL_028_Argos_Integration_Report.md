@@ -48,9 +48,21 @@ Make GameLingo's Japanese-to-English translation provider usable by a Windows de
 ### End-to-End Acceptance (Windows Packaged Build)
 - Built `GameLingo.exe` using `pyinstaller` (via `build_windows.ps1`).
 - Executed `--smoke-test` and `--test-workflow` successfully against the packaged executable.
-- Packaged Zip Checksum (SHA-256): `7DF88CA1F7B34A5AFFC4517970AF1DBC21D56F703495E7402FA5FF86CC6E3197`
-- Provenance Source Commit: `3efb2bc`
-- Verified CI Run (Passing): `https://github.com/kunal-gswm/GameLingo/actions/runs/38112658743` (commit `5949cf2`)
+
+#### Initial Build (GL-028 Interim)
+- **Packaged Zip Checksum (SHA-256)**: `7DF88CA1F7B34A5AFFC4517970AF1DBC21D56F703495E7402FA5FF86CC6E3197`
+- **Provenance Source Commit**: `3efb2bc`
+
+#### Rebuilt Release Artifact (GL-029 Rebuild)
+- **Packaged Zip Checksum (SHA-256)**: `418E11509FE9DE5FD662E47269352E09F546A14097FC1F719608347BEFF3B309`
+- **File Size**: 273,214,028 bytes
+- **Filename**: `GameLingo-Windows-x64.zip`
+- **Provenance Source Commit**: `ba2cf0d`
+- **Verified CI Run (Passing)**: `https://github.com/kunal-gswm/GameLingo/actions/runs/38112658743` (commit `5949cf2`) / `https://github.com/kunal-gswm/GameLingo/actions/runs/38112737871` (commit `ba2cf0d`)
+- **Extracted Acceptance Testing**: Executed `--smoke-test` and `--test-workflow` against an extracted copy in a spaced path (`dist/GL029 acceptance test/GameLingo/GameLingo.exe`) with exit code 0.
+
+### Remaining Limitations
+- While CLI, backend translation pipeline, and headless GUI components are fully covered by automated test suites and synthetic packaged workflows, manual interactive exploratory testing of the desktop GUI in non-headless desktop environments and pilot testing on production RPG Maker commercial games remain ongoing quality objectives.
 
 ## Conclusion
 GL-028 completes the offline translation capability requirement, bridging the gap between local application usage and first-run model provisioning. No automatic silent downloads are triggered, preserving bandwidth and user consent. GameLingo remains 100% offline-ready for users bringing their own `.argosmodel` packages.
