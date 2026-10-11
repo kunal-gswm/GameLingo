@@ -544,7 +544,11 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
     dash_page = dash_win.pages[0]
     dash_page.refresh()
 
-    # 1. Format descriptions
+    # 1. Dashboard Subtitle Engine-Neutrality
+    assert "RPG Maker" not in dash_win.header_desc.text()
+    assert "detected game engine" in dash_win.header_desc.text()
+
+    # 2. Format descriptions
     assert "RPG Maker MV" in dash_page.lbl_mv_title.text()
     assert "RPG Maker MZ" in dash_page.lbl_mz_title.text()
     assert "Ren'Py Visual Novel" in dash_page.lbl_renpy_title.text()
@@ -552,14 +556,22 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
     assert "data/" in dash_page.lbl_mz_desc.text()
     assert "game/*.rpy" in dash_page.lbl_renpy_desc.text()
     assert "strings.rpy" in dash_page.lbl_renpy_desc.text()
+    assert "Accessible game/*.rpy source scripts" in dash_page.lbl_renpy_desc.text()
+    assert (
+        ".rpa archive extraction and .rpyc decompilation are not supported"
+        in dash_page.lbl_renpy_desc.text()
+    )
 
-    # 2. Unsupported scope notice
+    # 3. Unsupported scope notice
     assert "Save Files Unsupported" in dash_page.lbl_unsupported_notice.text()
     assert "Binary Assets Unsupported" in dash_page.lbl_unsupported_notice.text()
     assert ".rpyc" in dash_page.lbl_unsupported_notice.text()
 
-    # 3. Initial unselected state
+    # 4. Initial unselected state
     assert "No Game Selected" in dash_page.lbl_structure_pill.text()
+    assert "Supported" in dash_page.pill_mv.text()
+    assert "Supported" in dash_page.pill_mz.text()
+    assert "Supported" in dash_page.pill_renpy.text()
 
     # 4. Folder with missing expected data structure
     invalid_dir = tmp_path / "invalid_game"
@@ -588,6 +600,8 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
         "ValidGame" in dash_page.lbl_structure_desc.text()
         or "data/" in dash_page.lbl_structure_desc.text()
     )
+    assert "Supported" in dash_page.pill_mz.text()
+    assert "Not Detected" in dash_page.pill_renpy.text()
 
     # 6. Valid Ren'Py game directory
     renpy_dir = tmp_path / "renpy_game"
@@ -602,6 +616,9 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
     dash_page.refresh()
     assert "Structure Verified" in dash_page.lbl_structure_pill.text()
     assert "Ren'Py" in dash_page.lbl_structure_desc.text()
+    assert "Supported" in dash_page.pill_renpy.text()
+    assert "Not Detected" in dash_page.pill_mv.text()
+    assert "Not Detected" in dash_page.pill_mz.text()
 
     # 7. Ren'Py with compiled .rpyc only
     rpyc_dir = tmp_path / "rpyc_game"
@@ -614,6 +631,9 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
     dash_page.refresh()
     assert "Source Missing" in dash_page.lbl_structure_pill.text()
     assert ".rpyc" in dash_page.lbl_structure_desc.text()
+    assert "Source Required" in dash_page.pill_renpy.text()
+    assert "Not Detected" in dash_page.pill_mv.text()
+    assert "Not Detected" in dash_page.pill_mz.text()
 
 
 def test_selected_game_separate_from_model_state(qapp, tmp_path):
@@ -725,6 +745,8 @@ def test_dashboard_select_game_renpy_does_not_show_rpgmaker_error(qapp, tmp_path
         assert mock_warn.called
         assert not mock_info.called
         assert "Source Scripts Required" in mock_warn.call_args[0][1]
+        assert "Source Required" in dash_page.pill_renpy.text()
+        assert "Not Detected" in dash_page.pill_mv.text()
 
 
 def test_extraction_page_gating_source_vs_compiled(qapp, tmp_path):

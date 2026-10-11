@@ -30,7 +30,7 @@ from gamelingo.gui.theme import (
 PAGE_METADATA = [
     {
         "title": "Project Dashboard",
-        "desc": "Overview of your workspace, detected RPG Maker game, and translation progress.",
+        "desc": "Overview of your workspace, detected game engine, and translation progress.",
     },
     {
         "title": "String Extraction",
@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
         brand_title.setStyleSheet(f"color: {TEXT_PRIMARY}; padding-left: 6px;")
         sidebar_layout.addWidget(brand_title)
 
-        brand_subtitle = QLabel("RPG Maker Translator")
+        brand_subtitle = QLabel("Local Game Translator")
         brand_subtitle.setFont(QFont("Segoe UI", 10))
         brand_subtitle.setStyleSheet(
             f"color: {TEXT_MUTED}; padding-left: 6px; margin-bottom: 12px;"

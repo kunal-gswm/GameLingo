@@ -133,8 +133,7 @@ class ExtractionPage(QWidget):
         source_layout.addWidget(self.lbl_game_path)
 
         self.lbl_info = QLabel(
-            "Supports RPG Maker MV (`www/data/`) and MZ (`data/`) JSON formats: "
-            "Map dialogue (code 401), Choices (code 102), System terms, Actors, Enemies, Skills, Items, and Map names."
+            "Supports RPG Maker MV/MZ (JSON data files) and Ren'Py Visual Novel (accessible game/*.rpy source scripts)."
         )
         self.lbl_info.setFont(QFont("Segoe UI", 10))
         self.lbl_info.setStyleSheet(f"color: {TEXT_MUTED};")
@@ -213,14 +212,23 @@ class ExtractionPage(QWidget):
         if self.state.game_path:
             self.lbl_game_path.setText(str(self.state.game_path.absolute()))
             adapter, _, conf = detect_adapter(self.state.game_path)
-            if adapter and hasattr(adapter, "diagnose"):
-                diag = adapter.diagnose(self.state.game_path)
-                if not diag.get("has_source_scripts", True):
-                    can_extract = False
-                    source_limitation_msg = diag.get(
-                        "message",
-                        "Readable source scripts are required for extraction. Compiled or archived scripts cannot be extracted.",
-                    )
+            if adapter and adapter.adapter_id == "renpy":
+                if hasattr(adapter, "diagnose"):
+                    diag = adapter.diagnose(self.state.game_path)
+                    if not diag.get("has_source_scripts", True):
+                        can_extract = False
+                        source_limitation_msg = diag.get(
+                            "message",
+                            "Readable source scripts are required for extraction. Compiled or archived scripts cannot be extracted.",
+                        )
+                    else:
+                        self.lbl_info.setText(
+                            f"Detected Ren'Py Visual Novel: Ready to extract dialogue, menus, and marked strings from {diag.get('rpy_count', 0)} .rpy source scripts."
+                        )
+            elif adapter and adapter.adapter_id == "rpgmaker_mv_mz":
+                self.lbl_info.setText(
+                    "Detected RPG Maker MV/MZ: Ready to extract dialogue, choices, and database terms from JSON data files."
+                )
             elif not adapter or conf == 0.0:
                 can_extract = False
                 source_limitation_msg = (
@@ -228,6 +236,9 @@ class ExtractionPage(QWidget):
                 )
         else:
             self.lbl_game_path.setText("No game selected.")
+            self.lbl_info.setText(
+                "Supports RPG Maker MV/MZ (JSON data files) and Ren'Py Visual Novel (accessible game/*.rpy source scripts)."
+            )
 
         self.btn_extract.setEnabled(can_extract)
 

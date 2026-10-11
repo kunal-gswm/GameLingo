@@ -138,8 +138,8 @@ class DashboardPage(QWidget):
         self.lbl_mv_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
         mv_header.addWidget(self.lbl_mv_title)
         mv_header.addStretch()
-        mv_pill = create_status_pill("Supported", "info")
-        mv_header.addWidget(mv_pill)
+        self.pill_mv = create_status_pill("Supported", "info")
+        mv_header.addWidget(self.pill_mv)
         mv_layout.addLayout(mv_header)
 
         self.lbl_mv_desc = QLabel(
@@ -166,8 +166,8 @@ class DashboardPage(QWidget):
         self.lbl_mz_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
         mz_header.addWidget(self.lbl_mz_title)
         mz_header.addStretch()
-        mz_pill = create_status_pill("Supported", "info")
-        mz_header.addWidget(mz_pill)
+        self.pill_mz = create_status_pill("Supported", "info")
+        mz_header.addWidget(self.pill_mz)
         mz_layout.addLayout(mz_header)
 
         self.lbl_mz_desc = QLabel(
@@ -194,15 +194,15 @@ class DashboardPage(QWidget):
         self.lbl_renpy_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
         renpy_header.addWidget(self.lbl_renpy_title)
         renpy_header.addStretch()
-        renpy_pill = create_status_pill("Supported", "info")
-        renpy_header.addWidget(renpy_pill)
+        self.pill_renpy = create_status_pill("Supported", "info")
+        renpy_header.addWidget(self.pill_renpy)
         renpy_layout.addLayout(renpy_header)
 
         self.lbl_renpy_desc = QLabel(
-            "Target data: game/*.rpy source scripts\n"
+            "Engine: Ren'Py Visual Novel\n"
+            "Supported input: Accessible game/*.rpy source scripts\n"
             "Output: game/tl/<language>/strings.rpy native string translations\n"
-            "Supported: accessible .rpy source files (dialogue, menus, strings)\n"
-            "Limited: games with only compiled .rpyc scripts (source required)"
+            "Limitation: .rpa archive extraction and .rpyc decompilation are not supported (source scripts required)."
         )
         self.lbl_renpy_desc.setFont(QFont("Segoe UI", 10))
         self.lbl_renpy_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
@@ -228,8 +228,8 @@ class DashboardPage(QWidget):
 
         self.lbl_unsupported_notice = QLabel(
             "• Save Files Unsupported: Runtime save states (*.rpgsave, save/, www/save/) are dynamic progress data and are not translated or modified.\n"
-            "• Binary Assets Unsupported: Media assets (images in img/, audio in audio/, movies in movies/, fonts, executables Game.exe/nw.exe, compiled plugins) are unsupported. GameLingo operates exclusively on text dialogue and database definitions in JSON data files.\n"
-            "• Compiled Scripts (.rpyc) Limited: Ren'Py games with only compiled .rpyc files require original .rpy source files for text extraction. Decompilation of .rpyc files is unsupported."
+            "• Binary Assets Unsupported: Media assets (images in img/, audio in audio/, movies in movies/, fonts, executables Game.exe/nw.exe/island.exe, compiled plugins) are unsupported. GameLingo operates exclusively on text dialogue, database definitions, and source script files.\n"
+            "• Compiled & Archived Scripts Limited: Ren'Py games with only compiled .rpyc files or .rpa archives require original .rpy source files for text extraction. Decompilation of .rpyc files and .rpa archive extraction are unsupported."
         )
         self.lbl_unsupported_notice.setFont(QFont("Segoe UI", 10))
         self.lbl_unsupported_notice.setStyleSheet(f"color: {TEXT_SECONDARY};")
@@ -258,7 +258,7 @@ class DashboardPage(QWidget):
         structure_layout.addLayout(struct_header_row)
 
         self.lbl_structure_desc = QLabel(
-            "No game directory selected. Choose an RPG Maker MV or MZ installation folder above to inspect and validate its data structure."
+            "No game directory selected. Choose an RPG Maker MV/MZ or Ren'Py installation folder above to inspect and validate its structure."
         )
         self.lbl_structure_desc.setFont(QFont("Segoe UI", 10))
         self.lbl_structure_desc.setStyleSheet(f"color: {TEXT_MUTED};")
@@ -277,10 +277,13 @@ class DashboardPage(QWidget):
         self.stage_labels = []
         stages = [
             ("1. Open Workspace", "Initialize project database and backup directory."),
-            ("2. Select Game", "Detect RPG Maker MV or MZ installation folder."),
+            (
+                "2. Select Game",
+                "Detect game installation folder (RPG Maker MV/MZ or Ren'Py).",
+            ),
             (
                 "3. Extract Strings",
-                "Parse map dialogue, database terms, and system files.",
+                "Parse dialogue, script strings, and game data.",
             ),
             (
                 "4. Translate Units",
@@ -398,6 +401,29 @@ class DashboardPage(QWidget):
                 f"background-color: {BG_SURFACE_ALT}; color: {TEXT_MUTED}; border: 1px solid {BORDER_SUBTLE}; border-radius: 4px; padding: 2px 8px;"
             )
 
+    def _update_pill(self, pill: QLabel, text: str, status_type: str):
+        pill.setText(f" {text} ")
+        if status_type == "success":
+            pill.setStyleSheet(
+                "background-color: #19351e; color: #81c784; border: 1px solid #2e7d32; border-radius: 4px; padding: 2px 8px;"
+            )
+        elif status_type == "info":
+            pill.setStyleSheet(
+                "background-color: #162b42; color: #90caf9; border: 1px solid #3d72a4; border-radius: 4px; padding: 2px 8px;"
+            )
+        elif status_type == "warning":
+            pill.setStyleSheet(
+                "background-color: #38240f; color: #fbbf24; border: 1px solid #b45309; border-radius: 4px; padding: 2px 8px;"
+            )
+        elif status_type == "danger":
+            pill.setStyleSheet(
+                "background-color: #381515; color: #f87171; border: 1px solid #c53030; border-radius: 4px; padding: 2px 8px;"
+            )
+        else:
+            pill.setStyleSheet(
+                f"background-color: {BG_SURFACE_ALT}; color: {TEXT_MUTED}; border: 1px solid {BORDER_SUBTLE}; border-radius: 4px; padding: 2px 8px;"
+            )
+
     def _update_structure_status(self, text: str, status_type: str, details: str):
         self.lbl_structure_pill.setText(f" {text} ")
         if status_type == "success":
@@ -451,12 +477,18 @@ class DashboardPage(QWidget):
         # 3. Check game data structure
         check_path = self.selected_invalid_game_path or self.state.game_path
         if check_path is None:
+            self._update_pill(self.pill_mv, "Supported", "info")
+            self._update_pill(self.pill_mz, "Supported", "info")
+            self._update_pill(self.pill_renpy, "Supported", "info")
             self._update_structure_status(
                 "No Game Selected",
                 "neutral",
                 "No game directory selected. Choose an RPG Maker MV/MZ or Ren'Py installation folder above to inspect and validate its structure.",
             )
         elif not check_path.exists():
+            self._update_pill(self.pill_mv, "Not Detected", "neutral")
+            self._update_pill(self.pill_mz, "Not Detected", "neutral")
+            self._update_pill(self.pill_renpy, "Not Detected", "neutral")
             self._update_structure_status(
                 "Directory Missing",
                 "danger",
@@ -466,19 +498,31 @@ class DashboardPage(QWidget):
             detected_adapter, version_desc, confidence = detect_adapter(check_path)
             if detected_adapter and detected_adapter.adapter_id == "renpy":
                 diag = detected_adapter.diagnose(check_path)
+                self._update_pill(self.pill_mv, "Not Detected", "neutral")
+                self._update_pill(self.pill_mz, "Not Detected", "neutral")
                 if diag["has_source_scripts"]:
+                    self._update_pill(self.pill_renpy, "Supported", "info")
                     self._update_structure_status(
                         "Structure Verified",
                         "info",
                         f"Valid Ren'Py visual novel structure verified ({diag['rpy_count']} .rpy source scripts found). Engine detected: {version_desc}. Native translation target: game/tl/<language>/strings.rpy.",
                     )
                 else:
+                    self._update_pill(self.pill_renpy, "Source Required", "warning")
                     self._update_structure_status(
                         "Source Missing",
                         "danger",
                         diag["message"],
                     )
             elif detected_adapter and detected_adapter.adapter_id == "rpgmaker_mv_mz":
+                self._update_pill(self.pill_renpy, "Not Detected", "neutral")
+                if (check_path / "www" / "data" / "System.json").exists():
+                    self._update_pill(self.pill_mv, "Supported", "info")
+                    self._update_pill(self.pill_mz, "Not Detected", "neutral")
+                else:
+                    self._update_pill(self.pill_mz, "Supported", "info")
+                    self._update_pill(self.pill_mv, "Not Detected", "neutral")
+
                 data_dir = detected_adapter._get_data_dir(check_path)
                 try:
                     json_count = len(list(data_dir.glob("*.json"))) if data_dir else 0
@@ -491,6 +535,9 @@ class DashboardPage(QWidget):
                     f"Valid RPG Maker data structure verified at '{rel_data}/' ({json_count} JSON data files found, System.json present). Engine detected: {version_desc}.",
                 )
             else:
+                self._update_pill(self.pill_mv, "Not Detected", "neutral")
+                self._update_pill(self.pill_mz, "Not Detected", "neutral")
+                self._update_pill(self.pill_renpy, "Not Detected", "neutral")
                 missing_reasons = []
                 data_candidates = [check_path / "data", check_path / "www" / "data"]
                 has_any_data_dir = any(d.is_dir() for d in data_candidates)
