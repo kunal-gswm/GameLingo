@@ -650,7 +650,7 @@ def main() -> int:
     c_pc.add_argument(
         "--activate-language",
         action="store_true",
-        help="Include Ren'Py language activation script (00_gamelingo_activate.rpy)",
+        help="Include Ren'Py language activation script (gamelingo_activate.rpy)",
     )
     c_pc.set_defaults(func=cmd_plan_create)
 

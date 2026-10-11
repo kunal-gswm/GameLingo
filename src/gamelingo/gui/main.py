@@ -26,6 +26,14 @@ if __name__ == "__main__":
 
         app = QCoreApplication(sys.argv)
         print("Qt initialized successfully.")
+
+        import rpycdec
+
+        from gamelingo.adapters.renpy_decompiler import is_decompiler_available
+
+        assert is_decompiler_available() is True
+        print(f"rpycdec {getattr(rpycdec, '__version__', 'ready')} import verified.")
+
         print("Smoke test passed.")
         sys.exit(0)
 

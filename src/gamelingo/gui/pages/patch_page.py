@@ -104,7 +104,7 @@ class PatchPage(QWidget):
         patch_layout.addLayout(btn_row)
 
         self.chk_activate_lang = QCheckBox(
-            "Include Ren'Py language activation script (00_gamelingo_activate.rpy)"
+            "Include Ren'Py language activation script (gamelingo_activate.rpy)"
         )
         self.chk_activate_lang.setFont(QFont("Segoe UI", 10))
         self.chk_activate_lang.setStyleSheet(f"color: {TEXT_PRIMARY};")

@@ -235,7 +235,7 @@ def generate_strings_rpy(
 def generate_activation_rpy(target_lang: str) -> str:
     """
     Generates an explicit Ren'Py language activation script.
-    Placed at game/00_gamelingo_activate.rpy to activate translations
+    Placed at game/gamelingo_activate.rpy to activate translations
     when the game has no built-in language selector menu.
     """
     return (

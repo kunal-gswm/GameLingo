@@ -325,7 +325,7 @@ def test_renpy_language_activation_patch_lifecycle(renpy_env):
     assert validate_plan(source_dir, plan) is True
 
     preview = preview_plan(plan)
-    assert "00_gamelingo_activate.rpy" in preview
+    assert "gamelingo_activate.rpy" in preview
     assert "Language Activation Script for 'english'" in preview
 
     # 2. Apply plan
@@ -333,7 +333,7 @@ def test_renpy_language_activation_patch_lifecycle(renpy_env):
     assert report["status"] == "success"
 
     target_strings = source_dir / "game" / "tl" / "english" / "strings.rpy"
-    target_act = source_dir / "game" / "00_gamelingo_activate.rpy"
+    target_act = source_dir / "game" / "gamelingo_activate.rpy"
 
     assert target_strings.exists()
     assert target_act.exists()
@@ -347,15 +347,68 @@ def test_renpy_language_activation_patch_lifecycle(renpy_env):
     orig_script = (source_dir / "game" / "script.rpy").read_text(encoding="utf-8")
     assert "こんにちは" in orig_script
 
-    # 3. Restore: must delete both strings.rpy AND 00_gamelingo_activate.rpy!
+    # 3. Restore: must delete both strings.rpy AND gamelingo_activate.rpy!
     backup_path = Path(report["backup_dir"])
     restore_result = execute_restore(
         backup_path,
         source_dir,
-        ["game/tl/english/strings.rpy", "game/00_gamelingo_activate.rpy"],
+        ["game/tl/english/strings.rpy", "game/gamelingo_activate.rpy"],
         overwrite=True,
         execute=True,
     )
     assert restore_result["status"] == "success"
     assert not target_strings.exists()
     assert not target_act.exists()
+
+
+def test_renpy_activation_script_safety_check_prevents_overwrite(tmp_path: Path):
+    source_dir = tmp_path / "renpy_game"
+    game_dir = source_dir / "game"
+    game_dir.mkdir(parents=True)
+    script_rpy = game_dir / "script.rpy"
+    script_rpy.write_text('label start:\n    "Hello"\n', encoding="utf-8")
+
+    # Create a user-authored gamelingo_activate.rpy without GameLingo header
+    user_act = game_dir / "gamelingo_activate.rpy"
+    user_act.write_text(
+        "# User custom script\ninit python:\n    pass\n", encoding="utf-8"
+    )
+
+    u1 = TranslationUnit(
+        id="game/script.rpy::line:2",
+        file_id="game/script.rpy",
+        locator="line:2",
+        source_text="Hello",
+        context="Narration",
+        tokens_json="[]",
+        source_hash="h1",
+        status="approved",
+    )
+    r1 = TranslationRecord(
+        id="r1",
+        unit_id=u1.id,
+        provider="mock",
+        model="m",
+        draft_text="Hola",
+        final_text="Hola",
+        quality_flags="",
+        created_at=0.0,
+        updated_at=0.0,
+    )
+    plan = create_plan(
+        source_dir,
+        "test_proj",
+        [u1],
+        [r1],
+        adapter_id="renpy",
+        target_lang="es",
+        include_activation=True,
+    )
+
+    backup_dir = tmp_path / "backups"
+    report = apply_plan(source_dir, plan, backup_dir, execute=True, overwrite=True)
+
+    assert report["status"] == "failed"
+    assert any("Safety check" in err for err in report["errors"])
+    # Ensure original user script was not modified or overwritten
+    assert "User custom script" in user_act.read_text(encoding="utf-8")

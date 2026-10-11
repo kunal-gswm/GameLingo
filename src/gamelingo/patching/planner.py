@@ -362,9 +362,9 @@ def create_plan(
         ]
         if valid_trans_edits:
             act_rel_path = (
-                "game/00_gamelingo_activate.rpy"
+                "game/gamelingo_activate.rpy"
                 if (source_root_resolved / "game").is_dir()
-                else "00_gamelingo_activate.rpy"
+                else "gamelingo_activate.rpy"
             )
             plan["edits"].append(
                 {

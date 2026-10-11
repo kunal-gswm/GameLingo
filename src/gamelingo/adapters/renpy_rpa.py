@@ -490,7 +490,10 @@ def _parse_rpa_1(
     f.seek(0)
     try:
         compressed_index = f.read()
-        raw_index = zlib.decompress(compressed_index)
+        try:
+            raw_index = zlib.decompress(compressed_index)
+        except Exception:
+            raw_index = zlib.decompressobj().decompress(compressed_index)
         raw_dict = SafeRPAUnpickler(io.BytesIO(raw_index)).load()
     except Exception as e:
         raise RPAFormatError(f"Failed to decompress or parse RPA-1.0 index: {e}") from e
@@ -661,26 +664,32 @@ def create_synthetic_rpa(
         data_bytes[: len(header_fixed)] = header_fixed
 
     elif version == "RPA-1.0":
-        # In RPA-1.0, data comes after or before index. Ren'Py loads loads(zlib.decompress(f.read())) directly from 0.
-        # But members have offset in file.
-        # So we put placeholder index first, then content, then update index.
-        # Simpler: place index at 0, data afterwards.
-        # Let's estimate index size by computing offset.
-        for fn, content in files_dict.items():
-            index[fn] = [(0, len(content))]
+        # In RPA-1.0, the index is located at offset 0 (beginning of the archive).
+        # We iterate to find the fixed-point length of the compressed index blob,
+        # ensuring that chunk offsets recorded in the index match the final blob length.
+        index: Dict[str, List[Tuple[Any, ...]]] = {}
+        idx_len = 0
+        final_idx_blob = b""
+        for _ in range(25):
+            curr_offset = idx_len
+            for fn, content in files_dict.items():
+                index[fn] = [(curr_offset, len(content))]
+                curr_offset += len(content)
 
-        # serialize index to find size
-        idx_blob = zlib.compress(pickle.dumps(index, protocol=2))
-        base_offset = len(idx_blob)
+            idx_blob = zlib.compress(pickle.dumps(index, protocol=2))
+            if len(idx_blob) == idx_len:
+                final_idx_blob = idx_blob
+                break
+            idx_len = len(idx_blob)
+            final_idx_blob = idx_blob
+        else:
+            curr_offset = len(final_idx_blob)
+            for fn, content in files_dict.items():
+                index[fn] = [(curr_offset, len(content))]
+                curr_offset += len(content)
+            final_idx_blob = zlib.compress(pickle.dumps(index, protocol=2))
 
-        # recalculate real offsets
-        curr_offset = base_offset
-        for fn, content in files_dict.items():
-            index[fn] = [(curr_offset, len(content))]
-            curr_offset += len(content)
-
-        idx_blob = zlib.compress(pickle.dumps(index, protocol=2))
-        data_bytes.extend(idx_blob)
+        data_bytes.extend(final_idx_blob)
         for fn, content in files_dict.items():
             data_bytes.extend(content)
 

@@ -18,7 +18,7 @@ GameLingo is a local-first Windows desktop workbench for translating game text i
 | Engine | Source Formats | Output Format | Capabilities & Constraints |
 | :--- | :--- | :--- | :--- |
 | **RPG Maker MV & MZ** | `data/*.json`, `www/data/*.json` | Serialized Engine JSON | Extracts dialogue, names, descriptions, common events, and map info. Patches modify JSON data with isolated backup. Encrypted assets (`.rpgmvp`) must be decrypted prior to translation. |
-| **Ren'Py Visual Novels** | `game/**/*.rpy` (scripts), `game/*.rpa` archives (RPA-3.0, RPA-2.0, RPA-1.0), compiled `*.rpyc` | `game/tl/<lang>/strings.rpy` | Extracts dialogue, narration, and choices from loose `.rpy` scripts, read-only `.rpa` archives, or compiled `.rpyc` files (via pure-Python `rpycdec`). Applies deterministic precedence (`loose .rpy` > `loose .rpyc` > `archive .rpy` > `archive .rpyc`). Generates non-destructive native Ren'Py string translations without altering original archives or script files. Optional language activation script (`00_gamelingo_activate.rpy`). |
+| **Ren'Py Visual Novels** | `game/**/*.rpy` (scripts), `game/*.rpa` archives (RPA-3.0, RPA-2.0, RPA-1.0), compiled `*.rpyc` | `game/tl/<lang>/strings.rpy` | Extracts dialogue, narration, and choices from loose `.rpy` scripts, read-only `.rpa` archives, or compiled `.rpyc` files (via pure-Python `rpycdec`). Applies deterministic precedence (`loose .rpy` > `loose .rpyc` > `archive .rpy` > `archive .rpyc`). Generates non-destructive native Ren'Py string translations without altering original archives or script files. Optional language activation script (`gamelingo_activate.rpy`). |
 
 ### Out of Scope
 - Save file editing and live memory injection.
