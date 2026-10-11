@@ -6,15 +6,17 @@ This report documents the real-game acceptance testing, Windows desktop GUI veri
 
 - **Target Repository**: `https://github.com/kunal-gswm/GameLingo`
 - **Baseline Git SHA**: `5600a7a362152390d04b1fcc0e6acf52fd00831c`
-- **Rebuilt Windows Package**: `dist\GameLingo-Windows-x64.zip` (273,214,376 bytes)
-- **Package SHA-256 Checksum**: `549611E3B68E574E32B38021E46E3F579E9EA77A04DBEE40A1C1F5201D823DE0`
+- **Application Fix Commit**: [`1cd6a6a198aab469d3e1c1b32eed14efa7779aa6`](https://github.com/kunal-gswm/GameLingo/commit/1cd6a6a198aab469d3e1c1b32eed14efa7779aa6)
+- **Verified Clean Build Commit**: [`6459f53a82b0399747867e43547639642b138bf6`](https://github.com/kunal-gswm/GameLingo/commit/6459f53a82b0399747867e43547639642b138bf6) (source code identical to `1cd6a6a`)
+- **Initial GL-030 Package Checksum**: `549611E3B68E574E32B38021E46E3F579E9EA77A04DBEE40A1C1F5201D823DE0` (273,214,376 bytes)
+- **GL-031 Rebuilt Package Checksum**: `28787D87098FAFD90DC22D3D9302021CFFFA64BABD77183B5FB454A15A400B92` (273,214,225 bytes)
 - **Quality Gate Results**: 95 passed, 0 skipped, 0 failed (`uv run pytest`)
 
 ---
 
 ## 1. Real Game Identification & Isolation
 
-Testing was performed against a legally obtained Japanese RPG Maker MV desktop game located on the host system:
+Testing was performed against a Japanese RPG Maker MV desktop game available on the local filesystem:
 
 - **Game Title**: *Do Disciplinary Committee Members Dream of Succubi* (v1.04)
 - **Engine Identification**: RPG Maker MV (NW.js runtime, engine version `32267220`, `Game.exe`)
@@ -22,7 +24,7 @@ Testing was performed against a legally obtained Japanese RPG Maker MV desktop g
 - **Original Files Baseline Status**: Completely preserved and untouched (verified via SHA-256 pre- and post-test)
 - **Isolated Working Copy**: Created in a path containing spaces:
   `D:\GL030 Real Game Pilot\Disciplinary Committee Game\`
-  *(Kept strictly outside the Git repository; all temporary pilot data cleaned up following verification)*
+  *(Kept strictly outside the Git repository; treated exclusively as an isolated local test subject without redistribution; all temporary pilot data cleaned up following verification)*
 
 ### Baseline Metrics & Selected Original Hashes
 
@@ -58,10 +60,11 @@ Testing was performed against a legally obtained Japanese RPG Maker MV desktop g
 - **Offline Model Check**: [ArgosSetupService.check_status("ja", "en")](file:///e:/GameLingo/src/gamelingo/translation/argos_setup.py) returned `ModelStatus.READY` with zero network requests.
 - **Model Package**: `argostranslate` installed language pair `ja -> en` version 1.1 (`CTranslate2` / OpenNMT transformer model).
 
-### Translation Quality & Placeholder Safety Observations
+### Translation Provider Completion Rate vs. Quality & Placeholder Safety Observations
 A sample of 50 Japanese units extracted from the real game was translated through [ArgosTranslateProvider](file:///e:/GameLingo/src/gamelingo/translation/argos_provider.py):
 
-- **Successful Translations**: **49 / 50 (98%)**
+- **Provider Completion Rate**: **49 / 50 (98%)**
+  - Argos NMT completed translation without runtime error and placeholder syntax remained intact for 49 strings. Note that provider completion does not equate to publishable literary translation; machine output is strictly treated as untrusted draft text requiring human review.
   - Menu / Choice text: `'解除された場合はこちら'` $\rightarrow$ `'Click here to cancel'` (Clear and accurate)
   - Common event dialogue: `'\>フェードインが完了しましたか？'` $\rightarrow$ `'Is \> fade in complete?'` (Placeholders and escaped angle brackets preserved)
   - Database categories: `'■■戦闘テキスト用'` $\rightarrow$ `'■■For Combat Text'` (Accurate)
@@ -80,7 +83,7 @@ The full patch lifecycle was exercised on the isolated working copy:
 | :--- | :--- | :---: | :--- |
 | **1. Extraction** | `RPGMakerMVMZAdapter.extract()` | **PASS** | 65,616 units extracted in 1.69s; 117 Japanese units identified. |
 | **2. Translation** | `ArgosTranslateProvider.translate_batch()` | **PASS** | 25 selected Japanese units translated in 9.36s using real Argos v1.1. |
-| **3. Review Gate** | Human approval simulation (`u.status = 'approved'`) | **PASS** | 25 units explicitly approved; unapproved items remained unpatched. |
+| **3. Review Gate** | Scripted approval state simulation (`u.status = 'approved'`) | **PASS** | Automated simulation of human approval gate at domain model layer; distinct from interactive UI review. |
 | **4. Patch Planning** | `create_plan()` | **PASS** | 25 valid edits generated across 3 target files; 0 rejected. |
 | **5. Dry Run** | `apply_plan(execute=False)` | **PASS** | Status `preview`; 0 files modified; affected targets validated. |
 | **6. Atomic Apply** | `apply_plan(execute=True, overwrite=True)` | **PASS** | Backup snapshot created (`711b34c8...`); 3 files modified atomically. |
@@ -121,8 +124,12 @@ Following all patch application and restoration cycles:
 - **Linter**: `uv run ruff check .` $\rightarrow$ All checks passed.
 - **Formatter**: `uv run ruff format --check .` $\rightarrow$ 65 files formatted.
 - **Diff Check**: `git diff --check` $\rightarrow$ Clean.
-- **Documentation & Fix Commit**: [`1cd6a6a198aab469d3e1c1b32eed14efa7779aa6`](https://github.com/kunal-gswm/GameLingo/commit/1cd6a6a198aab469d3e1c1b32eed14efa7779aa6)
-- **Verified GitHub Actions Run**: [Run #43 (Success)](https://github.com/kunal-gswm/GameLingo/actions/runs/38124640358)
+- **Documentation & Fix Commits**:
+  - Fix Commit: [`1cd6a6a198aab469d3e1c1b32eed14efa7779aa6`](https://github.com/kunal-gswm/GameLingo/commit/1cd6a6a198aab469d3e1c1b32eed14efa7779aa6)
+  - Provenance Commit: [`6459f53a82b0399747867e43547639642b138bf6`](https://github.com/kunal-gswm/GameLingo/commit/6459f53a82b0399747867e43547639642b138bf6)
+- **Verified GitHub Actions Runs**:
+  - Run #43 for `1cd6a6a`: [Run #38124640358 (Success)](https://github.com/kunal-gswm/GameLingo/actions/runs/38124640358)
+  - Run #44 for `6459f53`: [Run #38124699369 (Success)](https://github.com/kunal-gswm/GameLingo/actions/runs/38124699369)
   - `Core Tests & Linting`: Success
   - `GUI Tests`: Success
 
