@@ -3,15 +3,23 @@ from typing import Dict
 
 # Matches:
 # %1, %2, %s, %d (printf style and index style)
-# {player}, {anything} (brace style)
+# {{, [[ (escaped braces and brackets in Ren'Py)
+# {player}, {anything}, {i}, {/i}, {b}, {/b}, {color=...} (brace style)
+# [player_name], [points], [flag!t] (Ren'Py square bracket interpolation)
 # \N[1], \V[2], \P[3], \C[4], \I[5], \G, \! (RPG maker style)
 # \\ (literal backslash)
+# \!, \>, \<, \|, \., \^ (special short codes in RPG maker)
+# \", \', \n, \r, \t (escaped quotes, newlines, tabs)
 PLACEHOLDER_REGEX = re.compile(
     r"(%[1-9sd])"  # %1, %2, %s, %d
-    r"|(\{[^}]+\})"  # {player}, {item}
+    r"|(\{\{)"  # Escaped literal { in Ren'Py
+    r"|(\[\[)"  # Escaped literal [ in Ren'Py
+    r"|(\{[^}]+\})"  # {player}, {item}, {i}, {/i}, {b}, {/b}, {color=...}
+    r"|(\[[a-zA-Z0-9_.\s!:]+\])"  # Ren'Py interpolation: [player_name], [points], [flag!t]
     r"|(\\[A-Za-z]+(?:\[\d+\])?)"  # \N[1], \G, \C[5], etc.
     r"|(\\\\)"  # Literal backslash
     r"|(\\[!><|.^])"  # special short codes in RPG maker like \!, \>, \<, \|, \., \^
+    r"|(\\[\"'nrt])"  # Escaped quotes, newlines, tabs
 )
 
 

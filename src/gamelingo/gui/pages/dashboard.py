@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from gamelingo.adapters.rpgmaker_mv_mz import RPGMakerMVMZAdapter
+from gamelingo.adapters.registry import detect_adapter
 from gamelingo.gui.state import AppState
 from gamelingo.gui.theme import (
     BG_SURFACE_ALT,
@@ -180,6 +180,36 @@ class DashboardPage(QWidget):
         mz_layout.addWidget(self.lbl_mz_desc)
         engines_row.addWidget(self.card_mz, stretch=1)
 
+        # Ren'Py Card
+        self.card_renpy = QFrame()
+        self.card_renpy.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        renpy_layout = QVBoxLayout(self.card_renpy)
+        renpy_layout.setContentsMargins(12, 10, 12, 10)
+        renpy_layout.setSpacing(4)
+        renpy_header = QHBoxLayout()
+        self.lbl_renpy_title = QLabel("Ren'Py Visual Novel")
+        self.lbl_renpy_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.lbl_renpy_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        renpy_header.addWidget(self.lbl_renpy_title)
+        renpy_header.addStretch()
+        renpy_pill = create_status_pill("Supported", "info")
+        renpy_header.addWidget(renpy_pill)
+        renpy_layout.addLayout(renpy_header)
+
+        self.lbl_renpy_desc = QLabel(
+            "Target data: game/*.rpy source scripts\n"
+            "Output: game/tl/<language>/strings.rpy native string translations\n"
+            "Supported: accessible .rpy source files (dialogue, menus, strings)\n"
+            "Limited: games with only compiled .rpyc scripts (source required)"
+        )
+        self.lbl_renpy_desc.setFont(QFont("Segoe UI", 10))
+        self.lbl_renpy_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_renpy_desc.setWordWrap(True)
+        renpy_layout.addWidget(self.lbl_renpy_desc)
+        engines_row.addWidget(self.card_renpy, stretch=1)
+
         formats_layout.addLayout(engines_row)
 
         # Unsupported Content Advisory Card
@@ -198,7 +228,8 @@ class DashboardPage(QWidget):
 
         self.lbl_unsupported_notice = QLabel(
             "• Save Files Unsupported: Runtime save states (*.rpgsave, save/, www/save/) are dynamic progress data and are not translated or modified.\n"
-            "• Binary Assets Unsupported: Media assets (images in img/, audio in audio/, movies in movies/, fonts, executables Game.exe/nw.exe, compiled plugins) are unsupported. GameLingo operates exclusively on text dialogue and database definitions in JSON data files."
+            "• Binary Assets Unsupported: Media assets (images in img/, audio in audio/, movies in movies/, fonts, executables Game.exe/nw.exe, compiled plugins) are unsupported. GameLingo operates exclusively on text dialogue and database definitions in JSON data files.\n"
+            "• Compiled Scripts (.rpyc) Limited: Ren'Py games with only compiled .rpyc files require original .rpy source files for text extraction. Decompilation of .rpyc files is unsupported."
         )
         self.lbl_unsupported_notice.setFont(QFont("Segoe UI", 10))
         self.lbl_unsupported_notice.setStyleSheet(f"color: {TEXT_SECONDARY};")
@@ -432,9 +463,34 @@ class DashboardPage(QWidget):
                 f"Selected game directory does not exist on disk: '{check_path}'. Expected an existing directory containing 'data/System.json' or 'www/data/System.json'.",
             )
         else:
-            adapter = RPGMakerMVMZAdapter()
-            data_dir = adapter._get_data_dir(check_path)
-            if data_dir is None:
+            detected_adapter, version_desc, confidence = detect_adapter(check_path)
+            if detected_adapter and detected_adapter.adapter_id == "renpy":
+                diag = detected_adapter.diagnose(check_path)
+                if diag["has_source_scripts"]:
+                    self._update_structure_status(
+                        "Structure Verified",
+                        "info",
+                        f"Valid Ren'Py visual novel structure verified ({diag['rpy_count']} .rpy source scripts found). Engine detected: {version_desc}. Native translation target: game/tl/<language>/strings.rpy.",
+                    )
+                else:
+                    self._update_structure_status(
+                        "Source Missing",
+                        "danger",
+                        diag["message"],
+                    )
+            elif detected_adapter and detected_adapter.adapter_id == "rpgmaker_mv_mz":
+                data_dir = detected_adapter._get_data_dir(check_path)
+                try:
+                    json_count = len(list(data_dir.glob("*.json"))) if data_dir else 0
+                except Exception:
+                    json_count = 0
+                rel_data = data_dir.relative_to(check_path) if data_dir else "data"
+                self._update_structure_status(
+                    "Structure Verified",
+                    "info",
+                    f"Valid RPG Maker data structure verified at '{rel_data}/' ({json_count} JSON data files found, System.json present). Engine detected: {version_desc}.",
+                )
+            else:
                 missing_reasons = []
                 data_candidates = [check_path / "data", check_path / "www" / "data"]
                 has_any_data_dir = any(d.is_dir() for d in data_candidates)
@@ -444,7 +500,7 @@ class DashboardPage(QWidget):
                     )
                 else:
                     missing_reasons.append(
-                        "Neither 'data/' nor 'www/data/' directory was found."
+                        "Neither 'data/' nor 'www/data/' directory was found, and no Ren'Py 'game/*.rpy' scripts were detected."
                     )
 
                 has_saves = (
@@ -465,26 +521,14 @@ class DashboardPage(QWidget):
                 )
                 if has_binaries and not has_any_data_dir:
                     missing_reasons.append(
-                        "Binary assets or executables detected without extracted JSON data files."
+                        "Binary assets or executables detected without extracted game script or data files."
                     )
 
                 reason_str = " ".join(missing_reasons)
                 self._update_structure_status(
                     "Structure Missing",
                     "danger",
-                    f"Expected data structure is missing from '{check_path}'. {reason_str} Ensure the game is an unpacked RPG Maker MV or MZ directory with 'System.json'. Note that save files and binary assets are unsupported.",
-                )
-            else:
-                supported, version_desc, _ = adapter.detect(check_path)
-                try:
-                    json_count = len(list(data_dir.glob("*.json")))
-                except Exception:
-                    json_count = 0
-                rel_data = data_dir.relative_to(check_path)
-                self._update_structure_status(
-                    "Structure Verified",
-                    "info",
-                    f"Valid RPG Maker data structure verified at '{rel_data}/' ({json_count} JSON data files found, System.json present). Engine detected: {version_desc}.",
+                    f"Expected data structure is missing from '{check_path}'. {reason_str} Ensure the game is an unpacked RPG Maker MV/MZ directory or a Ren'Py game with .rpy source scripts.",
                 )
 
         # 3. Database counts
@@ -604,13 +648,12 @@ class DashboardPage(QWidget):
             return
 
         dir_path = QFileDialog.getExistingDirectory(
-            self, "Select RPG Maker MV/MZ Game Directory"
+            self, "Select Game Directory (RPG Maker MV/MZ or Ren'Py)"
         )
         if dir_path:
             path = Path(dir_path)
-            adapter = RPGMakerMVMZAdapter()
-            supported, version, _conf = adapter.detect(path)
-            if supported:
+            adapter, version, conf = detect_adapter(path)
+            if adapter and conf > 0.0:
                 self.selected_invalid_game_path = None
                 self.state.game_path = path
 
@@ -625,15 +668,15 @@ class DashboardPage(QWidget):
                                 "default",
                                 "Default Project",
                                 str(path),
-                                "rpgmaker_mv_mz",
+                                adapter.adapter_id,
                                 "1.0",
                                 time.time(),
                             ),
                         )
                     else:
                         conn.execute(
-                            "UPDATE projects SET install_path = ? WHERE id = 'default'",
-                            (str(path),),
+                            "UPDATE projects SET install_path = ?, adapter_id = ? WHERE id = 'default'",
+                            (str(path), adapter.adapter_id),
                         )
 
                 self.refresh()

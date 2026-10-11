@@ -547,12 +547,16 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
     # 1. Format descriptions
     assert "RPG Maker MV" in dash_page.lbl_mv_title.text()
     assert "RPG Maker MZ" in dash_page.lbl_mz_title.text()
+    assert "Ren'Py Visual Novel" in dash_page.lbl_renpy_title.text()
     assert "data/" in dash_page.lbl_mv_desc.text()
     assert "data/" in dash_page.lbl_mz_desc.text()
+    assert "game/*.rpy" in dash_page.lbl_renpy_desc.text()
+    assert "strings.rpy" in dash_page.lbl_renpy_desc.text()
 
     # 2. Unsupported scope notice
     assert "Save Files Unsupported" in dash_page.lbl_unsupported_notice.text()
     assert "Binary Assets Unsupported" in dash_page.lbl_unsupported_notice.text()
+    assert ".rpyc" in dash_page.lbl_unsupported_notice.text()
 
     # 3. Initial unselected state
     assert "No Game Selected" in dash_page.lbl_structure_pill.text()
@@ -569,7 +573,7 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
     assert "Neither 'data/' nor 'www/data/'" in dash_page.lbl_structure_desc.text()
     assert "Save files are unsupported" in dash_page.lbl_structure_desc.text()
 
-    # 5. Valid game directory
+    # 5. Valid RPG Maker game directory
     valid_dir = tmp_path / "valid_game"
     valid_dir.mkdir()
     (valid_dir / "data").mkdir()
@@ -584,6 +588,32 @@ def test_dashboard_supported_game_formats_and_structure_validation(qapp, tmp_pat
         "ValidGame" in dash_page.lbl_structure_desc.text()
         or "data/" in dash_page.lbl_structure_desc.text()
     )
+
+    # 6. Valid Ren'Py game directory
+    renpy_dir = tmp_path / "renpy_game"
+    renpy_dir.mkdir()
+    (renpy_dir / "game").mkdir()
+    (renpy_dir / "game" / "options.rpy").write_text(
+        'define config.name = "Test"\n', encoding="utf-8"
+    )
+    (renpy_dir / "game" / "script.rpy").write_text('"Hello"\n', encoding="utf-8")
+
+    dash_page.state.game_path = renpy_dir
+    dash_page.refresh()
+    assert "Structure Verified" in dash_page.lbl_structure_pill.text()
+    assert "Ren'Py" in dash_page.lbl_structure_desc.text()
+
+    # 7. Ren'Py with compiled .rpyc only
+    rpyc_dir = tmp_path / "rpyc_game"
+    rpyc_dir.mkdir()
+    (rpyc_dir / "game").mkdir()
+    (rpyc_dir / "game" / "options.rpyc").write_bytes(b"\x00\x00RENPYC")
+    (rpyc_dir / "game" / "script.rpyc").write_bytes(b"\x00\x00RENPYC")
+
+    dash_page.state.game_path = rpyc_dir
+    dash_page.refresh()
+    assert "Source Missing" in dash_page.lbl_structure_pill.text()
+    assert ".rpyc" in dash_page.lbl_structure_desc.text()
 
 
 def test_selected_game_separate_from_model_state(qapp, tmp_path):

@@ -3,7 +3,7 @@ import re
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from gamelingo.domain.models import TranslationRecord, TranslationUnit
 from gamelingo.safety.backup import calculate_sha256, is_safe_path
@@ -53,20 +53,46 @@ def create_plan(
     units: List[TranslationUnit],
     records: List[TranslationRecord],
     file_path_map: Dict[str, str] = None,
+    adapter_id: Optional[str] = None,
+    target_lang: str = "en",
 ) -> Dict[str, Any]:
     try:
         source_root_resolved = source_root.resolve(strict=True)
     except OSError:
         raise PlannerError("Source root does not exist.")
 
+    is_renpy = adapter_id == "renpy" or (
+        adapter_id is None and units and any(u.file_id.endswith(".rpy") for u in units)
+    )
+
     plan = {
         "version": "1.0",
         "plan_id": str(uuid.uuid4()),
         "created_at": time.time(),
         "project_id": project_id,
+        "adapter_id": "renpy" if is_renpy else "rpgmaker_mv_mz",
         "edits": [],
         "validation_errors": [],
     }
+
+    if is_renpy:
+        lang_map = {
+            "en": "english",
+            "ja": "japanese",
+            "es": "spanish",
+            "fr": "french",
+            "de": "german",
+            "zh": "chinese",
+            "ru": "russian",
+            "ko": "korean",
+        }
+        tl_name = lang_map.get(target_lang.lower(), target_lang.lower())
+        plan["target_lang"] = tl_name
+
+        if (source_root_resolved / "game").is_dir():
+            target_rel_path = f"game/tl/{tl_name}/strings.rpy"
+        else:
+            target_rel_path = f"tl/{tl_name}/strings.rpy"
 
     # Map units to records
     record_map = {r.unit_id: r for r in records}
@@ -85,7 +111,7 @@ def create_plan(
                 {
                     "unit_id": unit.id,
                     "file_id": unit.file_id,
-                    "file_path": rel_path,
+                    "file_path": rel_path if not is_renpy else target_rel_path,
                     "locator": unit.locator,
                     "status": "rejected",
                     "reason": "missing_translation",
@@ -99,7 +125,7 @@ def create_plan(
                 {
                     "unit_id": unit.id,
                     "file_id": unit.file_id,
-                    "file_path": rel_path,
+                    "file_path": rel_path if not is_renpy else target_rel_path,
                     "locator": unit.locator,
                     "status": "rejected",
                     "reason": "empty_translation",
@@ -112,7 +138,7 @@ def create_plan(
                 {
                     "unit_id": unit.id,
                     "file_id": unit.file_id,
-                    "file_path": rel_path,
+                    "file_path": rel_path if not is_renpy else target_rel_path,
                     "locator": unit.locator,
                     "status": "rejected",
                     "reason": "unapproved",
@@ -121,6 +147,89 @@ def create_plan(
             )
             continue
 
+        if is_renpy:
+            # Ren'Py source script check
+            source_file = source_root_resolved / rel_path
+            if not is_safe_path(source_root_resolved, source_file):
+                plan["edits"].append(
+                    {
+                        "unit_id": unit.id,
+                        "file_id": unit.file_id,
+                        "file_path": target_rel_path,
+                        "status": "rejected",
+                        "reason": "unsafe_path",
+                    }
+                )
+                continue
+
+            if not source_file.exists():
+                plan["edits"].append(
+                    {
+                        "unit_id": unit.id,
+                        "file_id": unit.file_id,
+                        "file_path": target_rel_path,
+                        "status": "rejected",
+                        "reason": "file_not_found",
+                    }
+                )
+                continue
+
+            # Check target destination safety
+            target_dest = source_root_resolved / target_rel_path
+            if not is_safe_path(source_root_resolved, target_dest):
+                plan["edits"].append(
+                    {
+                        "unit_id": unit.id,
+                        "file_id": unit.file_id,
+                        "file_path": target_rel_path,
+                        "status": "rejected",
+                        "reason": "unsafe_path",
+                    }
+                )
+                continue
+
+            # Check for conflicting translations for the same source string in this batch
+            duplicate = next(
+                (
+                    e
+                    for e in plan["edits"]
+                    if e.get("original_text") == unit.source_text
+                    and e.get("status") == "valid"
+                ),
+                None,
+            )
+            if duplicate and duplicate.get("translated_text") != translated_text:
+                duplicate["status"] = "conflict"
+                duplicate["reason"] = "conflicting_translations"
+                plan["edits"].append(
+                    {
+                        "unit_id": unit.id,
+                        "file_id": unit.file_id,
+                        "file_path": target_rel_path,
+                        "source_file_path": rel_path,
+                        "locator": unit.locator,
+                        "status": "conflict",
+                        "reason": "conflicting_translations",
+                    }
+                )
+                continue
+
+            plan["edits"].append(
+                {
+                    "unit_id": unit.id,
+                    "file_id": unit.file_id,
+                    "file_path": target_rel_path,
+                    "source_file_path": rel_path,
+                    "locator": unit.locator,
+                    "original_text": unit.source_text,
+                    "translated_text": translated_text,
+                    "status": "valid",
+                    "engine": "renpy",
+                }
+            )
+            continue
+
+        # RPG Maker JSON handling
         target_file = source_root_resolved / rel_path
         if not is_safe_path(source_root_resolved, target_file):
             plan["edits"].append(
@@ -251,6 +360,7 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
     except OSError:
         raise PlanValidationError("Source root does not exist.")
 
+    is_renpy = plan.get("adapter_id") == "renpy"
     edits = plan.get("edits", [])
     valid_edits = [e for e in edits if e.get("status") == "valid"]
 
@@ -278,12 +388,26 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
         if target_file.is_symlink():
             raise PlanValidationError(f"Path is a symlink: {file_path}")
 
+        if is_renpy:
+            # For Ren'Py, destination file (strings.rpy) does not need to exist yet,
+            # but source script must exist and be safe.
+            source_file_rel = edit.get("source_file_path", edit.get("file_id"))
+            if not source_file_rel or ".." in source_file_rel:
+                raise PlanValidationError(
+                    f"Invalid source script path: {source_file_rel}"
+                )
+            source_file = source_root_resolved / source_file_rel
+            if not is_safe_path(source_root_resolved, source_file):
+                raise PlanValidationError(
+                    f"Source script outside source root: {source_file_rel}"
+                )
+            if not source_file.exists():
+                raise PlanValidationError(f"Source script not found: {source_file_rel}")
+            continue
+
         if not target_file.exists():
             raise PlanValidationError(f"Source file not found: {file_path}")
 
-        # Optional: we can re-resolve the locator here to ensure it still matches original_text.
-        # But this function verifies the *schema* and *safety* of the plan.
-        # Re-verifying stale sources is good practice.
         try:
             with open(target_file, "r", encoding="utf-8") as f:
                 file_data = json.load(f)
@@ -310,11 +434,21 @@ def preview_plan(plan: Dict[str, Any]) -> str:
     valid = [e for e in plan.get("edits", []) if e.get("status") == "valid"]
     rejected = [e for e in plan.get("edits", []) if e.get("status") != "valid"]
 
+    if plan.get("adapter_id") == "renpy":
+        lines.append(
+            f"Engine: Ren'Py Visual Novel (Target: {plan.get('target_lang', 'english')})"
+        )
+
     lines.append(f"Valid Edits: {len(valid)}")
     for e in valid:
-        lines.append(
-            f"  [VALID] {e.get('file_path', e.get('file_id'))} @ {e['locator']}"
-        )
+        if e.get("engine") == "renpy":
+            lines.append(
+                f"  [VALID] {e.get('file_path')} (source: {e.get('source_file_path', e.get('file_id'))} @ {e['locator']})"
+            )
+        else:
+            lines.append(
+                f"  [VALID] {e.get('file_path', e.get('file_id'))} @ {e['locator']}"
+            )
         lines.append(f"    - {e['original_text']}")
         lines.append(f"    + {e['translated_text']}")
 

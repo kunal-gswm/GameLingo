@@ -28,7 +28,7 @@ def calculate_sha256(path: Path) -> str:
 def is_safe_path(root: Path, path: Path) -> bool:
     try:
         root_resolved = root.resolve(strict=True)
-        path_resolved = path.resolve(strict=True)
+        path_resolved = path.resolve()
     except OSError:
         return False
 
@@ -78,13 +78,27 @@ def create_backup(
             )
         seen_paths.add(file_path)
 
+        rel_path = file_path.resolve().relative_to(source_root_resolved)
+
+        if not file_path.exists():
+            manifest["files"].append(
+                {
+                    "original_path": str(rel_path.as_posix()),
+                    "backup_path": None,
+                    "existed": False,
+                    "size": 0,
+                    "original_hash": "",
+                    "backup_hash": "",
+                }
+            )
+            continue
+
         if file_path.is_symlink():
             raise BackupValidationError(f"Symlinks are not allowed: {file_path}")
 
         if not file_path.is_file():
             raise BackupValidationError(f"Not a regular file: {file_path}")
 
-        rel_path = file_path.resolve().relative_to(source_root_resolved)
         dest_path = backup_dir / rel_path
 
         size = file_path.stat().st_size
@@ -119,6 +133,7 @@ def create_backup(
             {
                 "original_path": str(rel_path.as_posix()),
                 "backup_path": str(rel_path.as_posix()),
+                "existed": True,
                 "size": size,
                 "original_hash": original_hash,
                 "backup_hash": backup_hash,
@@ -170,6 +185,9 @@ def verify_backup(backup_dir: Path) -> bool:
     seen_paths = set()
 
     for f_meta in files:
+        if f_meta.get("existed") is False:
+            continue
+
         rel_path_str = f_meta.get("backup_path")
         if not rel_path_str:
             raise BackupValidationError("Missing backup_path in manifest entry.")

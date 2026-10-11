@@ -1,7 +1,10 @@
 import json
+import os
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List
 
+from gamelingo.adapters.renpy_strings import generate_strings_rpy, parse_strings_rpy
 from gamelingo.patching.planner import (
     _resolve_rpgmaker_locator,
     _tokenize_locator,
@@ -58,11 +61,7 @@ def apply_plan(
     """
     Applies or previews a patch plan.
     If execute=False, it performs a dry-run preview.
-    If execute=True, it requires overwrite=True to actually write files,
-    otherwise it is still considered a dry-run or will fail.
-    Wait, the prompt says "require explicit execution authorization" (execute=True).
-    And "explicit overwrite policy where required".
-    We'll require both if they are replacing files, to be safe.
+    If execute=True, it requires overwrite=True to actually write files.
     """
 
     report = {
@@ -85,47 +84,69 @@ def apply_plan(
         return report
 
     source_root_resolved = source_root.resolve(strict=True)
+    is_renpy = plan.get("adapter_id") == "renpy"
 
     edits = plan.get("edits", [])
     valid_edits = [e for e in edits if e.get("status") == "valid"]
 
-    # Group edits by file
+    # Group edits by destination file
     edits_by_file: Dict[str, List[Dict[str, Any]]] = {}
     for edit in valid_edits:
         fp = edit.get("file_path", edit.get("file_id"))
         edits_by_file.setdefault(fp, []).append(edit)
 
     affected_files = list(edits_by_file.keys())
-
     report["affected_files"] = affected_files
 
     if not execute:
         # Dry-run Revalidation of current values
-        for fp, file_edits in edits_by_file.items():
-            target_file = source_root_resolved / fp
-            with open(target_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
+        if is_renpy:
+            for fp, file_edits in edits_by_file.items():
+                target_file = source_root_resolved / fp
+                if target_file.exists():
+                    try:
+                        with open(target_file, "r", encoding="utf-8") as f:
+                            existing_content = f.read()
+                        parsed = parse_strings_rpy(existing_content)
+                        already_applied = True
+                        for edit in file_edits:
+                            orig = edit.get("original_text")
+                            trans = edit.get("translated_text")
+                            if (
+                                orig not in parsed
+                                or parsed[orig].get("translation") != trans
+                            ):
+                                already_applied = False
+                        if already_applied:
+                            report["skipped_already_applied"].append(fp)
+                    except Exception:
+                        pass
+        else:
+            for fp, file_edits in edits_by_file.items():
+                target_file = source_root_resolved / fp
+                with open(target_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
 
-            already_applied = True
-            for edit in file_edits:
-                locator = edit.get("locator")
-                expected = edit.get("original_text")
-                translated = edit.get("translated_text")
+                already_applied = True
+                for edit in file_edits:
+                    locator = edit.get("locator")
+                    expected = edit.get("original_text")
+                    translated = edit.get("translated_text")
 
-                try:
-                    current_val = _resolve_rpgmaker_locator(data, locator)
-                    if current_val != translated:
+                    try:
+                        current_val = _resolve_rpgmaker_locator(data, locator)
+                        if current_val != translated:
+                            already_applied = False
+                        if current_val != expected and current_val != translated:
+                            report["errors"].append(
+                                f"Unexpected current value for {fp}::{locator}"
+                            )
+                    except Exception:
+                        report["errors"].append(f"Could not resolve {fp}::{locator}")
                         already_applied = False
-                    if current_val != expected and current_val != translated:
-                        report["errors"].append(
-                            f"Unexpected current value for {fp}::{locator}"
-                        )
-                except Exception:
-                    report["errors"].append(f"Could not resolve {fp}::{locator}")
-                    already_applied = False
 
-            if already_applied:
-                report["skipped_already_applied"].append(fp)
+                if already_applied:
+                    report["skipped_already_applied"].append(fp)
 
         return report
 
@@ -133,7 +154,6 @@ def apply_plan(
         raise PatcherError("overwrite=True is required to execute changes.")
 
     if report["errors"]:
-        # Shouldn't happen if validate_plan passed, but we double checked
         report["status"] = "failed"
         return report
 
@@ -165,57 +185,96 @@ def apply_plan(
     staged_files = {}
     try:
         # 2. Stage changes
-        for fp, file_edits in edits_by_file.items():
-            target_file = source_root_resolved / fp
-            with open(target_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
+        if is_renpy:
+            for fp, file_edits in edits_by_file.items():
+                target_file = source_root_resolved / fp
+                existing_content = None
+                if target_file.exists():
+                    with open(target_file, "r", encoding="utf-8") as f:
+                        existing_content = f.read()
 
-            all_applied = True
-            for edit in file_edits:
-                locator = edit.get("locator")
-                expected = edit.get("original_text")
-                translated = edit.get("translated_text")
+                entries = [
+                    {
+                        "old": edit.get("original_text"),
+                        "new": edit.get("translated_text"),
+                        "comment": f"{edit.get('source_file_path', edit.get('file_id'))} @ {edit.get('locator')}",
+                    }
+                    for edit in file_edits
+                ]
+                new_content = generate_strings_rpy(
+                    plan.get("target_lang", "english"),
+                    entries,
+                    existing_content=existing_content,
+                )
 
-                current_val = _resolve_rpgmaker_locator(data, locator)
-                if current_val == translated:
-                    continue  # already applied
-                if current_val != expected:
-                    report["status"] = "failed"
-                    report["errors"].append(
-                        f"Stale source detected dynamically during staging for {fp}::{locator}"
-                    )
-                    return report  # abort!
+                target_file.parent.mkdir(parents=True, exist_ok=True)
+                fd, tmp_path_str = tempfile.mkstemp(
+                    prefix="gamelingo_", suffix=".tmp", dir=str(target_file.parent)
+                )
+                os.close(fd)
+                tmp_file = Path(tmp_path_str)
+                staged_files[fp] = tmp_file
 
-                all_applied = False
-                _apply_rpgmaker_locator(data, locator, translated)
+                with open(tmp_file, "w", encoding="utf-8") as f:
+                    f.write(new_content)
 
-            if all_applied:
-                report["skipped_already_applied"].append(fp)
-                continue
+                # Verify staged
+                parsed_staged = parse_strings_rpy(new_content)
+                for edit in file_edits:
+                    orig = edit.get("original_text")
+                    if orig not in parsed_staged:
+                        report["status"] = "failed"
+                        report["errors"].append(
+                            f"Staged Ren'Py translation missing source: {orig}"
+                        )
+                        return report
+        else:
+            for fp, file_edits in edits_by_file.items():
+                target_file = source_root_resolved / fp
+                with open(target_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
 
-            import os
-            import tempfile
+                all_applied = True
+                for edit in file_edits:
+                    locator = edit.get("locator")
+                    expected = edit.get("original_text")
+                    translated = edit.get("translated_text")
 
-            fd, tmp_path_str = tempfile.mkstemp(
-                prefix="gamelingo_", suffix=".tmp", dir=str(target_file.parent)
-            )
-            os.close(fd)
-            tmp_file = Path(tmp_path_str)
+                    current_val = _resolve_rpgmaker_locator(data, locator)
+                    if current_val == translated:
+                        continue  # already applied
+                    if current_val != expected:
+                        report["status"] = "failed"
+                        report["errors"].append(
+                            f"Stale source detected dynamically during staging for {fp}::{locator}"
+                        )
+                        return report  # abort!
 
-            # Register immediately for cleanup
-            staged_files[fp] = tmp_file
+                    all_applied = False
+                    _apply_rpgmaker_locator(data, locator, translated)
 
-            with open(tmp_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+                if all_applied:
+                    report["skipped_already_applied"].append(fp)
+                    continue
 
-            # Verify staged
-            with open(tmp_file, "r", encoding="utf-8") as f:
-                staged_data = json.load(f)
+                fd, tmp_path_str = tempfile.mkstemp(
+                    prefix="gamelingo_", suffix=".tmp", dir=str(target_file.parent)
+                )
+                os.close(fd)
+                tmp_file = Path(tmp_path_str)
+                staged_files[fp] = tmp_file
 
-            for edit in file_edits:
-                assert _resolve_rpgmaker_locator(
-                    staged_data, edit.get("locator")
-                ) == edit.get("translated_text")
+                with open(tmp_file, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+
+                # Verify staged
+                with open(tmp_file, "r", encoding="utf-8") as f:
+                    staged_data = json.load(f)
+
+                for edit in file_edits:
+                    assert _resolve_rpgmaker_locator(
+                        staged_data, edit.get("locator")
+                    ) == edit.get("translated_text")
 
         if report["status"] == "failed":
             return report
@@ -242,13 +301,26 @@ def apply_plan(
                 target_file = source_root_resolved / fp
                 try:
                     report["output_hashes"][fp] = calculate_sha256(target_file)
-                    with open(target_file, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                    for edit in edits_by_file[fp]:
-                        if _resolve_rpgmaker_locator(
-                            data, edit.get("locator")
-                        ) != edit.get("translated_text"):
-                            raise ValueError("Post-write verification value mismatch")
+                    if is_renpy:
+                        with open(target_file, "r", encoding="utf-8") as f:
+                            written_content = f.read()
+                        parsed_written = parse_strings_rpy(written_content)
+                        for edit in edits_by_file[fp]:
+                            orig = edit.get("original_text")
+                            if orig not in parsed_written:
+                                raise ValueError(
+                                    f"Post-write verification failed: {orig} not found in {fp}"
+                                )
+                    else:
+                        with open(target_file, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                        for edit in edits_by_file[fp]:
+                            if _resolve_rpgmaker_locator(
+                                data, edit.get("locator")
+                            ) != edit.get("translated_text"):
+                                raise ValueError(
+                                    "Post-write verification value mismatch"
+                                )
                     report["successfully_changed_files"].append(fp)
                 except Exception as e:
                     report["errors"].append(

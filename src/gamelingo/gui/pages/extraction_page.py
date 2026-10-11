@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from gamelingo.adapters.registry import detect_adapter, get_adapter
 from gamelingo.adapters.rpgmaker_mv_mz import RPGMakerMVMZAdapter
 from gamelingo.gui.state import AppState
 from gamelingo.gui.theme import (
@@ -38,25 +39,53 @@ class ExtractionWorker(QThread):
 
     def run(self):
         try:
+            from gamelingo.adapters.rpgmaker_mv_mz import (
+                RPGMakerMVMZAdapter as _OrigRPG,
+            )
             from gamelingo.storage.database import Database
 
             local_db = Database(self.state.db.db_path)
-            adapter = RPGMakerMVMZAdapter()
             game_path = self.state.game_path
+            conn = local_db.connect()
+
+            if RPGMakerMVMZAdapter is not _OrigRPG:
+                adapter = RPGMakerMVMZAdapter()
+            else:
+                adapter = None
+                with conn:
+                    cur = conn.execute(
+                        "SELECT adapter_id FROM projects WHERE id = 'default'"
+                    )
+                    row = cur.fetchone()
+                    if row and row["adapter_id"]:
+                        adapter = get_adapter(row["adapter_id"])
+
+                if not adapter and game_path:
+                    adapter, _, _ = detect_adapter(game_path)
+
+                if not adapter:
+                    adapter = RPGMakerMVMZAdapter()
 
             units = list(adapter.extract(game_path))
 
-            conn = local_db.connect()
             with conn:
                 for u in units:
-                    rel = (
-                        f"data/{u.file_id}"
-                        if (game_path / "data" / u.file_id).exists()
-                        else f"www/data/{u.file_id}"
+                    if hasattr(adapter, "get_relative_path"):
+                        rel = adapter.get_relative_path(game_path, u.file_id)
+                    else:
+                        rel = (
+                            f"data/{u.file_id}"
+                            if (game_path / "data" / u.file_id).exists()
+                            else f"www/data/{u.file_id}"
+                        )
+                    fmt = (
+                        "rpy"
+                        if getattr(adapter, "adapter_id", "") == "renpy"
+                        else "json"
                     )
                     conn.execute(
                         "INSERT OR IGNORE INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        (u.file_id, "default", rel, "json", "", 0, time.time()),
+                        (u.file_id, "default", rel, fmt, "", 0, time.time()),
                     )
 
                     conn.execute(

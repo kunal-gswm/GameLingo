@@ -103,6 +103,14 @@ def preview_restore(
             continue
 
         meta = backup_file_map[rel_path_str]
+
+        if meta.get("existed") is False:
+            if target_file.exists():
+                plan["conflicts"].append(rel_path_str)
+            else:
+                plan["valid_to_restore"].append(rel_path_str)
+            continue
+
         backup_file = backup_dir / meta["backup_path"]
 
         if not backup_file.is_file():
@@ -165,21 +173,6 @@ def execute_restore(
             raise RestoreValidationError(f"File not in backup manifest: {rel_path_str}")
 
         meta = backup_file_map[rel_path_str]
-        backup_file = backup_dir / meta["backup_path"]
-
-        if not backup_file.is_file():
-            raise RestoreValidationError(f"Backup file missing: {meta['backup_path']}")
-
-        # Strict validation of the backup file before starting
-        if backup_file.stat().st_size != meta["size"]:
-            raise RestoreValidationError(
-                f"Backup file corrupted (size mismatch): {meta['backup_path']}"
-            )
-
-        if calculate_sha256(backup_file) != meta["backup_hash"]:
-            raise RestoreValidationError(
-                f"Backup file corrupted (checksum mismatch): {meta['backup_path']}"
-            )
 
         target_file = target_root / rel_path_str
         target_resolved = target_file.resolve()
@@ -204,12 +197,41 @@ def execute_restore(
                 f"Target file exists and overwrite is False: {rel_path_str}"
             )
 
+        if meta.get("existed") is False:
+            to_restore.append(
+                {
+                    "rel_path": rel_path_str,
+                    "target": target_file,
+                    "backup": None,
+                    "meta": meta,
+                    "action": "delete",
+                }
+            )
+            continue
+
+        backup_file = backup_dir / meta["backup_path"]
+
+        if not backup_file.is_file():
+            raise RestoreValidationError(f"Backup file missing: {meta['backup_path']}")
+
+        # Strict validation of the backup file before starting
+        if backup_file.stat().st_size != meta["size"]:
+            raise RestoreValidationError(
+                f"Backup file corrupted (size mismatch): {meta['backup_path']}"
+            )
+
+        if calculate_sha256(backup_file) != meta["backup_hash"]:
+            raise RestoreValidationError(
+                f"Backup file corrupted (checksum mismatch): {meta['backup_path']}"
+            )
+
         to_restore.append(
             {
                 "rel_path": rel_path_str,
                 "target": target_file,
                 "backup": backup_file,
                 "meta": meta,
+                "action": "replace",
             }
         )
 
@@ -232,6 +254,10 @@ def execute_restore(
                 recovery_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(target, recovery_path)
                 item["recovery_path"] = recovery_path
+
+            if item.get("action") == "delete":
+                staged_files.append(item)
+                continue
 
             # Stage backup copy for atomic replacement
             stage_fd, stage_path_str = tempfile.mkstemp(dir=str(target_root_resolved))
@@ -257,12 +283,17 @@ def execute_restore(
         try:
             for item in staged_files:
                 target = item["target"]
-                stage = item["stage_path"]
-
-                target.parent.mkdir(parents=True, exist_ok=True)
-                stage.replace(target)
-                restored_paths.append(item["rel_path"])
-                item["committed"] = True
+                if item.get("action") == "delete":
+                    if target.exists():
+                        target.unlink()
+                    restored_paths.append(item["rel_path"])
+                    item["committed"] = True
+                else:
+                    stage = item["stage_path"]
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    stage.replace(target)
+                    restored_paths.append(item["rel_path"])
+                    item["committed"] = True
 
         except Exception as e:
             # 4. Rollback on failure

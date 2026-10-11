@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 from gamelingo import __version__
-from gamelingo.adapters.rpgmaker_mv_mz import RPGMakerMVMZAdapter
+from gamelingo.adapters.registry import detect_adapter
 from gamelingo.domain.models import TranslationRecord, TranslationUnit
 from gamelingo.patching.apply import apply_plan
 from gamelingo.patching.planner import create_plan, preview_plan, validate_plan
@@ -75,9 +75,8 @@ def cmd_project_verify(args):
 
 
 def cmd_game_detect(args):
-    adapter = RPGMakerMVMZAdapter()
-    supported, version, conf = adapter.detect(Path(args.game_path))
-    if supported:
+    adapter, version, conf = detect_adapter(Path(args.game_path))
+    if adapter and conf > 0.0:
         print(f"Detected {version} (confidence: {conf:.2f})")
     else:
         print("No supported game engine detected at this path.")
@@ -90,11 +89,9 @@ def cmd_game_inspect(args):
 
 def cmd_extract(args):
     db = get_db(args.workspace)
-    adapter = RPGMakerMVMZAdapter()
     game_path = Path(args.game_path).resolve()
-
-    supported, _, _ = adapter.detect(game_path)
-    if not supported:
+    adapter, version, conf = detect_adapter(game_path)
+    if not adapter or conf == 0.0:
         print(f"Unsupported game path: {game_path}")
         sys.exit(1)
 
@@ -108,15 +105,15 @@ def cmd_extract(args):
                     "default",
                     "Default Project",
                     str(game_path),
-                    "rpgmaker_mv_mz",
+                    adapter.adapter_id,
                     "1.0",
                     time.time(),
                 ),
             )
         else:
             conn.execute(
-                "UPDATE projects SET install_path = ? WHERE id = 'default'",
-                (str(game_path),),
+                "UPDATE projects SET install_path = ?, adapter_id = ? WHERE id = 'default'",
+                (str(game_path), adapter.adapter_id),
             )
 
     print(f"Extracting texts from {game_path}...")
@@ -124,14 +121,18 @@ def cmd_extract(args):
 
     with conn:
         for u in units:
-            rel = (
-                f"data/{u.file_id}"
-                if (game_path / "data" / u.file_id).exists()
-                else f"www/data/{u.file_id}"
-            )
+            if hasattr(adapter, "get_relative_path"):
+                rel = adapter.get_relative_path(game_path, u.file_id)
+            else:
+                rel = (
+                    f"data/{u.file_id}"
+                    if (game_path / "data" / u.file_id).exists()
+                    else f"www/data/{u.file_id}"
+                )
+            fmt = "rpy" if getattr(adapter, "adapter_id", "") == "renpy" else "json"
             conn.execute(
                 "INSERT OR IGNORE INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (u.file_id, "default", rel, "json", "", 0, time.time()),
+                (u.file_id, "default", rel, fmt, "", 0, time.time()),
             )
 
             # Using INSERT OR IGNORE to not overwrite if they exist, but actually we should update if source changed.

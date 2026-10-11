@@ -10,12 +10,23 @@ from gamelingo.domain.models import TranslationUnit
 class RPGMakerMVMZAdapter(GameAdapter):
     """Adapter for RPG Maker MV and MZ engines."""
 
+    adapter_id = "rpgmaker_mv_mz"
+    name = "RPG Maker MV/MZ"
+
     def _get_data_dir(self, install_path: Path) -> Optional[Path]:
         for candidate in ["data", "www/data"]:
             data_dir = install_path / candidate
             if data_dir.is_dir() and (data_dir / "System.json").is_file():
                 return data_dir
         return None
+
+    def get_relative_path(self, install_path: Path, file_id: str) -> str:
+        """Resolves the relative path for an RPG Maker data file."""
+        if (install_path / "data" / file_id).exists():
+            return f"data/{file_id}"
+        if (install_path / "www" / "data" / file_id).exists():
+            return f"www/data/{file_id}"
+        return f"data/{file_id}"
 
     def detect(self, install_path: Path) -> Tuple[bool, str, float]:
         data_dir = self._get_data_dir(install_path)

@@ -80,17 +80,9 @@ def validate_translation(source_text: str, target_text: str) -> List[ValidationI
     # Actually, if we validate user edits, we don't have the original sentinel map.
     # We can just count literal placeholders in source vs target.
     # The PlaceholderProtector can just find all tokens in source, and we verify they exist in target.
-    source_tokens = []
-
-    def repl(m):
-        source_tokens.append(m.group(0))
-        return ""
-
     from gamelingo.translation.placeholders import PLACEHOLDER_REGEX
 
-    PLACEHOLDER_REGEX.sub(repl, source_text)
-
-    PLACEHOLDER_REGEX.sub(repl, target_text)
+    source_tokens = [m.group(0) for m in PLACEHOLDER_REGEX.finditer(source_text)]
 
     # We just do a naive check if all source tokens are present in target text.
     # Note: we need to use a better way because target_tokens might not match properly
