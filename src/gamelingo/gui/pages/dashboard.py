@@ -454,13 +454,13 @@ class DashboardPage(QWidget):
             self._update_structure_status(
                 "No Game Selected",
                 "neutral",
-                "No game directory selected. Choose an RPG Maker MV or MZ installation folder above to inspect and validate its data structure.",
+                "No game directory selected. Choose an RPG Maker MV/MZ or Ren'Py installation folder above to inspect and validate its structure.",
             )
         elif not check_path.exists():
             self._update_structure_status(
                 "Directory Missing",
                 "danger",
-                f"Selected game directory does not exist on disk: '{check_path}'. Expected an existing directory containing 'data/System.json' or 'www/data/System.json'.",
+                f"Selected game directory does not exist on disk: '{check_path}'. Expected an existing directory containing a supported game engine (RPG Maker MV/MZ or Ren'Py).",
             )
         else:
             detected_adapter, version_desc, confidence = detect_adapter(check_path)
@@ -528,7 +528,7 @@ class DashboardPage(QWidget):
                 self._update_structure_status(
                     "Structure Missing",
                     "danger",
-                    f"Expected data structure is missing from '{check_path}'. {reason_str} Ensure the game is an unpacked RPG Maker MV/MZ directory or a Ren'Py game with .rpy source scripts.",
+                    f"Expected data structure is missing from '{check_path}'. {reason_str} Select a game installation directory or its supported data directory.",
                 )
 
         # 3. Database counts
@@ -616,7 +616,7 @@ class DashboardPage(QWidget):
             )
         elif not has_game:
             self.lbl_next_action.setText(
-                "Click 'Select Game Directory' to choose an RPG Maker MV or MZ game installation."
+                "Click 'Select Game Directory' to choose an RPG Maker MV/MZ or Ren'Py game installation."
             )
         elif total_units == 0:
             self.lbl_next_action.setText(
@@ -681,14 +681,30 @@ class DashboardPage(QWidget):
 
                 self.refresh()
                 self.game_selected.emit()
-                QMessageBox.information(
-                    self, "Success", f"Detected {version} successfully."
-                )
+
+                # Separate engine detection from source script availability
+                has_source = True
+                diag_msg = ""
+                if hasattr(adapter, "diagnose"):
+                    diag = adapter.diagnose(path)
+                    has_source = diag.get("has_source_scripts", True)
+                    diag_msg = diag.get("message", "")
+
+                if not has_source:
+                    QMessageBox.warning(
+                        self,
+                        "Source Scripts Required",
+                        f"Detected {version}.\n\n{diag_msg}",
+                    )
+                else:
+                    QMessageBox.information(
+                        self, "Success", f"Detected {version} successfully."
+                    )
             else:
                 self.selected_invalid_game_path = path
                 self.refresh()
                 QMessageBox.warning(
                     self,
                     "Unsupported",
-                    "No supported game engine detected at this path. Ensure the folder contains data/System.json or www/data/System.json. Note that save files and binary assets are unsupported.",
+                    "No supported game engine was detected. Select a game installation directory or its supported data directory.",
                 )

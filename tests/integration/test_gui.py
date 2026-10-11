@@ -678,3 +678,181 @@ def test_patch_and_review_layout_boundaries(qapp, app_state):
     # Check that backup controls are laid out vertically so buttons do not exceed card width
     assert not patch_page.btn_preview_restore.isHidden()
     assert not patch_page.btn_restore.isHidden()
+
+
+def test_dashboard_select_game_renpy_does_not_show_rpgmaker_error(qapp, tmp_path):
+    """
+    Ensure selecting a Ren'Py installation folder or inner game directory
+    identifies Ren'Py without displaying an RPG Maker-only System.json error.
+    """
+    ws = tmp_path / "ws_dash"
+    state = AppState()
+    state.open_workspace(ws)
+
+    win = MainWindow(state)
+    dash_page = win.pages[0]
+
+    # Create synthetic packaged Ren'Py installation root
+    renpy_root = tmp_path / "island-1.0-win"
+    renpy_root.mkdir()
+    game_dir = renpy_root / "game"
+    game_dir.mkdir()
+    (game_dir / "archive.rpa").write_bytes(b"RPA-3.0 0000000000000000 00000000")
+    (renpy_root / "lib").mkdir()
+    (renpy_root / "renpy").mkdir()
+    (renpy_root / "island.exe").write_bytes(b"MZ\x90\x00")
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getExistingDirectory",
+            return_value=str(renpy_root),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+    ):
+        dash_page.on_select_game()
+
+        # Should NOT show unsupported RPG Maker error mentioning System.json
+        for call in mock_warn.call_args_list:
+            dialog_text = call[0][2]
+            assert "System.json" not in dialog_text
+            assert "No supported game engine detected" not in dialog_text
+
+        # Game must be recognized as Ren'Py in state
+        assert state.game_path == renpy_root
+        assert dash_page.selected_invalid_game_path is None
+        # Warning dialog is about source scripts required, not engine rejection
+        assert mock_warn.called
+        assert not mock_info.called
+        assert "Source Scripts Required" in mock_warn.call_args[0][1]
+
+
+def test_extraction_page_gating_source_vs_compiled(qapp, tmp_path):
+    """
+    Ensure extraction is allowed for source-accessible Ren'Py projects
+    but blocked/disabled with explanatory status for compiled-only/archived projects.
+    """
+    ws = tmp_path / "ws_extract"
+    state = AppState()
+    state.open_workspace(ws)
+
+    win = MainWindow(state)
+    extract_page = win.pages[1]
+
+    # 1. Compiled / archived Ren'Py game
+    compiled_game = tmp_path / "compiled_game"
+    compiled_game.mkdir()
+    (compiled_game / "game").mkdir()
+    (compiled_game / "renpy").mkdir()
+    (compiled_game / "game" / "archive.rpa").write_bytes(b"RPA-3.0")
+    (compiled_game / "island.exe").write_bytes(b"MZ\x90\x00")
+
+    state.game_path = compiled_game
+    extract_page.refresh()
+
+    assert not extract_page.btn_extract.isEnabled()
+    assert "Compiled Only" in extract_page.pill_state.text()
+    assert "Readable .rpy source scripts are required" in extract_page.lbl_status.text()
+
+    with patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn:
+        extract_page.on_extract()
+        mock_warn.assert_called_once()
+        assert "Extraction Unsupported" in mock_warn.call_args[0][1]
+        assert extract_page.worker is None
+
+    # 2. Source-accessible Ren'Py game
+    source_game = tmp_path / "source_game"
+    source_game.mkdir()
+    (source_game / "game").mkdir()
+    (source_game / "renpy").mkdir()
+    (source_game / "game" / "options.rpy").write_text(
+        'define config.name = "Source VN"\n', encoding="utf-8"
+    )
+    (source_game / "game" / "script.rpy").write_text(
+        'label start:\n    "Hello"\n', encoding="utf-8"
+    )
+
+    state.game_path = source_game
+    extract_page.refresh()
+
+    assert extract_page.btn_extract.isEnabled()
+    assert "Ready" in extract_page.pill_state.text()
+    assert "Ready to extract" in extract_page.lbl_status.text()
+
+
+def test_directory_switching_and_engine_detection_consistency(qapp, tmp_path):
+    """
+    Ensure engine detection and state remain consistent when switching
+    between invalid folders, Ren'Py roots, inner game directories, and RPG Maker.
+    """
+    ws = tmp_path / "ws_switch"
+    state = AppState()
+    state.open_workspace(ws)
+
+    win = MainWindow(state)
+    dash_page = win.pages[0]
+
+    # Step 1: Unrelated directory
+    unrelated_dir = tmp_path / "unrelated"
+    unrelated_dir.mkdir()
+    (unrelated_dir / "test.txt").write_text("Hello", encoding="utf-8")
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getExistingDirectory",
+            return_value=str(unrelated_dir),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+    ):
+        dash_page.on_select_game()
+        assert mock_warn.called
+        assert "No supported game engine was detected" in mock_warn.call_args[0][2]
+        assert "System.json" not in mock_warn.call_args[0][2]
+        assert dash_page.selected_invalid_game_path == unrelated_dir
+
+    # Step 2: Switch to valid Ren'Py root
+    renpy_dir = tmp_path / "renpy_switch"
+    renpy_dir.mkdir()
+    (renpy_dir / "game").mkdir()
+    (renpy_dir / "renpy").mkdir()
+    (renpy_dir / "game" / "options.rpy").write_text(
+        'define config.name = "SwitchVN"\n', encoding="utf-8"
+    )
+    (renpy_dir / "game" / "script.rpy").write_text(
+        'label start:\n    "Hello"\n', encoding="utf-8"
+    )
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getExistingDirectory",
+            return_value=str(renpy_dir),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+    ):
+        dash_page.on_select_game()
+        assert mock_info.called
+        assert state.game_path == renpy_dir
+        assert dash_page.selected_invalid_game_path is None
+        assert "Structure Verified" in dash_page.lbl_structure_pill.text()
+        assert "Ren'Py" in dash_page.lbl_structure_desc.text()
+
+    # Step 3: Switch to RPG Maker MZ
+    rpg_dir = tmp_path / "rpg_switch"
+    rpg_dir.mkdir()
+    (rpg_dir / "data").mkdir()
+    with open(rpg_dir / "data" / "System.json", "w", encoding="utf-8") as f:
+        json.dump({"gameTitle": "RPG Switch", "versionId": 99}, f)
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getExistingDirectory",
+            return_value=str(rpg_dir),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+    ):
+        dash_page.on_select_game()
+        assert mock_info.called
+        assert state.game_path == rpg_dir
+        assert dash_page.selected_invalid_game_path is None
+        assert "Structure Verified" in dash_page.lbl_structure_pill.text()
+        assert "RPG Maker" in dash_page.lbl_structure_desc.text()

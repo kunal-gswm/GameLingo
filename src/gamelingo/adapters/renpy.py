@@ -58,19 +58,43 @@ class RenPyAdapter(GameAdapter):
         Supports selecting either the game root (containing 'game/')
         or selecting the 'game/' directory directly.
         """
+        if not install_path.exists():
+            return None
+
+        # 1. Selection of game installation root containing 'game/' directory
         game_sub = install_path / "game"
         if game_sub.is_dir():
             return game_sub
 
-        # Direct selection of the game directory
+        # 2. Direct selection of the game directory itself
         if (
             (install_path / "options.rpy").exists()
             or (install_path / "options.rpyc").exists()
             or (install_path / "script.rpy").exists()
             or (install_path / "script.rpyc").exists()
+            or (install_path / "screens.rpy").exists()
+            or (install_path / "screens.rpyc").exists()
+            or (install_path / "gui.rpy").exists()
+            or (install_path / "gui.rpyc").exists()
             or (install_path / "tl").is_dir()
+            or any(install_path.glob("*.rpa"))
         ):
             return install_path
+
+        # 3. Check if directory is named 'game' and adjacent to Ren'Py engine directories
+        if (
+            install_path.is_dir()
+            and install_path.name.lower() == "game"
+            and install_path.parent.is_dir()
+        ):
+            parent = install_path.parent
+            if (
+                (parent / "renpy").is_dir()
+                or (parent / "lib").is_dir()
+                or any(parent.glob("*.exe"))
+                or any(parent.glob("*.py"))
+            ):
+                return install_path
 
         return None
 
@@ -87,9 +111,21 @@ class RenPyAdapter(GameAdapter):
     def diagnose(self, install_path: Path) -> Dict[str, Any]:
         """
         Performs evidence-based diagnostics on the Ren'Py project structure.
-        Distinguishes projects with accessible .rpy source files from compiled .rpyc-only games.
-        Discovers source scripts recursively while strictly excluding translation directories (tl/).
+        Distinguishes projects with accessible .rpy source files from compiled .rpyc-only
+        or archived .rpa games. Discovers source scripts recursively while strictly
+        excluding translation directories (tl/).
         """
+        if not install_path.exists():
+            return {
+                "is_renpy": False,
+                "has_source_scripts": False,
+                "rpy_count": 0,
+                "rpyc_count": 0,
+                "rpa_count": 0,
+                "game_dir": None,
+                "message": f"Path does not exist: {install_path}",
+            }
+
         game_dir = self._get_game_dir(install_path)
         if not game_dir or not game_dir.is_dir():
             return {
@@ -97,9 +133,13 @@ class RenPyAdapter(GameAdapter):
                 "has_source_scripts": False,
                 "rpy_count": 0,
                 "rpyc_count": 0,
+                "rpa_count": 0,
                 "game_dir": None,
                 "message": "No Ren'Py game directory detected.",
             }
+
+        # Resolve root installation directory (either install_path itself or parent of game_dir)
+        root_dir = install_path if (install_path / "game").is_dir() else game_dir.parent
 
         rpy_files = sorted(
             [f for f in game_dir.rglob("*.rpy") if not self._is_tl_file(game_dir, f)],
@@ -108,6 +148,10 @@ class RenPyAdapter(GameAdapter):
         rpyc_files = sorted(
             [f for f in game_dir.rglob("*.rpyc") if not self._is_tl_file(game_dir, f)],
             key=lambda p: str(p.relative_to(install_path).as_posix()),
+        )
+        rpa_files = sorted(
+            list(game_dir.glob("*.rpa")),
+            key=lambda p: p.name,
         )
 
         has_options = (game_dir / "options.rpy").exists() or (
@@ -124,35 +168,82 @@ class RenPyAdapter(GameAdapter):
 
         marker_count = sum([has_options, has_script, has_screens, has_gui, has_tl])
 
-        if marker_count < 1 and not (len(rpy_files) > 0 or len(rpyc_files) > 0):
+        has_engine_renpy = (root_dir / "renpy").is_dir() if root_dir.is_dir() else False
+        has_engine_lib = (root_dir / "lib").is_dir() if root_dir.is_dir() else False
+        has_root_exe = any(root_dir.glob("*.exe")) if root_dir.is_dir() else False
+        has_engine_structure = (has_engine_renpy or has_engine_lib) and (
+            game_dir.name.lower() == "game" or has_root_exe
+        )
+
+        is_renpy = False
+        if marker_count >= 1:
+            is_renpy = True
+        elif has_engine_structure and (
+            len(rpa_files) > 0
+            or len(rpy_files) > 0
+            or len(rpyc_files) > 0
+            or (game_dir / "saves").is_dir()
+            or (game_dir / "cache").is_dir()
+        ):
+            is_renpy = True
+        elif len(rpa_files) > 0 and (
+            game_dir.name.lower() == "game" or has_engine_renpy
+        ):
+            is_renpy = True
+        elif (install_path / "game").is_dir() and (
+            len(rpy_files) > 0 or len(rpyc_files) > 0
+        ):
+            is_renpy = True
+
+        if not is_renpy:
             return {
                 "is_renpy": False,
                 "has_source_scripts": False,
                 "rpy_count": 0,
                 "rpyc_count": 0,
+                "rpa_count": 0,
                 "game_dir": game_dir,
                 "message": "Insufficient Ren'Py project evidence.",
             }
 
-        if len(rpy_files) == 0 and len(rpyc_files) > 0:
+        if len(rpy_files) == 0:
+            if len(rpyc_files) > 0:
+                msg = (
+                    f"Ren'Py game detected with {len(rpyc_files)} compiled .rpyc script(s), "
+                    "but no readable .rpy source files were found. Readable source scripts are required "
+                    "for text extraction. Decompilation of .rpyc files is not supported."
+                )
+            elif len(rpa_files) > 0:
+                rpa_names = ", ".join(f.name for f in rpa_files[:3])
+                if len(rpa_files) > 3:
+                    rpa_names += f" and {len(rpa_files) - 3} more"
+                msg = (
+                    f"Ren'Py game detected with archived package(s) ({rpa_names}), "
+                    "but no readable .rpy source files were found. Readable .rpy source scripts are required "
+                    "for text extraction. Archive extraction or decompilation is not supported."
+                )
+            else:
+                msg = (
+                    "Ren'Py game installation detected, but no readable .rpy source files were found. "
+                    "Readable .rpy source scripts are required for text extraction."
+                )
+
             return {
                 "is_renpy": True,
                 "has_source_scripts": False,
                 "rpy_count": 0,
                 "rpyc_count": len(rpyc_files),
+                "rpa_count": len(rpa_files),
                 "game_dir": game_dir,
-                "message": (
-                    f"Ren'Py game detected with {len(rpyc_files)} compiled .rpyc script(s), "
-                    "but no readable .rpy source files were found. Readable source scripts are required "
-                    "for text extraction. Decompilation of .rpyc files is not supported."
-                ),
+                "message": msg,
             }
 
         return {
             "is_renpy": True,
-            "has_source_scripts": len(rpy_files) > 0,
+            "has_source_scripts": True,
             "rpy_count": len(rpy_files),
             "rpyc_count": len(rpyc_files),
+            "rpa_count": len(rpa_files),
             "game_dir": game_dir,
             "message": f"Valid Ren'Py visual novel project verified ({len(rpy_files)} source script files found).",
         }
@@ -163,9 +254,15 @@ class RenPyAdapter(GameAdapter):
             return False, "", 0.0
 
         if not diag["has_source_scripts"]:
+            if diag.get("rpyc_count", 0) > 0 and diag.get("rpa_count", 0) == 0:
+                desc = "Ren'Py Visual Novel (Compiled .rpyc only - source scripts required)"
+            elif diag.get("rpa_count", 0) > 0 and diag.get("rpyc_count", 0) == 0:
+                desc = "Ren'Py Visual Novel (Archived .rpa - source scripts required)"
+            else:
+                desc = "Ren'Py Visual Novel (Compiled / archived - source scripts required)"
             return (
                 True,
-                "Ren'Py Visual Novel (Compiled .rpyc only - source scripts required)",
+                desc,
                 0.5,
             )
 
@@ -198,7 +295,7 @@ class RenPyAdapter(GameAdapter):
         if not diag["has_source_scripts"]:
             raise RuntimeError(
                 diag.get("message")
-                or "Readable .rpy source files were not found. Only compiled .rpyc files were detected. Decompilation is not supported."
+                or "Readable .rpy source files were not found. Only compiled or archived files were detected. Decompilation is not supported."
             )
 
         # Discovers all .rpy source files recursively under the game directory,

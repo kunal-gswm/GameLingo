@@ -64,7 +64,9 @@ class ExtractionWorker(QThread):
                     adapter, _, _ = detect_adapter(game_path)
 
                 if not adapter:
-                    adapter = RPGMakerMVMZAdapter()
+                    raise RuntimeError(
+                        f"No supported game engine adapter detected at '{game_path}'."
+                    )
 
             units = list(adapter.extract(game_path))
 
@@ -205,12 +207,29 @@ class ExtractionPage(QWidget):
 
     def refresh(self):
         enabled = self.state.game_path is not None and self.state.db is not None
-        self.btn_extract.setEnabled(enabled and self.worker is None)
+        can_extract = enabled and self.worker is None
+        source_limitation_msg = None
 
         if self.state.game_path:
             self.lbl_game_path.setText(str(self.state.game_path.absolute()))
+            adapter, _, conf = detect_adapter(self.state.game_path)
+            if adapter and hasattr(adapter, "diagnose"):
+                diag = adapter.diagnose(self.state.game_path)
+                if not diag.get("has_source_scripts", True):
+                    can_extract = False
+                    source_limitation_msg = diag.get(
+                        "message",
+                        "Readable source scripts are required for extraction. Compiled or archived scripts cannot be extracted.",
+                    )
+            elif not adapter or conf == 0.0:
+                can_extract = False
+                source_limitation_msg = (
+                    "No supported game engine detected at selected path."
+                )
         else:
             self.lbl_game_path.setText("No game selected.")
+
+        self.btn_extract.setEnabled(can_extract)
 
         if not enabled:
             if not self.state.workspace_path:
@@ -220,6 +239,14 @@ class ExtractionPage(QWidget):
             else:
                 self.lbl_status.setText("Select a supported game in Dashboard first.")
             self._set_pill("Disabled", "warning")
+        elif source_limitation_msg:
+            self.lbl_status.setText(source_limitation_msg)
+            self._set_pill(
+                "Compiled Only"
+                if "Ren'Py" in (source_limitation_msg or "")
+                else "Unsupported",
+                "warning",
+            )
         else:
             if self.worker is None:
                 self.lbl_status.setText("Ready to extract translatable strings.")
@@ -264,8 +291,16 @@ class ExtractionPage(QWidget):
         if not self.state.game_path or not self.state.db:
             return
 
-        adapter, _, _ = detect_adapter(self.state.game_path)
-        if adapter and hasattr(adapter, "diagnose"):
+        adapter, _, conf = detect_adapter(self.state.game_path)
+        if not adapter or conf == 0.0:
+            QMessageBox.warning(
+                self,
+                "Extraction Unsupported",
+                "No supported game engine was detected at the selected path.",
+            )
+            return
+
+        if hasattr(adapter, "diagnose"):
             diag = adapter.diagnose(self.state.game_path)
             if not diag.get("has_source_scripts", True):
                 QMessageBox.warning(

@@ -1,5 +1,7 @@
+import json
 from pathlib import Path
 
+from gamelingo.adapters.registry import detect_adapter
 from gamelingo.adapters.renpy import RenPyAdapter
 
 
@@ -265,3 +267,151 @@ def test_extract_rpyc_only_raises_unsupported_error(tmp_path: Path):
 
     assert "compiled .rpyc" in str(exc_info.value)
     assert "Readable source scripts are required" in str(exc_info.value)
+
+
+def test_detect_renpy_installation_root_with_executables_and_archives(tmp_path: Path):
+    """
+    Test selecting a packaged Ren'Py installation root containing
+    game/, lib/, renpy/, island.exe, and island.py with an archive.rpa.
+    """
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "archive.rpa").write_bytes(b"RPA-3.0 0000000000000000 00000000")
+    (game_dir / "script_version.txt").write_text("1.0", encoding="utf-8")
+
+    lib_dir = tmp_path / "lib"
+    lib_dir.mkdir()
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (tmp_path / "island.exe").write_bytes(b"MZ\x90\x00")
+    (tmp_path / "island.py").write_text("#!/usr/bin/env python\n", encoding="utf-8")
+
+    adapter = RenPyAdapter()
+    supported, version, conf = adapter.detect(tmp_path)
+
+    assert supported is True
+    assert "Ren'Py" in version
+    assert "source scripts required" in version.lower()
+    assert conf == 0.5
+
+    diag = adapter.diagnose(tmp_path)
+    assert diag["is_renpy"] is True
+    assert diag["has_source_scripts"] is False
+    assert diag["rpa_count"] == 1
+    assert "archive.rpa" in diag["message"]
+    assert "Readable .rpy source scripts are required" in diag["message"]
+
+
+def test_detect_renpy_inner_game_directory_selected(tmp_path: Path):
+    """
+    Test selecting the inner game/ directory directly from a packaged installation.
+    """
+    root = tmp_path / "island-1.0-win"
+    root.mkdir()
+    game_dir = root / "game"
+    game_dir.mkdir()
+    (game_dir / "archive.rpa").write_bytes(b"RPA-3.0 0000000000000000 00000000")
+
+    (root / "lib").mkdir()
+    (root / "renpy").mkdir()
+    (root / "island.exe").write_bytes(b"MZ\x90\x00")
+
+    adapter = RenPyAdapter()
+    supported, version, conf = adapter.detect(game_dir)
+
+    assert supported is True
+    assert "Ren'Py" in version
+    assert conf == 0.5
+
+    diag = adapter.diagnose(game_dir)
+    assert diag["is_renpy"] is True
+    assert diag["has_source_scripts"] is False
+    assert diag["rpa_count"] == 1
+
+
+def test_detect_renpy_installation_root_with_source_scripts(tmp_path: Path):
+    """
+    Test selecting an installation root that contains readable .rpy source scripts.
+    """
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "options.rpy").write_text(
+        'define config.name = "Test"\n', encoding="utf-8"
+    )
+    (game_dir / "script.rpy").write_text(
+        'label start:\n    "Hello"\n', encoding="utf-8"
+    )
+    (tmp_path / "lib").mkdir()
+    (tmp_path / "renpy").mkdir()
+    (tmp_path / "game.exe").write_bytes(b"MZ\x90\x00")
+
+    adapter = RenPyAdapter()
+    supported, version, conf = adapter.detect(tmp_path)
+
+    assert supported is True
+    assert "Ren'Py" in version
+    assert "2 script files" in version
+    assert conf == 1.0
+
+    diag = adapter.diagnose(tmp_path)
+    assert diag["is_renpy"] is True
+    assert diag["has_source_scripts"] is True
+    assert diag["rpy_count"] == 2
+
+
+def test_detect_adapter_registry_resolves_correct_engines(tmp_path: Path):
+    """
+    Test detect_adapter against RPG Maker MV (www/data/System.json),
+    RPG Maker MZ (data/System.json), Ren'Py, and an unrelated directory.
+    """
+    # 1. RPG Maker MV
+    mv_dir = tmp_path / "rpg_mv"
+    mv_dir.mkdir()
+    (mv_dir / "www" / "data").mkdir(parents=True)
+    with open(mv_dir / "www" / "data" / "System.json", "w", encoding="utf-8") as f:
+        json.dump({"gameTitle": "MV Game", "versionId": 123}, f)
+
+    adapter, desc, conf = detect_adapter(mv_dir)
+    assert adapter is not None
+    assert adapter.adapter_id == "rpgmaker_mv_mz"
+    assert "RPG Maker MV/MZ" in desc
+    assert conf == 1.0
+
+    # 2. RPG Maker MZ
+    mz_dir = tmp_path / "rpg_mz"
+    mz_dir.mkdir()
+    (mz_dir / "data").mkdir()
+    with open(mz_dir / "data" / "System.json", "w", encoding="utf-8") as f:
+        json.dump({"gameTitle": "MZ Game", "versionId": 456}, f)
+
+    adapter, desc, conf = detect_adapter(mz_dir)
+    assert adapter is not None
+    assert adapter.adapter_id == "rpgmaker_mv_mz"
+    assert "RPG Maker MV/MZ" in desc
+    assert conf == 1.0
+
+    # 3. Ren'Py
+    renpy_root = tmp_path / "renpy_root"
+    renpy_root.mkdir()
+    (renpy_root / "game").mkdir()
+    (renpy_root / "renpy").mkdir()
+    (renpy_root / "game" / "options.rpy").write_text(
+        'define config.name = "RP"\n', encoding="utf-8"
+    )
+
+    adapter, desc, conf = detect_adapter(renpy_root)
+    assert adapter is not None
+    assert adapter.adapter_id == "renpy"
+    assert "Ren'Py" in desc
+    assert conf == 1.0
+
+    # 4. Completely unrelated directory
+    unrelated_dir = tmp_path / "unrelated_project"
+    unrelated_dir.mkdir()
+    (unrelated_dir / "document.txt").write_text("Hello world", encoding="utf-8")
+    (unrelated_dir / "notes.md").write_text("# Notes", encoding="utf-8")
+
+    adapter, desc, conf = detect_adapter(unrelated_dir)
+    assert adapter is None
+    assert desc == ""
+    assert conf == 0.0
