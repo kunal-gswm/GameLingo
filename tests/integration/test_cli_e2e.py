@@ -52,8 +52,18 @@ def test_cli_e2e(e2e_setup, monkeypatch):
     assert run_cli("--workspace", str(ws), "extract", str(game)) == 0
 
     # Translate
-    # Mock ArgosTranslateProvider so it doesn't fail
+    # Mock ArgosTranslateProvider and ArgosSetupService so it doesn't fail
+    from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
     from gamelingo.translation.provider import TranslationResult
+
+    monkeypatch.setattr(
+        ArgosSetupService,
+        "check_status",
+        lambda *args, **kwargs: {
+            "status": ModelStatus.READY,
+            "message": "Model is installed and ready.",
+        },
+    )
 
     class FakeArgosProvider:
         def __init__(self, *args, **kwargs):
