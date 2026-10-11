@@ -74,3 +74,42 @@ def test_extract():
     # Verify UnknownData.json is ignored
     unknown_units = [u for u in units if u.file_id == "UnknownData.json"]
     assert len(unknown_units) == 0
+
+
+def test_extract_map_infos_regression(tmp_path: Path):
+    """
+    Regression test: Real RPG Maker MV/MZ games include MapInfos.json, which is a JSON list
+    rather than a dictionary. Previously, MapInfos.json matched the 'Map*.json' pattern and
+    caused an AttributeError ('list' object has no attribute 'get').
+    """
+    data_dir = tmp_path / "data"
+    data_dir.mkdir(parents=True)
+
+    import json
+
+    # System.json is required for _get_data_dir validation
+    with open(data_dir / "System.json", "w", encoding="utf-8") as f:
+        json.dump({"gameTitle": "MapInfos Test Game"}, f)
+
+    # Standard MapInfos.json structure: 1-indexed list with null at index 0
+    map_infos_content = [
+        None,
+        {"id": 1, "expanded": False, "name": "Overworld", "order": 1},
+        {"id": 2, "expanded": True, "name": "Starting Village", "order": 2},
+    ]
+    with open(data_dir / "MapInfos.json", "w", encoding="utf-8") as f:
+        json.dump(map_infos_content, f)
+
+    # Also test that a non-dict or empty map JSON does not crash _extract_map
+    with open(data_dir / "Map999.json", "w", encoding="utf-8") as f:
+        json.dump([], f)
+
+    adapter = RPGMakerMVMZAdapter()
+    units = list(adapter.extract(tmp_path))
+
+    map_info_units = [u for u in units if u.file_id == "MapInfos.json"]
+    assert len(map_info_units) == 2
+    assert map_info_units[0].locator == "[1].name"
+    assert map_info_units[0].source_text == "Overworld"
+    assert map_info_units[1].locator == "[2].name"
+    assert map_info_units[1].source_text == "Starting Village"

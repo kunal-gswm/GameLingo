@@ -66,6 +66,8 @@ class RPGMakerMVMZAdapter(GameAdapter):
             "Troops.json",
         ]:
             yield from self._extract_database_array(data, file_id)
+        elif file_id == "MapInfos.json":
+            yield from self._extract_map_infos(data, file_id)
         elif file_id.startswith("Map") and file_id.endswith(".json"):
             yield from self._extract_map(data, file_id)
         elif file_id == "CommonEvents.json":
@@ -86,22 +88,38 @@ class RPGMakerMVMZAdapter(GameAdapter):
             source_hash=self._hash_text(text),
         )
 
-    def _extract_system(
-        self, data: Dict[str, Any], file_id: str
-    ) -> Iterator[TranslationUnit]:
+    def _extract_system(self, data: Any, file_id: str) -> Iterator[TranslationUnit]:
+        if not isinstance(data, dict):
+            return
+
         if "gameTitle" in data:
             if unit := self._create_unit(
                 file_id, "gameTitle", data["gameTitle"], "Game Title"
             ):
                 yield unit
 
-        if "terms" in data:
+        if "terms" in data and isinstance(data["terms"], dict):
             terms = data["terms"]
             for key, msg in terms.get("messages", {}).items():
                 if unit := self._create_unit(
                     file_id, f"terms.messages.{key}", msg, f"System Message: {key}"
                 ):
                     yield unit
+
+    def _extract_map_infos(self, data: Any, file_id: str) -> Iterator[TranslationUnit]:
+        if not isinstance(data, list):
+            return
+
+        for index, item in enumerate(data):
+            if not item or not isinstance(item, dict):
+                continue
+
+            item_id = item.get("id", index)
+            name = item.get("name", "")
+            if unit := self._create_unit(
+                file_id, f"[{index}].name", name, f"MapInfo ID:{item_id} Name"
+            ):
+                yield unit
 
     def _extract_database_array(
         self, data: List[Optional[Dict[str, Any]]], file_id: str
@@ -138,9 +156,10 @@ class RPGMakerMVMZAdapter(GameAdapter):
             ):
                 yield unit
 
-    def _extract_map(
-        self, data: Dict[str, Any], file_id: str
-    ) -> Iterator[TranslationUnit]:
+    def _extract_map(self, data: Any, file_id: str) -> Iterator[TranslationUnit]:
+        if not isinstance(data, dict):
+            return
+
         if "displayName" in data:
             if unit := self._create_unit(
                 file_id, "displayName", data["displayName"], "Map Name"
