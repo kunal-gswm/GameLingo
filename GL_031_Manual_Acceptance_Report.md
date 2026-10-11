@@ -181,7 +181,11 @@ External beta testing is **JUSTIFIED WITH QUALIFICATIONS**:
 - **Automated Tests**: 95 passed, 0 skipped, 0 failed.
 - **Packaged Smoke & Workflow**: PASS.
 - **Manual Interactive Acceptance**: Documented with full Runbook and pending live human session.
-- **Documentation Commit**: [`26718ef557f300c0293077e6822c6085a5a1f6a1`](https://github.com/kunal-gswm/GameLingo/commit/26718ef557f300c0293077e6822c6085a5a1f6a1)
-- **Verified GitHub Actions Run**: [Run #45 (Success)](https://github.com/kunal-gswm/GameLingo/actions/runs/38126715529)
+- **Reconciliation & Documentation Commits**:
+  - GL-031 Acceptance Report: [`26718ef`](https://github.com/kunal-gswm/GameLingo/commit/26718ef557f300c0293077e6822c6085a5a1f6a1)
+  - Provenance Reconciliation (GL-031.1): [`a020440`](https://github.com/kunal-gswm/GameLingo/commit/a020440868a941c30dcaea07aaa437d1746d93ed)
+- **Verified GitHub Actions Runs**:
+  - Run #45 (Commit `26718ef`): [Run #38126715529 (Success)](https://github.com/kunal-gswm/GameLingo/actions/runs/38126715529)
+  - Run #47 (Commit `a020440`): [Run #38130012843 (Success)](https://github.com/kunal-gswm/GameLingo/actions/runs/38130012843)
   - `Core Tests & Linting`: Success
   - `GUI Tests`: Success
