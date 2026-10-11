@@ -6,7 +6,8 @@
 **GL-033 Feature Commit:** `5eb22f2ce8f6659460884eaa22456c434587ae7c`<br>
 **GL-033.1 Hardening Commit:** `41895e2227ec2b30b30bf351934252f36acb3d03`<br>
 **Remote Branch:** `main` (synchronized with `origin/main`)<br>
-**Verified CI Run:** `https://github.com/kunal-gswm/GameLingo/actions/runs/38140117225` (Run ID: `38140117225`)<br>
+**Verified CI Run (GL-033):** `https://github.com/kunal-gswm/GameLingo/actions/runs/38140117225` (Run ID: `38140117225`)<br>
+**Verified CI Run (GL-033.1):** `https://github.com/kunal-gswm/GameLingo/actions/runs/38143370607` (Run ID: `38143370607`)<br>
 
 ---
 
@@ -21,7 +22,7 @@ GameLingo's local-first Windows desktop application architecture was preserved a
 4. **Native Translation Generation:** Generated translations using Ren'Py's native string translation mechanism (`game/tl/<language>/strings.rpy`) under `translate <language> strings:` blocks, ensuring original `.rpy` source scripts are **never directly overwritten**. Duplicate strings are deduplicated deterministically with combined comments, and existing translations are preserved.
 5. **Safe Patching, Backup & Clean Restoration:** Extended GameLingo's safety system (`backup.py`, `restore.py`, `apply.py`, `planner.py`) to support newly created files. Backup manifests record `"existed": False` when a file does not pre-exist on disk. Restore operations cleanly unlink newly created files, returning the target directory to its pristine unpatched state. Atomic staging, post-write checksum verification, rollback on failure, and path traversal protection are strictly enforced.
 6. **UI Integration:** Updated the dashboard's Supported Game Formats card to list Ren'Py (output format, limitations, and live structure verification diagnostics).
-7. **Quality Gates & Release:** Rebuilt the portable Windows package (`GameLingo-Windows-x64.zip`), validated smoke tests and workflow execution in the packaged binary, achieved 100% test pass rate (127 passed tests), and verified clean GitHub Actions CI.
+7. **Quality Gates & Release:** Rebuilt the portable Windows package (`GameLingo-Windows-x64.zip`), validated smoke tests and workflow execution in the packaged binary, achieved 100% test pass rate (130 passed tests), and verified clean GitHub Actions CI.
 
 ---
 
@@ -29,15 +30,15 @@ GameLingo's local-first Windows desktop application architecture was preserved a
 
 ### 2.1 Git and CI Verification
 
-| Metric | Recorded Value |
-| :--- | :--- |
-| Feature Commit | `5eb22f2ce8f6659460884eaa22456c434587ae7c` |
-| Branch | `main` (synced with `origin/main`) |
-| CI Run ID | `38140117225` |
-| CI Run URL | https://github.com/kunal-gswm/GameLingo/actions/runs/38140117225 |
-| CI Status | `completed` / `success` |
-| Core Tests & Linting Job | ID: `114472084960` (Status: `success`, 11s) |
-| GUI Tests Job | ID: `114472085130` (Status: `success`, 29s) |
+| Metric | GL-033 Milestone | GL-033.1 Hardening |
+| :--- | :--- | :--- |
+| Commit SHA | `5eb22f2ce8f6659460884eaa22456c434587ae7c` | `b9eb7e7ea84be4300258296f6068f28fcdb0748e` |
+| Branch | `main` (synced) | `main` (synced) |
+| CI Run ID | `38140117225` | `38143370607` |
+| CI Run URL | https://github.com/kunal-gswm/GameLingo/actions/runs/38140117225 | https://github.com/kunal-gswm/GameLingo/actions/runs/38143370607 |
+| CI Status | `completed` / `success` | `completed` / `success` |
+| Core Tests & Linting Job | ID: `114472084960` (11s) | ID: `114481597924` (11s) |
+| GUI Tests Job | ID: `114472085130` (29s) | ID: `114481597633` (28s) |
 
 ### 2.2 Rebuilt Windows Package
 
