@@ -8,8 +8,9 @@ from gamelingo.benchmark.models import (
 from gamelingo.benchmark.runner import run_benchmark
 
 if __name__ == "__main__":
-    dataset_path = Path("src/gamelingo/benchmark/dataset.jsonl")
-    output_dir = Path("src/gamelingo/benchmark/results")
+    repo_root = Path(__file__).resolve().parent.parent
+    dataset_path = repo_root / "src/gamelingo/benchmark/dataset.jsonl"
+    output_dir = repo_root / "src/gamelingo/benchmark/results"
 
     candidates = [
         OPUSMTCandidate(),

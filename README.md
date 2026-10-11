@@ -1,302 +1,190 @@
 # GameLingo
 
-GameLingo is a local-first desktop translation-patch workbench for people who want to translate a game's stored text into a playable, editable translation. 
+GameLingo is a local-first Windows desktop workbench for translating game text into playable, editable translations. It safely extracts text from game data files, translates strings using local neural machine translation, provides a human review and spreadsheet interchange interface, and generates verified translation patches with isolated backups and one-click rollback.
 
-**Note: This is a clean-slate rebuild.** No previous GameLingo code is used. The eventual public product name is not cleared legally and may change.
+---
 
-## Vision and Scope
-- **Local-First:** The application will run entirely locally.
-- **Zero-Cost:** No paid API, hosted backend, cloud database, subscription, or account is required.
-- **Initial Target:** Supported engine profiles target RPG Maker MV/MZ and Ren'Py visual novels.
-- **MVP Workflow:** Japanese-to-English local translation, persistent progress, human review, and safe patching.
-- **Out of Scope:** Save editing, OCR/live overlays, cloud sync, decompilation of compiled-only scripts (.rpyc), and plugin marketplaces are explicitly outside scope.
+## 1. Vision & Core Principles
 
-## Development Setup
+- **Local-First & Offline:** Runs entirely on your machine. Once installed, translation and patching require zero internet access.
+- **Zero-Cost:** No paid APIs, cloud services, external databases, or subscriptions.
+- **Safety by Default:** Never silently overwrites game files. Pre-patch manifests, atomic staging, automatic rollback, and full restore capabilities ensure original game files remain protected.
+- **Human-in-the-Loop:** Machine translations are treated as draft text. Approval gates and quality validation prevent unverified machine output from deploying into games.
 
-We use Python 3.12+ and `uv` for environment management.
+---
 
-1. **Install dependencies:**
-   ```bash
-   uv pip install -e .
-   uv pip install pytest ruff
+## 2. Supported Game Engines
+
+| Engine | Source Formats | Output Format | Capabilities & Constraints |
+| :--- | :--- | :--- | :--- |
+| **RPG Maker MV & MZ** | `data/*.json`, `www/data/*.json` | Serialized Engine JSON | Extracts dialogue, names, descriptions, common events, and map info. Patches modify JSON data with isolated backup. Encrypted assets (`.rpgmvp`) must be decrypted prior to translation. |
+| **Ren'Py Visual Novels** | `game/**/*.rpy` (nested scripts) | `game/tl/<lang>/strings.rpy` | Discovers `.rpy` scripts recursively while excluding `game/tl/`. Generates native Ren'Py string translations without touching `.rpy` source scripts. Optional language activation script (`00_gamelingo_activate.rpy`). `.rpyc`-only projects without source scripts are not supported. |
+
+### Out of Scope
+- Save file editing and live memory injection.
+- OCR / real-time screen overlays.
+- Decompilation of compiled `.rpyc` bytecode.
+- Binary asset editing (audio, images, movies).
+
+---
+
+## 3. Features
+
+- **Desktop UI & CLI:** Modern PySide6 dark-graphite desktop interface and full-featured command-line interface.
+- **Smart Text Extraction:** Preserves hierarchical locators, character tags, and scene context.
+- **Placeholder & Markup Protection:** Detects and protects variable interpolation (`\N[1]`, `%1`, `[player_name]`), formatting tags (`\C[0]`, `{i}`, `{b}`, `{color=...}`), and escaped control characters.
+- **Local Machine Translation:** Integrated offline translation powered by Argos Translate (CTranslate2 NMT runtime).
+- **Translation Memory & Deduplication:** Caches translated units in a local SQLite database to prevent duplicate work.
+- **Review & Quality Validation:** Split-view review interface with search, status filtering, warning checks (length mismatch, corrupted placeholders, untranslated Japanese text), and approval actions.
+- **Spreadsheet Interchange:** UTF-8-BOM CSV export/import compatible with Microsoft Excel, featuring formula-injection protection and immutable metadata validation.
+- **Safety Engine:** Atomic write staging (`gamelingo_*.tmp`), UUID-isolated backup snapshots, post-write SHA-256 verification, automatic rollback on partial failure, and byte-for-byte restoration.
+
+---
+
+## 4. Installation & Windows Portable Release
+
+Pre-built portable releases are available on the [GitHub Releases](https://github.com/kunal-gswm/GameLingo/releases) page.
+
+1. **Download:** Download `GameLingo-Windows-x64.zip` and `GameLingo-Windows-x64.zip.sha256`.
+2. **Verify Checksum:** Open PowerShell in your download folder and verify the archive hash:
+   ```powershell
+   Get-FileHash GameLingo-Windows-x64.zip -Algorithm SHA256
+   Get-Content GameLingo-Windows-x64.zip.sha256
    ```
+3. **Extract:** Extract the ZIP to a writable location (e.g., `C:\Tools\GameLingo\` or your Documents folder). Do not extract inside `Program Files` or system directories requiring elevated permissions.
+4. **Launch:** Double-click `GameLingo.exe`.
+   - *Windows SmartScreen Note:* Because GameLingo is an unsigned open-source application, Windows SmartScreen may show a prompt ("Windows protected your PC"). Click **More info** $\rightarrow$ **Run anyway** after verifying the release source and checksum.
 
-2. **Run the entry point:**
-   ```bash
-   python -m gamelingo.app
-   ```
-   Or use the installed script:
-   ```bash
-   gamelingo
-   ```
+---
 
-3. **Run tests:**
-   ```bash
-   pytest
-   ```
+## 5. Quick Start
 
-4. **Lint and Format:**
-   ```bash
-   ruff check .
-   ruff format .
-   ```
+### Graphical Interface (GUI)
+1. **Open Workspace:** Select or create a folder where GameLingo will store project databases and backups.
+2. **Select Game Directory:** Choose the root directory of your RPG Maker MV/MZ or Ren'Py game. GameLingo will verify engine structure and report diagnostics.
+3. **Extract Strings:** Navigate to the Extract page and click **Extract All Text**.
+4. **Translate:** Navigate to the Translate page and start a translation job.
+5. **Review:** Navigate to the Review page to inspect translations, edit text, and approve units.
+6. **Patch:** Navigate to the Patch page, review the validated plan preview, and click **Apply Patch to Game**.
 
-## Continuous Integration (CI)
-
-Automated quality checks are run on every push to the `main` branch and on all pull requests via GitHub Actions.
-
-The following checks run automatically:
-1. **Tests:** Executes `pytest` to ensure unit tests pass.
-2. **Linting:** Executes `ruff check .` to check for style and quality violations.
-3. **Formatting:** Executes `ruff format --check .` to enforce consistent code formatting.
-
-To run the exact same checks locally in a reproducible environment, use:
+### Command-Line Interface (CLI)
 ```bash
-uv sync --locked
+# 1. Initialize a project workspace
+gamelingo project init --workspace ./workspace
+
+# 2. Inspect and detect game engine
+gamelingo game detect "C:/Games/MyGame"
+
+# 3. Extract translatable strings
+gamelingo extract "C:/Games/MyGame"
+
+# 4. Run translation job
+gamelingo translate
+
+# 5. Review translations or export to CSV
+gamelingo review list --status needs_review,draft
+gamelingo export csv --output translations.csv
+
+# 6. Generate and preview patch plan
+gamelingo patch plan --plan-file patch.json
+
+# 7. Apply patch with isolated backup
+gamelingo patch apply patch.json --execute --yes
+```
+
+---
+
+## 6. Translation Model Setup
+
+GameLingo uses the open-source Argos Translate Japanese-to-English neural translation model (`ja -> en` v1.1, ~50MB).
+
+- **Online Setup (One-Click):** On the GUI Translation page, click **Download & Install Model**. GameLingo will download and register the model from the official Argos index with explicit consent.
+- **Offline Setup:** For air-gapped systems:
+  1. Download the `translate-ja_en` package (`.argosmodel`) from [Argos Open Tech](https://www.argosopentech.com/).
+  2. In the GUI Translation page, click **Install from Local File** and select the `.argosmodel` file.
+- **Missing Model Behavior:** If the model is not installed, GameLingo runs normally for extraction, review, CSV editing, and patch application using pre-existing translations; translation generation will prompt for model installation.
+
+---
+
+## 7. Development & Testing
+
+### Prerequisites
+- Python 3.12 or newer
+- [uv](https://github.com/astral-sh/uv) (fast Python package and environment manager)
+
+### Local Setup
+```bash
+# Clone the repository
+git clone https://github.com/kunal-gswm/GameLingo.git
+cd GameLingo
+
+# Install all dependencies (core, GUI, Argos, dev)
+uv sync --locked --extra gui --extra argos --group dev
+
+# Launch desktop GUI
+uv run python -m gamelingo.gui.main
+
+# Run test suite (130 automated tests)
 uv run pytest
+
+# Check code formatting and linting
 uv run ruff check .
 uv run ruff format --check .
 ```
 
-## Data Persistence
-
-The local persistence module handles storing projects, translation units, and translation memories.
-- **Responsibilities:** Manages SQLite connection, database initialization, and strictly ordered schema migrations.
-- **Location:** The SQLite database (`<project>.sqlite3`) should ideally be stored in the user's data directory or within the selected project workspace. The specific path is provided explicitly when initializing a `Database(Path)` instance.
-- **Migrations:** Migrations are defined in `src/gamelingo/storage/database.py`. They are transactional (where supported by SQLite) and versioned. Using `.migrate()` applies all pending schema updates in order.
-- **Testing:** Database tests use temporary SQLite files to avoid affecting real projects. Run them via `uv run pytest tests/integration/test_database.py`.
-
-## Backup and Safety
-
-GameLingo ensures you never lose original game data by enforcing a strict backup protocol before any modifications.
-- **System:** `gamelingo.safety.backup` manages reliable copying and checksum generation. `gamelingo.safety.restore` manages safe deployment back to the target directory.
-- **Manifests:** Every backup job produces a `manifest.json` which securely records file sizes, original SHA-256 checksums, and backup checksums.
-- **Preview & Restore:** By default, restore operations are dry-runs (`preview_restore()`). To change files on disk, explicitly call `execute_restore()` with `execute=True` and `overwrite=True` (if replacing files).
-- **Verification:** The backup manifest strictly enforces that original files are byte-for-byte identical to the recorded backups before restoration begins. If a replacement fails mid-operation, the system attempts to rollback changed files to their pre-restore state.
-- **Limitations:** Automated translation patch deployment is separate and will be built upon these safe file primitives in a future milestone.
-
-## Translation Patch Planning
-
-Before any translations are deployed, GameLingo constructs a **Patch Plan**. 
-- **What it is:** A read-only, declarative JSON description of exactly which values in which game files are proposed to change.
-- **Why it matters:** Plan generation *never* modifies game files. It purely inspects available translations, calculates the necessary changes against the current disk state, and explicitly flags unapproved translations or conflicts.
-- **Stale Sources & Conflicts:** If a game file has been updated externally and the original source text no longer matches the expected text at the exact locator, it is flagged as `stale_source`. If two translations target the same exact locator with different translated values, it is flagged as a `conflict`.
-- **Validation vs Application:** Validation (`validate_plan`) merely checks that the plan is structurally sound, targets safe paths within the game root, and points to valid existing locators. A valid plan is *not* permission to overwrite files. **Patch application is a separate, future milestone.**
-- **Exporting & Inspection:** Plans can be exported to standard JSON (`json.dump(plan)`) and re-parsed, allowing external review or manual verification before deployment.
-
-## Patch Application
-
-Applying translations to live game files is handled through a strict, multi-stage pipeline:
-- **Preview vs Execution:** Calling the patch API without explicit authorization evaluates the plan in a dry-run context. It parses files in memory, identifies what would change, and flags conflicts, but makes zero filesystem writes.
-- **Authorization & Overwrite:** Writing files requires explicit execution authorization and an explicit overwrite policy flag.
-- **Automatic Verified Backups:** Before a single original file is touched, the system dynamically generates a backup manifest covering every affected file, executes the backup, and re-verifies the copy integrity. If backup fails, application aborts cleanly.
-- **Post-Write Validation:** Edited files are built in a staging area (temporary files), validated, swapped atomically where possible, and re-read from disk to calculate final output hashes and ensure structural integrity.
-- **Recovery:** If any stage of replacement or post-write verification fails, the system immediately delegates to the core restoration API to revert files using the backup created moments prior. 
-- **Supported Formats:** RPG Maker MV/MZ JSON files (`data/*.json`, `www/data/*.json`) and Ren'Py Visual Novels (`game/tl/<language>/strings.rpy`). For RPG Maker, patcher output re-serializes JSON semantics. For Ren'Py, native string translation files are generated in `game/tl/<language>/strings.rpy`, leaving original `.rpy` scripts untouched.
-
-## Translation Pipeline Core
-
-GameLingo features a robust, provider-independent orchestration pipeline that manages translation jobs safely and efficiently without immediately modifying game files:
-- **Provider Interface:** A simple, typed contract (`TranslationProvider`) separates the orchestration logic from the actual translation engine, supporting single requests, grouped batches, and explicit error handling.
-- **Translation Memory & Deduplication:** To prevent redundant work, duplicate requests within a job are grouped by a strict identity key (`hash(source_text)`, `language_pair`, `hash(context)`). Translated requests are durably persisted to SQLite and reused across future jobs automatically.
-- **Batch Processing & Checkpointing:** Jobs are split into deterministic chunks (based on the provider's batch limit). Each chunk is processed serially and committed in a single transactional step. 
-- **Resumable Jobs:** Job status (`created`, `pending`, `running`, `completed`) and chunk execution states are durable. If an API request fails, or the system is unexpectedly interrupted, users can resume the exact job—the system skips already-persisted chunks and safely retries failed ones.
-
-### Running the Synthetic Benchmark
-You can run the synthetic pipeline benchmark to observe the massive efficiency gains from in-memory deduplication and persistent caching:
+### Benchmarks
+To compare translation models using the built-in 60-string game dialogue dataset:
 ```bash
-uv run pytest -s tests/integration/test_pipeline_benchmark.py
+uv sync --group benchmark
+uv run python scripts/run_benchmark.py
 ```
+Benchmark results are generated under `src/gamelingo/benchmark/results/`.
 
-## Local Translation Models & Benchmarking
-GameLingo evaluates free, local-first translation models. To ensure maximum compatibility and avoid bloating the core installation with massive ML frameworks, translation providers are implemented as **optional dependencies**.
-
-### Using Argos Translate (Production Provider)
-Based on benchmarks, **Argos Translate** is the recommended default local provider. It uses CTranslate2 (no CUDA/PyTorch required) and runs fully offline.
-
-1. Install the `argos` optional dependency group:
-   ```bash
-   uv sync --group argos
-   # OR: pip install .[argos]
-   ```
-2. **Explicitly install the Japanese-to-English package**:
-   GameLingo will **never** download models automatically. You must install the model package manually. The verified package is `translate-ja_en` version `1.1`.
-   ```python
-   import argostranslate.package
-
-   argostranslate.package.update_package_index()
-   available_packages = argostranslate.package.get_available_packages()
-   package = next(
-       filter(lambda x: x.from_code == "ja" and x.to_code == "en", available_packages)
-   )
-   argostranslate.package.install_from_path(package.download())
-   ```
-   **License Note**: The Argos Translate Python code is licensed under the MIT License. The `translate-ja_en` model weights are released into the Public Domain (CC0).
-
-### Running Benchmarks
-You can run the translation provider benchmark harness directly to test and compare models (e.g. OPUS-MT and Argos Translate) on your own hardware using a 60-string representative game dataset:
-1. Ensure you have the `benchmark` optional dependency group installed (`uv sync --group benchmark`).
-2. Run the benchmarking tool:
-```bash
-python run_benchmark.py
+### Windows Package Build
+To produce the standalone portable Windows package locally:
+```powershell
+powershell -ExecutionPolicy Bypass -File build_windows.ps1
 ```
-3. A detailed performance and quality report will be generated in `src/gamelingo/benchmark/results/`.
+The script compiles `dist\GameLingo-Windows-x64.zip` and generates `dist\GameLingo-Windows-x64.zip.sha256`.
 
-## License
-First-party code in this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+---
 
-## Translation Workflow and Review
+## 8. Safety, Backups & Restoration
 
-GameLingo enforces a strict review lifecycle for translations to prevent poor machine output from accidentally ending up in your game.
+GameLingo enforces strict filesystem safety guarantees:
 
-### Statuses
-- **untranslated**: Default state.
-- **draft**: Machine-translated or human-edited text that is structurally valid but unapproved.
-- **needs_review**: Translations that failed validation warnings or errors.
-- **approved**: Explicitly validated and approved by a human.
-- **rejected**: Explicitly rejected by a human.
-- **failed**: Provider failure during translation generation.
+- **Isolated Backups:** Every patch operation creates a timestamped, UUID-isolated snapshot in `workspace/backups/<uuid>/` with a cryptographic `manifest.json`.
+- **Atomic Staging:** Edits are written to temporary staging files (`gamelingo_*.tmp`) in the destination directory and validated before replacing originals.
+- **Automatic Rollback:** If serialization, filesystem replacement, or post-write checksum verification fails, GameLingo catches the failure and immediately restores modified files to their pristine baseline.
+- **One-Click Restore:** Revert patches at any time via the GUI Patch page or CLI:
+  ```bash
+  gamelingo restore <backup-id> --execute --overwrite
+  ```
+  Restoration returns original files to their exact pre-patch SHA-256 state and cleanly unlinks newly created translation or activation files.
 
-### Quality Validation
-Before a translation can be approved, it passes through structural checks.
-**Blocking Errors (Prevent Approval):**
-- Missing or empty output.
-- Missing, duplicated, or corrupted placeholders (e.g. `%1`, `\N[1]`).
-- Leftover masking sentinels (`XXXTOKEN0XXX`).
+---
 
-**Warnings (Flagged for Review):**
-- Output identical to source text.
-- Unusual length differences (too long/short).
-- Japanese characters remaining in output.
+## 9. Known Limitations & Troubleshooting
 
-*Note: The test `剣を装備しました。` translating to `Sword was fixed.` is mechanically valid and preserves tokens, but contextually inaccurate. Passing validation does not equal semantic quality, hence the mandatory approval step.*
+- **Antivirus Quarantines:** PyInstaller-bundled binaries may occasionally trigger false-positive heuristics on Windows. If `GameLingo.exe` fails to start, verify that bundled files in `_internal` were not blocked by security software.
+- **Startup Diagnostics:** If the application crashes on launch, run `GameLingo.exe > crash_log.txt 2>&1` in PowerShell to capture stdout/stderr. Ensure directory paths do not exceed Windows' 260-character path limit.
+- **Machine Translation Quality:** Raw neural machine translation may produce literal or stiff phrasing. Human review via the Review tab or CSV export is strongly recommended before patching.
+- **Encrypted Game Archives:** RPG Maker MV/MZ games distributing encrypted assets (`.rpgmvp`, `.rpgmvo`) must be unpacked with an asset decrypter before GameLingo can parse JSON events.
+- **Ren'Py SDK Verification:** Direct in-engine rendering via an official running Ren'Py SDK is not executed in headless CI environments and remains unverified. Translation files strictly comply with Ren'Py 8.x translation specifications.
 
-## CLI Quick Start
+---
 
-GameLingo provides a complete end-to-end command-line workflow. All commands use the `gamelingo` entry point and default to your current directory as the project workspace. To specify a different workspace, use `--workspace <path>`.
+## 10. Documentation & Release History
 
-1. **Initialize Project**
-   Create a new project workspace in the current directory:
-   ```bash
-   uv run python -m gamelingo project init
-   ```
+- **Product Requirements:** [`docs/product/PRD.md`](docs/product/PRD.md)
+- **Milestone & Release History:** [`docs/history/MILESTONE_HISTORY.md`](docs/history/MILESTONE_HISTORY.md)
+- **Ren'Py Support & Hardening Report:** [`docs/releases/GL_033_RenPy_Support_Report.md`](docs/releases/GL_033_RenPy_Support_Report.md)
 
-2. **Detect and Inspect Game**
-   Check if your game is supported:
-   ```bash
-   uv run python -m gamelingo game detect "C:/Path/To/Game"
-   ```
+---
 
-3. **Extract Text**
-   Extract translation units safely:
-   ```bash
-   uv run python -m gamelingo extract "C:/Path/To/Game"
-   ```
+## 11. Contributing & License
 
-4. **Translate via Argos Translate (Optional Local LLM)**
-   If you have installed the optional Argos dependencies, run translation. It automatically handles batching, caching, and resumption:
-   ```bash
-   uv run python -m gamelingo translate
-   ```
+Contributions, bug reports, and suggestions are welcome via [GitHub Issues](https://github.com/kunal-gswm/GameLingo/issues) and [Pull Requests](https://github.com/kunal-gswm/GameLingo/pulls).
 
-5. **Manage Jobs**
-   If a translation job was interrupted or needs resuming:
-   ```bash
-   uv run python -m gamelingo jobs list
-   uv run python -m gamelingo jobs resume <job-id>
-   ```
-
-6. **Review Workflow**
-   Machine translations must be approved.
-   ```bash
-   uv run python -m gamelingo review list --status needs_review,draft
-   uv run python -m gamelingo review show <unit_id>
-   uv run python -m gamelingo review edit <unit_id> "Better translation."
-   uv run python -m gamelingo review approve <unit_id>
-   ```
-   
-   Alternatively, you can edit translations in bulk using spreadsheet export/import:
-   ```bash
-   # Export to CSV
-   uv run python -m gamelingo export csv --output "translations.csv" --status draft,needs_review
-   
-   # ... Edit translations.csv in Excel/LibreOffice ...
-   
-   # Preview changes without modifying database
-   uv run python -m gamelingo import preview "translations.csv"
-   
-   # Apply changes
-   uv run python -m gamelingo import apply "translations.csv" --yes
-   ```
-   *Note on CSV Editing and Interoperability:*
-   - **Supported CSV Format:** GameLingo exports CSV version 1.0 using standard UTF-8-BOM encoding for broad spreadsheet compatibility.
-   - **Editable Columns:** Edit **only** the `translated_text` column.
-   - **Immutable Metadata:** Do **not** modify `unit_id`, `locator`, `source_text`, `source_hash`, `project_id`, or `format_version`. The importer verifies these strictly and rejects tampered rows.
-   - **Formula Injection Safety:** GameLingo automatically protects against spreadsheet formula evaluation (e.g. `=`, `+`, `-`, `@`) by escaping dangerous values with a leading single quote (`'`). 
-   - **Handling Formula-Like Text:** If you intend to type literal formula-like text (e.g. `=SUM()`), prefix it with a single quote (`'`) in your spreadsheet application. When saving to CSV, the spreadsheet preserves the quote, and GameLingo's importer strips exactly one leading quote if present. If you fail to prefix a new formula-like value, GameLingo will reject the import to protect you from executing unexpected macros or corrupting translations.
-   - **Stale Exports:** GameLingo tracks the `source_hash` and `source_text`. If the game was updated or the source text changed in the database since your CSV export, the importer will block the stale row.
-   - **Previewing:** Always use `import preview "translations.csv"` to validate your file before applying. Preview mode is guaranteed strictly read-only.
-   - **Approval Lifecycle:** Importing an edited translation resets its status to `needs_review` or `draft` (invalidating prior approval). Approval status is intentionally not imported from CSV to enforce human review in the dedicated UI and ensure no unverified machine/bulk edits bypass quality checks.
-   - **Error Recovery:** If you encounter a malformed CSV or ambiguous formula error, either manually fix the quoted fields/prefixes in a plain text editor, or discard the CSV and export a fresh copy from GameLingo.
-   - **Tested Spreadsheets:** This implementation was directly tested and verified against Microsoft Excel for Windows. Other applications (e.g., LibreOffice Calc, Google Sheets) may have subtle differences in how they strip leading whitespace or tabs before saving. Always check the preview output.
-
-7. **Create Patch Plan**
-   Generate a patch plan using approved translations:
-   ```bash
-   uv run python -m gamelingo plan create --plan-file patch.json
-   ```
-
-8. **Apply Patch (Safe, explicit authorization)**
-   By default, `apply` does a safe preview:
-   ```bash
-   uv run python -m gamelingo apply patch.json
-   ```
-   To explicitly execute and overwrite game files:
-   ```bash
-   uv run python -m gamelingo apply patch.json --execute --yes
-   ```
-
-## GUI Quick Start
-
-GameLingo provides a modern PySide6 desktop interface for users who prefer visual tools over the CLI.
-
-### Installing Optional GUI Dependencies
-
-To keep the core application lightweight, the GUI is an optional dependency group called `gui`. Install it using:
-```bash
-uv sync --extra gui
-```
-*(Note: `--group` was changed to `--extra` per standard configuration).*
-
-### Launching the Desktop App
-
-You can launch the GUI using the Python module:
-```bash
-uv run python -m gamelingo.gui.main
-```
-
-### Supported GUI Features
-The GUI provides complete coverage of the GameLingo translation lifecycle:
-- **Dashboard:** Create or open workspaces, and dynamically detect supported RPG Maker MV/MZ and Ren'Py game directories with structure verification and format diagnostics.
-- **Extraction:** A dedicated progress page to safely extract game data.
-- **Translation:** Launch, monitor, stop, or resume translation jobs with Argos Translate (assuming you've installed it).
-- **Review:** A dedicated split-pane UI where you can inspect source and translation side-by-side, view quality warnings, edit text, and approve or reject units.
-- **Patch:** Create and validate a patch plan with zero risk, preview changes, and explicitly apply them with a backup confirmation.
-
-### Testing and CI Verification
-The project features a strict continuous integration lifecycle with split dependency verification:
-- **Core Tests Job:** Verifies the CLI, project initialization, SQLite interactions, translation pipeline, and parsing services WITHOUT installing the GUI packages. This guarantees the core application never silently breaks for server environments or low-profile CLI setups.
-- **GUI Tests Job:** Installs the optional `gui` group (which installs `PySide6`) alongside headless Linux dependencies (`QT_QPA_PLATFORM: offscreen`), and safely exercises all GUI components without rendering them on-screen.
-
-#### Running Tests Locally
-To run the full suite including GUI tests (ensure you have installed the `gui` extra):
-```bash
-uv run pytest tests/integration/test_gui.py
-```
-If you omit the `gui` dependencies, the test suite will cleanly `skip` the GUI tests and execute the remaining test suite.
-
-#### Limitations
-- **Platform Limitations:** While GameLingo is primarily targeted at Windows systems, GUI tests run headlessly on Ubuntu in CI.
-- **Worker Hangs/Shutdowns:** Hard-closing the application while extraction or translation threads are running will trigger an aggressive cancellation request. Checkpointing preserves progress, but shutting down mid-task may lose the most recent unfinished batch of translations.
-
-**Note:** Just like the CLI, the GUI never connects to the internet or uploads your data. Model weights for translation must still be manually installed via the command-line steps detailed above.
+- **License:** First-party code is licensed under the [MIT License](LICENSE).
+- **Third-Party Notices:** Licenses for bundled and optional dependencies (PySide6, CTranslate2, Argos Translate, Stanza, etc.) are cataloged in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt).
