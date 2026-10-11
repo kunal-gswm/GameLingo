@@ -50,6 +50,7 @@ Make GameLingo's Japanese-to-English translation provider usable by a Windows de
 - Executed `--smoke-test` and `--test-workflow` successfully against the packaged executable.
 - Packaged Zip Checksum (SHA-256): `7DF88CA1F7B34A5AFFC4517970AF1DBC21D56F703495E7402FA5FF86CC6E3197`
 - Provenance Source Commit: `3efb2bc`
+- Verified CI Run (Passing): `https://github.com/kunal-gswm/GameLingo/actions/runs/38112658743` (commit `5949cf2`)
 
 ## Conclusion
 GL-028 completes the offline translation capability requirement, bridging the gap between local application usage and first-run model provisioning. No automatic silent downloads are triggered, preserving bandwidth and user consent. GameLingo remains 100% offline-ready for users bringing their own `.argosmodel` packages.
