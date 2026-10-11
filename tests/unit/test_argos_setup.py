@@ -110,7 +110,7 @@ def test_install_from_file_valid(tmp_path, mock_argos_modules):
     mock_argos_modules["install_from_path"].assert_called_once_with(str(zip_path))
 
 
-def test_install_from_file_invalid_zip(tmp_path):
+def test_install_from_file_invalid_zip(tmp_path, mock_argos_modules):
     invalid_path = tmp_path / "invalid.argosmodel"
     invalid_path.write_text("not a zip")
 
@@ -118,7 +118,7 @@ def test_install_from_file_invalid_zip(tmp_path):
         ArgosSetupService.install_from_file("ja", "en", str(invalid_path))
 
 
-def test_install_from_file_missing_metadata(tmp_path):
+def test_install_from_file_missing_metadata(tmp_path, mock_argos_modules):
     zip_path = tmp_path / "no_meta.argosmodel"
     with zipfile.ZipFile(zip_path, "w") as z:
         z.writestr("dummy.txt", "data")

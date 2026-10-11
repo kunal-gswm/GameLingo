@@ -136,8 +136,6 @@ class ArgosSetupService:
     def install_from_file(cls, source_lang: str, target_lang: str, file_path: str):
         from zipfile import BadZipFile, ZipFile
 
-        import argostranslate.package
-
         path_obj = Path(file_path)
         if not path_obj.exists():
             raise FileNotFoundError(f"Package file not found: {file_path}")
@@ -153,6 +151,8 @@ class ArgosSetupService:
             raise ValueError(
                 "The provided file is not a valid zip archive (.argosmodel)."
             )
+
+        import argostranslate.package
 
         argostranslate.package.install_from_path(str(path_obj))
 
