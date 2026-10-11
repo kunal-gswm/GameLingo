@@ -90,8 +90,12 @@ The master stylesheet (`APP_STYLESHEET`) defines standard focus rings, scrollbar
 
 ## 3. Automated Test Suite & Coverage
 
-The test suite was expanded to 100 passing tests, including 11 integration tests covering the redesigned UI:
+The test suite accurately distinguishes between the full repository test suite and the GUI integration test suite:
 
+- **Full Repository Test Suite**: **103 passed, 0 skipped, 0 failed** in 12.47s across unit, adapter, storage, safety, translation, and GUI suites (`uv run pytest`).
+- **GUI Integration Suite**: **14 test functions** defined in [`tests/integration/test_gui.py`](file:///e:/GameLingo/tests/integration/test_gui.py).
+
+### GUI Test Functions
 ```
 tests/integration/test_gui.py::test_main_window_loads PASSED
 tests/integration/test_gui.py::test_translation_page PASSED
@@ -104,31 +108,34 @@ tests/integration/test_gui.py::test_dashboard_workflow_states PASSED
 tests/integration/test_gui.py::test_translation_model_status_display PASSED
 tests/integration/test_gui.py::test_review_search_filter_and_unsaved_flow PASSED
 tests/integration/test_gui.py::test_patch_restore_interaction PASSED
+tests/integration/test_gui.py::test_dashboard_supported_game_formats_and_structure_validation PASSED
+tests/integration/test_gui.py::test_selected_game_separate_from_model_state PASSED
+tests/integration/test_gui.py::test_patch_and_review_layout_boundaries PASSED
 ```
 
 ### Coverage Highlights
-- **Navigation & Theming**: Verifies 1180×760 reference size and 900×600 minimum size, navigation through all 5 stacked pages, and top header updates.
-- **Dashboard States**: Tests empty installation state vs populated workspace and game configuration.
-- **Model Readiness**: Tests `ModelStatus.NOT_INSTALLED` and `ModelStatus.READY` visual updates.
-- **Review Workflow**: Tests text search filtering, status filter combo selection, unsaved changes indicator, save draft, approval, and rejection.
-- **Restore Workflow**: Tests snapshot discovery, restore preview text, and confirmed restore execution using `create_backup` and `execute_restore`.
+- **Navigation & Theming**: Verifies 1180×760 reference size and 900×600 minimum size, navigation through all 5 stacked pages, footer label `v0.1.0 • Local-first`, and top header status updates.
+- **Dashboard States & Format Support**: Tests empty installation state vs populated workspace and game configuration, Supported Game Formats panel (MV and MZ descriptions, unsupported save files and binary assets notices), and missing vs valid data structure reporting.
+- **Model Readiness & Status Independence**: Tests distinct labels (`Model Not Installed`, `Model Installed`, `Dependency Missing`), verifying that selecting a game never falsely implies model readiness.
+- **Review Workflow & Pane Constraints**: Tests text search filtering, status filter combo selection, unsaved changes dirty indicator, and non-collapsible splitter minimum pane widths.
+- **Restore Workflow & Layout Boundaries**: Tests snapshot discovery, restore preview text, confirmed restore execution, and responsive layout of backup restoration controls without clipping at 900×600.
 
 ---
 
 ## 4. Release Provenance & Historical Archive
 
-### 4.1 Rebuilt Package Metadata
-The Windows x64 distribution package was rebuilt using `build_windows.ps1` from the exact committed source:
+### 4.1 Rebuilt Package Metadata (GL-032.1)
+The Windows x64 distribution package was rebuilt using `build_windows.ps1` from the exact committed source for GL-032.1:
 
 | Parameter | Value |
 | :--- | :--- |
-| **Source Commit SHA** | `4108d6e6cf186d2796728ae86d60f85940bacc24` |
+| **Source Commit SHA** | [`a158de712436aee2e31eaac700fe2eb2c7e3c175`](https://github.com/kunal-gswm/GameLingo/commit/a158de712436aee2e31eaac700fe2eb2c7e3c175) |
 | **Branch** | `main` |
 | **Python Version** | Python 3.14.0 |
 | **PyInstaller Version** | 6.22.3 |
 | **Package Path** | `dist\GameLingo-Windows-x64.zip` |
-| **Package Size** | 273,247,884 bytes |
-| **Package SHA-256** | `2A5EC90F402246C62CD8138724672631DADD10E7CE723BA5882505F65E4C8A66` |
+| **Package Size** | 273,251,033 bytes |
+| **Package SHA-256** | `246F9D86B5EA3C2C8F4C01CAE8AA9FFEFE83EED3F3AC76153FAC7E592BB28B9E` |
 
 ### 4.2 Historical Checksum Archive
 Historical records remain preserved and reconciled against evidence:
@@ -141,9 +148,10 @@ Historical records remain preserved and reconciled against evidence:
 | **GL-030 Initial Rebuild** | `1cd6a6a` | 273,214,376 bytes | `549611E3B68E574E32B38021E46E3F579E9EA77A04DBEE40A1C1F5201D823DE0` | `GL_030_Real_Game_Pilot_Report.md` (Lines 9-11) |
 | **GL-031 Verified Build** | `6459f53` | 273,214,225 bytes | `28787D87098FAFD90DC22D3D9302021CFFFA64BABD77183B5FB454A15A400B92` | `dist\GameLingo-Windows-x64.zip.sha256` |
 | **GL-032 Desktop UI Overhaul** | `4108d6e` | 273,247,884 bytes | `2A5EC90F402246C62CD8138724672631DADD10E7CE723BA5882505F65E4C8A66` | `dist\GameLingo-Windows-x64.zip.sha256` (Verified Rebuild) |
+| **GL-032.1 Status & Polish** | `a158de7` | 273,251,033 bytes | `246F9D86B5EA3C2C8F4C01CAE8AA9FFEFE83EED3F3AC76153FAC7E592BB28B9E` | `dist\GameLingo-Windows-x64.zip.sha256` (Verified Rebuild) |
 
 ### 4.3 Packaged Verification in Spaced Directory
-The rebuilt archive was extracted into `dist\GL032 UI Acceptance Dir\GameLingo\GameLingo.exe` and tested:
+The rebuilt archive was extracted into `dist\GL032.1 Acceptance Dir\GameLingo\GameLingo.exe` and tested:
 
 | Test Mode | Command Executed | Exit Code | Verification Output |
 | :--- | :--- | :---: | :--- |
@@ -152,20 +160,28 @@ The rebuilt archive was extracted into `dist\GL032 UI Acceptance Dir\GameLingo\G
 
 ---
 
-## 5. Visual Inspection & Screenshots
+## 5. GL-032.1 Quality Pass & Visual Polish Details
 
-UI screenshots were rendered and inspected across both reference window sizes:
-- `page_0_dashboard_1180x760.png` & `page_0_dashboard_900x600.png`
-- `page_1_extraction_1180x760.png`
-- `page_2_translation_1180x760.png`
-- `page_3_review_1180x760.png` & `page_3_review_900x600.png`
-- `page_4_patch_1180x760.png`
+### 5.1 Status Semantics & Truthful Reporting
+1. **Sidebar Footer**: Replaced static `v0.1.0 • Offline Ready` with neutral `v0.1.0 • Local-first`.
+2. **Context Header Pill**: Replaced `Game Ready` with `Game Selected` using neutral info styling (`#162b42` / `#90caf9` / `#3d72a4`), avoiding false implications of model readiness prior to translation setup.
+3. **Dashboard Pipeline Stages**: Replaced misleading `Ready` (success green) pills on workspace and game steps with `Workspace Open` and `Game Selected` (info blue). Extraction stage displays `Not Extracted` (warning) until extraction is run.
+4. **Distinct Model Status Indicators**:
+   - `Model Installed` (`success`)
+   - `Model Not Installed` (`warning`)
+   - `Dependency Missing` (`danger`)
+   - `Check Error` (`danger`)
+   - `Downloading Model` / `Installing Model` (`info`)
 
-**Inspection Findings & Corrections Made**:
-1. Duplicate heading widgets removed from page interiors in favor of the global shell header.
-2. Long directory paths placed on full-width labels with mouse selection and tooltips, eliminating button compression.
-3. Review split layout proportions balanced with splitter minimum widths and dedicated CSV footer bars.
-4. Vertical scrollbars on the sidebar list suppressed to preserve clean aesthetics.
+### 5.2 Supported Game Formats Panel
+Added a dedicated panel to `DashboardPage` that:
+- Explicitly lists **RPG Maker MV** (`data/` or `www/data/`) and **RPG Maker MZ** (`data/`).
+- Details the **Unsupported Content Scope**: runtime save files (`*.rpgsave`, `save/`) and binary assets (images, audio, movies, executables) are unsupported and cannot be translated.
+- Live Data Structure Inspector: Reports `Structure Missing` (`danger`) with specific diagnostics when `System.json` is missing or when only save files/binaries are detected, and `Structure Verified` (`info`) when a valid directory is present.
+
+### 5.3 Visual Polish & Layout Boundary Constraints
+- **Patch Page Backup Controls**: Restructured backup combo box to span full width and placed action buttons on a separate row with stretch. Eliminated fixed 340px minimum width that caused controls to overflow outside the card boundaries at 900×600.
+- **Review Page Splitter**: Set `splitter.setChildrenCollapsible(False)` and enforced minimum pane widths (220px left, 320px right) to prevent editor and queue panes from collapsing.
 
 ---
 
@@ -173,21 +189,16 @@ UI screenshots were rendered and inspected across both reference window sizes:
 
 | Verification Category | Status | Notes |
 | :--- | :---: | :--- |
-| **Automated Widget Integration Tests** | **PASS** | 100/100 tests pass (`tests/integration/test_gui.py`). |
+| **Full Repository Test Suite** | **PASS** | 103/103 tests pass (`uv run pytest`). |
+| **GUI Integration Tests** | **PASS** | 14/14 tests pass in `tests/integration/test_gui.py`. |
 | **Packaged Binary CLI Smoke Test** | **PASS** | Exit code 0 in directory containing spaces. |
 | **Packaged Binary End-to-End Test** | **PASS** | Exit code 0 in directory containing spaces. |
-| **Visual Render Inspection** | **PASS** | Evaluated via rendered window snapshots at 1180×760 and 900×600. |
+| **Visual Render Inspection** | **PASS** | Evaluated via rendered window snapshots and layout constraints at 1180×760 and 900×600. |
 | **Interactive Human Desktop Acceptance** | **PENDING** | Requires interactive human user operating a live desktop display session. |
 
 ---
 
 ## 7. GitHub Actions CI Verification
 
-- **Verified Commit SHA**: [`96ab735fed444e106b1f4417bd7c572e0475f191`](https://github.com/kunal-gswm/GameLingo/commit/96ab735fed444e106b1f4417bd7c572e0475f191)
-- **CI Run Number**: 49
-- **CI Run URL**: [`https://github.com/kunal-gswm/GameLingo/actions/runs/38134067920`](https://github.com/kunal-gswm/GameLingo/actions/runs/38134067920)
-- **Workflow Status**: `completed`
-- **Conclusion**: `success`
-- **Job Results**:
-  - `Core Tests & Linting`: **PASS** (Job ID: `114454210918`)
-  - `GUI Tests`: **PASS** (Job ID: `114454211088`)
+- **GL-032 Verified Commit**: [`96ab735fed444e106b1f4417bd7c572e0475f191`](https://github.com/kunal-gswm/GameLingo/commit/96ab735fed444e106b1f4417bd7c572e0475f191) (Run #49: [`38134067920`](https://github.com/kunal-gswm/GameLingo/actions/runs/38134067920), Success)
+- **GL-032.1 Commit**: To be verified following report update push.
