@@ -2,7 +2,7 @@ import hashlib
 import re
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
 from gamelingo.adapters.base import GameAdapter
 from gamelingo.adapters.renpy_decompiler import (
@@ -38,21 +38,67 @@ NON_DIALOGUE_KEYWORDS = {
     "transform",
     "style",
     "init",
-    "screen",
     "translate",
     "pause",
     "window",
 }
 
-# Regex to safely extract _("...") or _('...') translatable strings
+# Regex to safely extract _("...") or __("...") translatable strings
 MARKED_STRING_REGEX = re.compile(
-    r'_\(\s*("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')\s*\)'
+    r'\b__?\(\s*("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')\s*\)'
 )
 
 # Regex to match a string literal at the beginning or after a character tag
 STRING_LITERAL_REGEX = re.compile(
     r'("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')'
 )
+
+# Japanese character range regex (hiragana, katakana, kanji, Japanese punctuation)
+JP_TEXT_REGEX = re.compile(r"[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff\u3000-\u303f]")
+
+# Hex color regex
+COLOR_HEX_REGEX = re.compile(r"^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
+
+# Asset and code file extensions that must not be extracted as translatable text
+ASSET_EXTENSIONS = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".bmp",
+    ".gif",
+    ".svg",
+    ".mp3",
+    ".ogg",
+    ".wav",
+    ".opus",
+    ".ttf",
+    ".otf",
+    ".woff",
+    ".woff2",
+    ".rpy",
+    ".rpyc",
+    ".rpym",
+    ".txt",
+}
+
+
+def is_asset_or_code(text: str) -> bool:
+    """Checks whether a string literal is an asset path, color hex, or empty string."""
+    s = text.strip()
+    if not s:
+        return True
+    if COLOR_HEX_REGEX.match(s):
+        return True
+    clean_p = s.split("?")[0].split("#")[0]
+    suffix = Path(clean_p).suffix.lower()
+    if suffix in ASSET_EXTENSIONS:
+        return True
+    if ("/" in s or "\\" in s) and any(
+        s.lower().endswith(ext) for ext in ASSET_EXTENSIONS
+    ):
+        return True
+    return False
 
 
 class RenPyAdapter(GameAdapter):
@@ -311,6 +357,84 @@ class RenPyAdapter(GameAdapter):
             "game_dir": game_dir,
             "message": msg,
             "archive_details": arc_diag.get("archives", []),
+            "image_text_inventory": self._inventory_image_assets(game_dir),
+        }
+
+    def _inventory_image_assets(self, game_dir: Path) -> Dict[str, Any]:
+        """
+        Scans loose game files and archived packages for image assets, identifying
+        likely text-bearing UI assets (such as buttons, banners, titles, and HUD graphics).
+        Ren'Py strings.rpy translations cannot modify text baked directly into images.
+        """
+        IMAGE_EXTENSIONS = {".png", ".webp", ".jpg", ".jpeg"}
+        UI_KEYWORDS = {
+            "btn",
+            "button",
+            "title",
+            "menu",
+            "banner",
+            "label",
+            "card",
+            "logo",
+            "hud",
+            "ui",
+            "header",
+            "footer",
+            "tab",
+            "choice",
+            "start",
+            "load",
+            "save",
+            "config",
+            "extra",
+        }
+
+        all_images = set()
+
+        # 1. Loose image files under game_dir
+        if game_dir.is_dir():
+            for f in game_dir.rglob("*"):
+                if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS:
+                    if not self._is_tl_file(game_dir, f):
+                        try:
+                            rel = str(f.relative_to(game_dir).as_posix())
+                            all_images.add(rel)
+                        except Exception:
+                            pass
+
+        # 2. Archived images
+        try:
+            archives = inspect_game_archives(game_dir)
+            for arc in archives:
+                for member in arc.list_members():
+                    ext = Path(member.path).suffix.lower()
+                    if ext in IMAGE_EXTENSIONS:
+                        all_images.add(member.path)
+        except Exception:
+            pass
+
+        likely_candidates = []
+        for img in sorted(all_images):
+            lower_img = img.lower()
+            name_part = Path(lower_img).stem
+            is_ui = (
+                lower_img.startswith("gui/")
+                or lower_img.startswith("ui/")
+                or any(k in name_part for k in UI_KEYWORDS)
+                or any(ord(c) > 127 for c in img)
+            )
+            if is_ui:
+                likely_candidates.append(img)
+
+        return {
+            "total_images": len(all_images),
+            "likely_text_bearing_count": len(likely_candidates),
+            "sample_candidates": likely_candidates[:25],
+            "limitations_note": (
+                "Ren'Py strings.rpy translations modify text rendered via Ren'Py's screen "
+                "language and dialogue engines. Text rendered directly into bitmap image assets "
+                "(PNG, WebP) cannot be modified via strings.rpy and requires graphic replacement."
+            ),
         }
 
     def detect(self, install_path: Path) -> Tuple[bool, str, float]:
@@ -545,6 +669,10 @@ class RenPyAdapter(GameAdapter):
         lines = content.splitlines()
         in_python_block = False
         python_block_indent = 0
+        in_python_docstring = False
+        in_screen_block = False
+        screen_name = ""
+        screen_indent = 0
         in_multiline_string = False
         multiline_delimiter = ""
         multiline_buffer: List[str] = []
@@ -569,9 +697,14 @@ class RenPyAdapter(GameAdapter):
                         multiline_delimiter + text_inside + multiline_delimiter
                     )
                     if unescaped and unescaped.strip():
+                        loc = (
+                            f"line:{multiline_start_line}:screen:{screen_name}:text:0"
+                            if in_screen_block and screen_name
+                            else f"line:{multiline_start_line}"
+                        )
                         unit = self._create_unit(
                             file_id,
-                            f"line:{multiline_start_line}",
+                            loc,
                             unescaped,
                             multiline_context,
                             archive_name=archive_name,
@@ -595,10 +728,24 @@ class RenPyAdapter(GameAdapter):
                     "#"
                 ):
                     in_python_block = False
+                    in_python_docstring = False
                 else:
-                    # Inside python block: only extract _("...") marked strings
-                    yield from self._extract_marked_strings(
-                        line, line_num, file_id, archive_name=archive_name
+                    # Skip docstrings in Python blocks
+                    if stripped.startswith(('"""', "'''")):
+                        if stripped.endswith(('"""', "'''")) and len(stripped) >= 6:
+                            i += 1
+                            continue
+                        in_python_docstring = not in_python_docstring
+                        i += 1
+                        continue
+                    if in_python_docstring:
+                        if '"""' in stripped or "'''" in stripped:
+                            in_python_docstring = False
+                        i += 1
+                        continue
+
+                    yield from self._extract_python_line(
+                        line, stripped, line_num, file_id, archive_name=archive_name
                     )
                     i += 1
                     continue
@@ -611,8 +758,50 @@ class RenPyAdapter(GameAdapter):
 
             # Single-line python statement
             if stripped.startswith("$"):
-                yield from self._extract_marked_strings(
-                    line, line_num, file_id, archive_name=archive_name
+                yield from self._extract_python_line(
+                    line, stripped, line_num, file_id, archive_name=archive_name
+                )
+                i += 1
+                continue
+
+            # Screen block state tracking
+            if in_screen_block:
+                if current_indent <= screen_indent and not stripped.startswith("#"):
+                    in_screen_block = False
+                    screen_name = ""
+
+            screen_match = re.match(
+                r"^(?:init\s+[-\d]+\s+)?screen\s+([a-zA-Z0-9_]+)", stripped
+            )
+            if screen_match:
+                in_screen_block = True
+                screen_name = screen_match.group(1)
+                screen_indent = current_indent
+                i += 1
+                continue
+
+            if in_screen_block:
+                clean_s = self._strip_inline_comment(stripped).strip()
+                if clean_s.startswith(("text ", "text\t")):
+                    rest_s = clean_s[4:].strip()
+                    if rest_s.startswith(('"""', "'''")):
+                        delim = rest_s[:3]
+                        if delim not in rest_s[3:]:
+                            in_multiline_string = True
+                            multiline_delimiter = delim
+                            multiline_buffer = [rest_s[3:]]
+                            multiline_start_line = line_num
+                            multiline_context = f"Screen: {screen_name} (text)"
+                            i += 1
+                            continue
+
+                yield from self._extract_screen_line(
+                    line,
+                    stripped,
+                    line_num,
+                    file_id,
+                    screen_name,
+                    archive_name=archive_name,
                 )
                 i += 1
                 continue
@@ -622,7 +811,7 @@ class RenPyAdapter(GameAdapter):
                 i += 1
                 continue
 
-            # Extract any explicit marked translatable strings _("...") on any line
+            # Extract any explicit marked translatable strings _("...") or __("...") on any line
             yield from self._extract_marked_strings(
                 line, line_num, file_id, archive_name=archive_name
             )
@@ -736,6 +925,25 @@ class RenPyAdapter(GameAdapter):
             )
             if char_match:
                 who = char_match.group(1).strip()
+                if who in {
+                    "thumb",
+                    "background",
+                    "hover_background",
+                    "foreground",
+                    "idle",
+                    "hover",
+                    "activate_sound",
+                    "sound",
+                    "mask",
+                    "child",
+                    "font",
+                    "left_bar",
+                    "right_bar",
+                    "xysize",
+                }:
+                    i += 1
+                    continue
+
                 raw_str = char_match.group(2)
                 if raw_str.startswith(('"""', "'''")):
                     delim = raw_str[:3]
@@ -774,6 +982,343 @@ class RenPyAdapter(GameAdapter):
 
             i += 1
 
+    def _extract_screen_line(
+        self,
+        line: str,
+        stripped: str,
+        line_num: int,
+        file_id: str,
+        screen_name: str,
+        archive_name: Optional[str] = None,
+    ) -> Iterator[TranslationUnit]:
+        """
+        Extracts visible user-facing text from Ren'Py screen language statements.
+        Handles text, textbutton, tooltip, label, input, use, and translatable properties.
+        Preserves Ren'Py markup, interpolation tags, and escapes while strictly ignoring
+        asset paths, styles, color codes, variable names, and internal action parameters.
+        """
+        clean = self._strip_inline_comment(stripped).strip()
+        if not clean:
+            return
+
+        seen_texts: Set[str] = set()
+
+        # 1. text statement (e.g., text "採取量" xpos ... or text "集中 [focus] / [focus_max]")
+        if clean.startswith(("text ", "text\t")):
+            rest = clean[4:].strip()
+            # 1a. String literal argument
+            m = STRING_LITERAL_REGEX.match(rest)
+            if m:
+                val = renpy_unescape_string(m.group(1))
+                if val and not is_asset_or_code(val):
+                    unit = self._create_unit(
+                        file_id,
+                        f"line:{line_num}:screen:{screen_name}:text:0",
+                        val,
+                        f"Screen: {screen_name} (text)",
+                        archive_name=archive_name,
+                    )
+                    if unit:
+                        seen_texts.add(val)
+                        yield unit
+                return
+
+            # 1b. Parenthesized or conditional text: text ("A" if cond else "B") or text ("%d" % ...)
+            if rest.startswith("("):
+                sub_idx = 0
+                for sm in STRING_LITERAL_REGEX.finditer(rest):
+                    val = renpy_unescape_string(sm.group(1))
+                    if val and not is_asset_or_code(val) and val not in seen_texts:
+                        unit = self._create_unit(
+                            file_id,
+                            f"line:{line_num}:screen:{screen_name}:text:{sub_idx}",
+                            val,
+                            f"Screen: {screen_name} (text)",
+                            archive_name=archive_name,
+                        )
+                        if unit:
+                            seen_texts.add(val)
+                            yield unit
+                            sub_idx += 1
+                return
+
+            # 1c. Explicit marked strings in text statement
+            for idx, sm in enumerate(MARKED_STRING_REGEX.finditer(rest)):
+                val = renpy_unescape_string(sm.group(1))
+                if val and not is_asset_or_code(val) and val not in seen_texts:
+                    unit = self._create_unit(
+                        file_id,
+                        f"line:{line_num}:screen:{screen_name}:text:{idx}",
+                        val,
+                        f"Screen: {screen_name} (text)",
+                        archive_name=archive_name,
+                    )
+                    if unit:
+                        seen_texts.add(val)
+                        yield unit
+            return
+
+        # 2. textbutton statement (e.g., textbutton "スタート" action ... or textbutton _("はい"))
+        if clean.startswith(("textbutton ", "textbutton\t")):
+            rest = clean[10:].strip()
+            # 2a. String literal argument
+            m = STRING_LITERAL_REGEX.match(rest)
+            if m:
+                val = renpy_unescape_string(m.group(1))
+                if val and not is_asset_or_code(val):
+                    unit = self._create_unit(
+                        file_id,
+                        f"line:{line_num}:screen:{screen_name}:textbutton:0",
+                        val,
+                        f"Screen: {screen_name} (textbutton)",
+                        archive_name=archive_name,
+                    )
+                    if unit:
+                        seen_texts.add(val)
+                        yield unit
+                return
+
+            # 2b. Parenthesized expression: textbutton ("▶ 次へ" if ... else "閉じる") action ...
+            if rest.startswith("("):
+                paren_depth = 0
+                paren_end = len(rest)
+                for idx_ch, ch in enumerate(rest):
+                    if ch == "(":
+                        paren_depth += 1
+                    elif ch == ")":
+                        paren_depth -= 1
+                        if paren_depth == 0:
+                            paren_end = idx_ch + 1
+                            break
+                expr_part = rest[:paren_end]
+                sub_idx = 0
+                for sm in STRING_LITERAL_REGEX.finditer(expr_part):
+                    val = renpy_unescape_string(sm.group(1))
+                    if val and not is_asset_or_code(val) and val not in seen_texts:
+                        unit = self._create_unit(
+                            file_id,
+                            f"line:{line_num}:screen:{screen_name}:textbutton:{sub_idx}",
+                            val,
+                            f"Screen: {screen_name} (textbutton)",
+                            archive_name=archive_name,
+                        )
+                        if unit:
+                            seen_texts.add(val)
+                            yield unit
+                            sub_idx += 1
+                return
+
+            # 2c. Explicit marked strings
+            for idx, sm in enumerate(MARKED_STRING_REGEX.finditer(rest)):
+                val = renpy_unescape_string(sm.group(1))
+                if val and not is_asset_or_code(val) and val not in seen_texts:
+                    unit = self._create_unit(
+                        file_id,
+                        f"line:{line_num}:screen:{screen_name}:textbutton:{idx}",
+                        val,
+                        f"Screen: {screen_name} (textbutton)",
+                        archive_name=archive_name,
+                    )
+                    if unit:
+                        seen_texts.add(val)
+                        yield unit
+            return
+
+        # 3. tooltip statement (e.g., tooltip "説明")
+        if clean.startswith(("tooltip ", "tooltip\t")):
+            rest = clean[7:].strip()
+            m = STRING_LITERAL_REGEX.match(rest)
+            if m:
+                val = renpy_unescape_string(m.group(1))
+                if val and not is_asset_or_code(val):
+                    unit = self._create_unit(
+                        file_id,
+                        f"line:{line_num}:screen:{screen_name}:tooltip:0",
+                        val,
+                        f"Screen: {screen_name} (tooltip)",
+                        archive_name=archive_name,
+                    )
+                    if unit:
+                        seen_texts.add(val)
+                        yield unit
+            return
+
+        # 4. label statement in screen (e.g., label "見出し")
+        if clean.startswith(("label ", "label\t")) and not clean.endswith(":"):
+            rest = clean[5:].strip()
+            m = STRING_LITERAL_REGEX.match(rest)
+            if m:
+                val = renpy_unescape_string(m.group(1))
+                if val and not is_asset_or_code(val):
+                    unit = self._create_unit(
+                        file_id,
+                        f"line:{line_num}:screen:{screen_name}:label:0",
+                        val,
+                        f"Screen: {screen_name} (label)",
+                        archive_name=archive_name,
+                    )
+                    if unit:
+                        seen_texts.add(val)
+                        yield unit
+            return
+
+        # 5. use statement: use subscreen("arg1", "arg2")
+        if clean.startswith(("use ", "use\t")):
+            sub_idx = 0
+            for sm in STRING_LITERAL_REGEX.finditer(clean):
+                val = renpy_unescape_string(sm.group(1))
+                if (
+                    val
+                    and not is_asset_or_code(val)
+                    and JP_TEXT_REGEX.search(val)
+                    and val not in seen_texts
+                ):
+                    unit = self._create_unit(
+                        file_id,
+                        f"line:{line_num}:screen:{screen_name}:use:{sub_idx}",
+                        val,
+                        f"Screen: {screen_name} (use)",
+                        archive_name=archive_name,
+                    )
+                    if unit:
+                        seen_texts.add(val)
+                        yield unit
+                        sub_idx += 1
+            return
+
+        # 6. input prompt: input prompt "お名前を入力してください"
+        if "prompt " in clean:
+            pm = re.search(
+                r'prompt\s+("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')',
+                clean,
+            )
+            if pm:
+                val = renpy_unescape_string(pm.group(1))
+                if val and not is_asset_or_code(val) and val not in seen_texts:
+                    unit = self._create_unit(
+                        file_id,
+                        f"line:{line_num}:screen:{screen_name}:input:0",
+                        val,
+                        f"Screen: {screen_name} (input)",
+                        archive_name=archive_name,
+                    )
+                    if unit:
+                        seen_texts.add(val)
+                        yield unit
+
+        # 7. Explicit marked strings _() or __() on any screen line
+        for idx, sm in enumerate(MARKED_STRING_REGEX.finditer(clean)):
+            val = renpy_unescape_string(sm.group(1))
+            if val and not is_asset_or_code(val) and val not in seen_texts:
+                unit = self._create_unit(
+                    file_id,
+                    f"line:{line_num}:screen:{screen_name}:str:{idx}",
+                    val,
+                    f"Screen: {screen_name} (marked string)",
+                    archive_name=archive_name,
+                )
+                if unit:
+                    seen_texts.add(val)
+                    yield unit
+
+        # 8. Tooltip property on buttons/hotspots
+        tooltip_m = re.search(
+            r'\btooltip\s+("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')',
+            clean,
+        )
+        if tooltip_m:
+            val = renpy_unescape_string(tooltip_m.group(1))
+            if val and not is_asset_or_code(val) and val not in seen_texts:
+                unit = self._create_unit(
+                    file_id,
+                    f"line:{line_num}:screen:{screen_name}:tooltip:0",
+                    val,
+                    f"Screen: {screen_name} (tooltip)",
+                    archive_name=archive_name,
+                )
+                if unit:
+                    seen_texts.add(val)
+                    yield unit
+
+        # 9. Other Japanese string literals in UI actions or properties (e.g., SetVariable("_house_hover_label", "浴室"))
+        sub_idx = 0
+        for sm in STRING_LITERAL_REGEX.finditer(clean):
+            val = renpy_unescape_string(sm.group(1))
+            if (
+                val
+                and not is_asset_or_code(val)
+                and JP_TEXT_REGEX.search(val)
+                and val not in seen_texts
+            ):
+                unit = self._create_unit(
+                    file_id,
+                    f"line:{line_num}:screen:{screen_name}:prop:{sub_idx}",
+                    val,
+                    f"Screen: {screen_name} (ui property)",
+                    archive_name=archive_name,
+                )
+                if unit:
+                    seen_texts.add(val)
+                    yield unit
+                    sub_idx += 1
+
+    def _extract_python_line(
+        self,
+        line: str,
+        stripped: str,
+        line_num: int,
+        file_id: str,
+        archive_name: Optional[str] = None,
+    ) -> Iterator[TranslationUnit]:
+        """
+        Extracts translatable strings from Python code blocks and one-liners.
+        Extracts explicitly marked _() / __() strings and static data strings containing
+        Japanese/CJK characters (e.g., confirmation dialog dictionaries, meter tooltips).
+        Strictly ignores comments, asset paths, color codes, and internal code.
+        """
+        clean = self._strip_inline_comment(stripped).strip()
+        if not clean:
+            return
+
+        seen_texts: Set[str] = set()
+
+        # 1. Explicitly marked _() or __() strings
+        for idx, match in enumerate(MARKED_STRING_REGEX.finditer(clean)):
+            val = renpy_unescape_string(match.group(1))
+            if val and not is_asset_or_code(val) and val not in seen_texts:
+                unit = self._create_unit(
+                    file_id,
+                    f"line:{line_num}:str:{idx}",
+                    val,
+                    "Explicit String _()",
+                    archive_name=archive_name,
+                )
+                if unit:
+                    seen_texts.add(val)
+                    yield unit
+
+        # 2. Static Japanese strings in data structures / assignments
+        sub_idx = 0
+        for sm in STRING_LITERAL_REGEX.finditer(clean):
+            val = renpy_unescape_string(sm.group(1))
+            if (
+                val
+                and not is_asset_or_code(val)
+                and JP_TEXT_REGEX.search(val)
+                and val not in seen_texts
+            ):
+                unit = self._create_unit(
+                    file_id,
+                    f"line:{line_num}:py:{sub_idx}",
+                    val,
+                    "Python Data / String",
+                    archive_name=archive_name,
+                )
+                if unit:
+                    seen_texts.add(val)
+                    yield unit
+                    sub_idx += 1
+
     def _extract_marked_strings(
         self,
         line: str,
@@ -782,12 +1327,18 @@ class RenPyAdapter(GameAdapter):
         archive_name: Optional[str] = None,
     ) -> Iterator[TranslationUnit]:
         """
-        Extracts explicitly marked translatable strings _("...") on any line.
+        Extracts explicitly marked translatable strings _("...") or __("...") on any line.
         """
+        seen: Set[str] = set()
         for idx, match in enumerate(MARKED_STRING_REGEX.finditer(line)):
             raw_str = match.group(1)
             text = renpy_unescape_string(raw_str)
-            if text and text.strip():
+            if (
+                text
+                and text.strip()
+                and not is_asset_or_code(text)
+                and text not in seen
+            ):
                 unit = self._create_unit(
                     file_id,
                     f"line:{line_num}:str:{idx}",
@@ -796,6 +1347,7 @@ class RenPyAdapter(GameAdapter):
                     archive_name=archive_name,
                 )
                 if unit:
+                    seen.add(text)
                     yield unit
 
     def _extract_existing_strings_file(
@@ -860,6 +1412,8 @@ class RenPyAdapter(GameAdapter):
         archive_name: Optional[str] = None,
     ) -> Optional[TranslationUnit]:
         if not text or not text.strip():
+            return None
+        if is_asset_or_code(text):
             return None
         full_context = context
         if archive_name:
