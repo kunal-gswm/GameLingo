@@ -466,3 +466,29 @@ def test_diagnose_image_text_inventory(tmp_path: Path):
     assert "btn_start.png" in sample_str
     assert "btn_quit.png" in sample_str
     assert "Ren'Py strings.rpy" in inv["limitations_note"]
+
+
+# 15. Python data structures: Tutorial cards list and action choice tuples
+def test_python_data_structures_tutorial_and_action_tuples(tmp_path: Path):
+    game_dir = _create_minimal_renpy_game(tmp_path)
+    content = """
+init python:
+    HUB_TUT_CARDS = [
+        "ここからは、日々を自分で組み立てる。\\nゴールは物語を進める。",
+        "【昼の稼ぎ】探索と釣りを活用せよ。",
+    ]
+    HYPNO_LIST = [
+        ("見つめる（安全に慣らす・覚醒-4）", 3, 0),
+        ("警戒を解く", 8, 1),
+    ]
+"""
+    (game_dir / "hub.rpy").write_text(content, encoding="utf-8")
+
+    adapter = RenPyAdapter()
+    units = list(adapter.extract(tmp_path))
+    texts = [u.source_text for u in units]
+
+    assert "ここからは、日々を自分で組み立てる。\nゴールは物語を進める。" in texts
+    assert "【昼の稼ぎ】探索と釣りを活用せよ。" in texts
+    assert "見つめる（安全に慣らす・覚醒-4）" in texts
+    assert "警戒を解く" in texts
