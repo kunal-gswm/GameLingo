@@ -162,8 +162,8 @@ GameLingo's adapter inspects the game environment before any patching or hook in
 
 ## 7. Deliverables & Build Integrity
 
-- **Commit SHA**: `[PENDING_COMMIT_SHA]`
-- **CI Run URL**: `[PENDING_CI_URL]`
+- **Commit SHA**: `bfd4e978ada390c2680c8df020c4c958dc6f8022`
+- **CI Run URL**: https://github.com/kunal-gswm/GameLingo/actions/runs/38275652935
 - **Windows Distribution Zip**: `dist/GameLingo-Windows-x64.zip`
 - **Distribution SHA-256 Checksum**: `63AC6BFA96C37023D243346D42A53B2ED9737E870168901707B908A2338F85E8`
 
