@@ -464,7 +464,7 @@ def test_detect_renpy_runtime_7x_from_vc_version(tmp_path: Path):
 
 
 def test_detect_renpy_runtime_7x_from_lib(tmp_path: Path):
-    """Detect Ren'Py 7.x from lib/windows-i686 directory."""
+    """Detect Ren'Py 7.x inferred only from lib/ directory with no vc_version.py as best_effort."""
     game_dir = tmp_path / "game"
     game_dir.mkdir()
     (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
@@ -476,7 +476,31 @@ def test_detect_renpy_runtime_7x_from_lib(tmp_path: Path):
     info = detect_renpy_runtime(tmp_path)
     assert info["major_version"] == 7
     assert info["python_family"] == "python2"
-    assert info["support_level"] == "supported_with_fallback"
+    assert info["version"] == "unknown"
+    assert info["support_level"] == "best_effort"
+    assert "inferred from lib/" in info["support_reason"]
+
+
+@pytest.mark.parametrize("incomplete_ver", ["7", "7.6"])
+def test_detect_renpy_runtime_incomplete_version_strings_best_effort(
+    tmp_path: Path, incomplete_ver: str
+):
+    """Verify incomplete version strings ('7', '7.6') are classified as best_effort."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        f"branch = 'master'\nversion = '{incomplete_ver}'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == incomplete_ver
+    assert info["major_version"] == 7
+    assert info["support_level"] == "best_effort"
+    assert "incomplete" in info["support_reason"]
 
 
 def test_detect_renpy_runtime_6x_unsupported(tmp_path: Path):
@@ -625,6 +649,46 @@ def test_diagnostics_for_unverified_known_version_in_apply_plan(tmp_path: Path):
     assert diag["support_level"] == "best_effort"
     assert diag["translation_strategy"] == "best_effort_polyglot_fallback"
     assert any("8.5.1 is unverified" in w for w in report["warnings"])
+
+
+def test_diagnostics_for_incomplete_version_in_apply_plan(tmp_path: Path):
+    """Verify diagnostics and warnings when applying a plan to an incomplete version string like '7.6'."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Text"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        "branch = 'master'\nversion = '7.6'\n", encoding="utf-8"
+    )
+
+    plan = {
+        "version": "1.0",
+        "plan_id": "test-plan-76",
+        "adapter_id": "renpy",
+        "target_lang": "english",
+        "edits": [
+            {
+                "file_path": "game/tl/english/strings.rpy",
+                "file_id": "game/script.rpy",
+                "source_file_path": "game/script.rpy",
+                "locator": "line:1",
+                "original_text": "テキスト",
+                "translated_text": "Text",
+                "status": "valid",
+            }
+        ],
+    }
+
+    report = apply_plan(tmp_path, plan, tmp_path / "backups", execute=False)
+    assert report["status"] == "preview"
+    assert "diagnostics" in report
+    diag = report["diagnostics"]
+    assert diag["detected_version"] == "7.6"
+    assert diag["support_level"] == "best_effort"
+    assert diag["translation_strategy"] == "best_effort_polyglot_fallback"
+    assert any("incomplete" in w for w in report["warnings"])
 
 
 def test_actual_game_island_runtime_detection():

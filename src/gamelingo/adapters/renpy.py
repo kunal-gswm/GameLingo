@@ -228,10 +228,13 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
 
     patch_version = numeric_parts[2] if len(numeric_parts) >= 3 else None
 
+    # A release is fully identified only when it has at least major, minor, and patch numbers (e.g. 7.6.3 or 8.4.1)
+    is_fully_identified = bool(version_str and len(numeric_parts) >= 3)
+
     # Classify support level according to strict empirical verification:
     # 1. verified: Only the exact tested engine build (Ren'Py 8.5.0.25111603)
-    # 2. supported_with_fallback: Documented ranges 7.0.0–7.6.3 (Python 2.7) and 8.0.0–8.4.x (Python 3)
-    # 3. best_effort: Unlisted builds, unverified newer minor versions, unknown versions, future major versions
+    # 2. supported_with_fallback: Fully identified releases within 7.0.0–7.6.3 (Python 2.7) or 8.0.0–8.4.x (Python 3)
+    # 3. best_effort: Inferred versions (e.g. from lib/ or bytecode), incomplete versions (7, 7.6), unlisted/newer versions (7.6.4, 8.5.1, 9.0)
     # 4. unsupported: Ren'Py < 7.0 (Screen Language 1); preflight blocks patching
     is_real_engine_verified = version_str == "8.5.0.25111603"
 
@@ -247,23 +250,19 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
             f"Ren'Py {version_str} ({python_family}) is verified on real engine runtime with "
             "native strings.rpy and dynamic Text.set_text hook."
         )
-    elif major_version == 7:
-        # Documented supported range: 7.0.0 - 7.6.3
+    elif is_fully_identified and major_version == 7:
+        # Documented supported range: 7.0.0 - 7.6.3 (requires full major.minor.patch identification)
         in_7x_range = False
-        if minor_version is not None:
+        if minor_version is not None and patch_version is not None:
             if 0 <= minor_version < 6:
                 in_7x_range = True
             elif minor_version == 6:
-                in_7x_range = patch_version is None or patch_version <= 3
-            else:
-                in_7x_range = False
-        else:
-            in_7x_range = True
+                in_7x_range = patch_version <= 3
 
         if in_7x_range:
             support_level = "supported_with_fallback"
             support_reason = (
-                f"Ren'Py {version_str or '7.x'} (Python 2.7) is in documented range 7.0.0–7.6.3; "
+                f"Ren'Py {version_str} (Python 2.7) is in documented range 7.0.0–7.6.3; "
                 "supported using polyglot Python 2/3 activation script and native strings.rpy translation tables "
                 "(unverified on real 7.x engine due to absent local SDK)."
             )
@@ -273,35 +272,44 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
                 f"Ren'Py {version_str} (Python 2.7) is outside the documented 7.0.0–7.6.3 range; "
                 "untested build, best-effort polyglot fallback applied."
             )
-    elif major_version == 8 and minor_version is not None and 0 <= minor_version <= 4:
-        # Documented supported range: 8.0.0 - 8.4.x
+    elif (
+        is_fully_identified
+        and major_version == 8
+        and minor_version is not None
+        and 0 <= minor_version <= 4
+    ):
+        # Documented supported range: 8.0.0 - 8.4.x (requires full major.minor.patch identification)
         support_level = "supported_with_fallback"
         support_reason = (
             f"Ren'Py {version_str} (Python 3) is in documented range 8.0.0–8.4.x; "
             "supported with native strings.rpy and dynamic runtime displayable hook "
             "(unverified on real engine on this host)."
         )
-    elif major_version is not None:
-        # Unlisted builds (e.g. other 8.5.0 builds), unverified minor versions (8.5.1, 8.6.0), or future major versions (9.x)
+    elif version_str and version_str != "unknown":
         support_level = "best_effort"
-        if version_str:
+        if len(numeric_parts) < 3:
             support_reason = (
-                f"Ren'Py {version_str} ({python_family}) is an unverified / unlisted engine version; "
-                "best-effort polyglot fallback applied."
+                f"Ren'Py version '{version_str}' is incomplete; cannot verify documented release range. "
+                "Best-effort polyglot fallback applied."
             )
         else:
-            version_str = "unknown"
             support_reason = (
-                f"Ren'Py {major_version}.x build could not be uniquely identified; "
+                f"Ren'Py {version_str} ({python_family}) is an unverified / unlisted engine version; "
                 "best-effort polyglot fallback applied."
             )
     else:
         version_str = "unknown"
         support_level = "best_effort"
-        support_reason = (
-            "Ren'Py engine version could not be uniquely identified; using universal polyglot Python 2/3 "
-            "activation script with safe best-effort fallback."
-        )
+        if detection_source:
+            support_reason = (
+                f"Ren'Py version inferred from {detection_source} without exact release metadata; "
+                "best-effort polyglot fallback applied."
+            )
+        else:
+            support_reason = (
+                "Ren'Py engine version could not be uniquely identified; using universal polyglot Python 2/3 "
+                "activation script with safe best-effort fallback."
+            )
 
     return {
         "version": version_str,
