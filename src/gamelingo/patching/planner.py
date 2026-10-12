@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from gamelingo.adapters.renpy import detect_renpy_runtime
 from gamelingo.domain.models import TranslationRecord, TranslationUnit
 from gamelingo.safety.backup import calculate_sha256, is_safe_path
 
@@ -77,6 +78,14 @@ def create_plan(
     }
 
     if is_renpy:
+        runtime_compat = detect_renpy_runtime(source_root_resolved)
+        plan["runtime_compatibility"] = runtime_compat
+        if runtime_compat.get("support_level") == "unsupported":
+            plan["validation_errors"].append(
+                f"Unsupported Ren'Py version {runtime_compat.get('version', 'legacy')}: "
+                f"{runtime_compat.get('support_reason')}"
+            )
+
         lang_map = {
             "en": "english",
             "ja": "japanese",

@@ -88,10 +88,14 @@ def test_duplicate_source_strings_handling():
 
 def test_generate_activation_rpy():
     script_en = generate_activation_rpy("english")
+    assert script_en.startswith("# -*- coding: utf-8 -*-")
     assert 'config.default_language = "english"' in script_en
     assert 'default preferences.language = "english"' in script_en
     assert "renpy.text.text.Text.set_text" in script_en
     assert "renpy.translation.translate_string" in script_en
+    assert "_gl_string_types" in script_en
+    assert "*args, **kwargs" in script_en
+    assert "_gl_orig_set_text" in script_en
     assert "init 100 python:" in script_en
 
     # Test with different language codes

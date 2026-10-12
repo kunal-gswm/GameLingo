@@ -101,6 +101,173 @@ def is_asset_or_code(text: str) -> bool:
     return False
 
 
+def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
+    """
+    Detects Ren'Py engine version, Python runtime family, and compatibility level.
+    Accounts for Ren'Py 7.x (Python 2.7) and Ren'Py 8.x (Python 3.x).
+    """
+    root_dir = install_path
+    if (install_path / "game").is_dir():
+        game_dir = install_path / "game"
+    elif install_path.name.lower() == "game" and install_path.parent.is_dir():
+        root_dir = install_path.parent
+        game_dir = install_path
+    else:
+        game_dir = install_path
+
+    version_str: Optional[str] = None
+    major_version: Optional[int] = None
+    minor_version: Optional[int] = None
+    python_family = "unknown"
+    detection_source: Optional[str] = None
+
+    # Check 1: renpy/vc_version.py (canonical Ren'Py SDK / distributed build version file)
+    vc_paths = [
+        root_dir / "renpy" / "vc_version.py",
+        game_dir.parent / "renpy" / "vc_version.py",
+        install_path / "renpy" / "vc_version.py",
+    ]
+    for vc_p in vc_paths:
+        if vc_p.is_file():
+            try:
+                content = vc_p.read_text(encoding="utf-8", errors="ignore")
+                match = re.search(r"version\s*=\s*['\"]([^'\"]+)['\"]", content)
+                if match:
+                    version_str = match.group(1)
+                    detection_source = f"vc_version.py ({vc_p.name})"
+                    parts = version_str.split(".")
+                    if len(parts) >= 1 and parts[0].isdigit():
+                        major_version = int(parts[0])
+                    if len(parts) >= 2 and parts[1].isdigit():
+                        minor_version = int(parts[1])
+                    break
+            except Exception:
+                pass
+
+    # Check 2: lib/ folder inspection for Python runtime architecture
+    lib_paths = [
+        root_dir / "lib",
+        game_dir.parent / "lib",
+        install_path / "lib",
+    ]
+    has_py3_lib = False
+    has_py2_lib = False
+    for lib_p in lib_paths:
+        if lib_p.is_dir():
+            for child in lib_p.iterdir():
+                c_name = child.name.lower()
+                if "py3" in c_name or "python3" in c_name:
+                    has_py3_lib = True
+                elif (
+                    "windows-i686" in c_name
+                    or "python27" in c_name
+                    or "python2.7" in c_name
+                    or "py2" in c_name
+                ):
+                    has_py2_lib = True
+
+    if has_py3_lib:
+        python_family = "python3"
+        if major_version is None:
+            major_version = 8
+            detection_source = "lib/ runtime directories (Python 3)"
+    elif has_py2_lib:
+        python_family = "python2"
+        if major_version is None:
+            major_version = 7
+            detection_source = "lib/ runtime directories (Python 2)"
+    elif major_version is not None:
+        if major_version >= 8:
+            python_family = "python3"
+        else:
+            python_family = "python2"
+
+    # Check 3: Header of compiled .rpyc files
+    if python_family == "unknown" and game_dir.is_dir():
+        rpyc_candidates = list(game_dir.glob("*.rpyc"))[:3]
+        for rc in rpyc_candidates:
+            try:
+                with open(rc, "rb") as f:
+                    header = f.read(16)
+                if header.startswith(b"RENPY RPC2"):
+                    with open(rc, "rb") as f:
+                        data = f.read(256)
+                    if b"\x80\x02" in data:
+                        python_family = "python2"
+                        if major_version is None:
+                            major_version = 7
+                        detection_source = ".rpyc pickle protocol 2"
+                        break
+                    elif (
+                        b"\x80\x03" in data
+                        or b"\x80\x04" in data
+                        or b"\x80\x05" in data
+                    ):
+                        python_family = "python3"
+                        if major_version is None:
+                            major_version = 8
+                        detection_source = ".rpyc pickle protocol 3+"
+                        break
+            except Exception:
+                pass
+
+    # Classify support level
+    if major_version is not None and major_version < 7:
+        support_level = "unsupported"
+        support_reason = (
+            f"Ren'Py {major_version}.x uses legacy Screen Language 1 and obsolete bytecode formats. "
+            "Unified string translation tables are not supported."
+        )
+    elif major_version is not None and major_version >= 8:
+        support_level = "fully_supported"
+        support_reason = (
+            f"Ren'Py {version_str or '8.x'} (Python 3) is fully supported with native strings.rpy "
+            "and dynamic runtime displayable hook."
+        )
+    elif major_version == 7 or python_family == "python2":
+        support_level = "supported_with_fallback"
+        support_reason = (
+            f"Ren'Py {version_str or '7.x'} (Python 2.7) is supported using polyglot Python 2/3 "
+            "activation script and native strings.rpy translation tables."
+        )
+    else:
+        support_level = "supported_with_fallback"
+        support_reason = (
+            "Ren'Py version could not be uniquely identified; using universal polyglot Python 2/3 "
+            "activation script with safe fallback."
+        )
+
+    return {
+        "version": version_str,
+        "major_version": major_version,
+        "minor_version": minor_version,
+        "python_family": python_family,
+        "support_level": support_level,
+        "support_reason": support_reason,
+        "detection_source": detection_source,
+        "features": {
+            "native_strings_rpy": support_level != "unsupported",
+            "dynamic_text_fallback": support_level != "unsupported",
+            "polyglot_python2_3": True,
+        },
+        "limitations": [
+            "Text baked directly into bitmap images (PNG/WebP) requires image asset replacement."
+        ]
+        + (
+            [
+                "Python 2.7 runtime: dynamic scripts must avoid Python 3 language features."
+            ]
+            if python_family == "python2"
+            else []
+        )
+        + (
+            ["Pre-Ren'Py 7.0 engine: unified string translation table is unavailable."]
+            if support_level == "unsupported"
+            else []
+        ),
+    }
+
+
 class RenPyAdapter(GameAdapter):
     """Adapter for Ren'Py visual novel engine."""
 
@@ -344,6 +511,15 @@ class RenPyAdapter(GameAdapter):
             mode = "no_scripts"
             msg = "Ren'Py game installation detected, but no readable or compiled script files were found."
 
+        runtime_compat = detect_renpy_runtime(install_path)
+        if runtime_compat["support_level"] == "unsupported":
+            has_extractable = False
+            mode = "unsupported_version"
+            msg = (
+                f"Ren'Py visual novel detected (version {runtime_compat.get('version') or 'legacy'}), "
+                f"but this engine version is unsupported. {runtime_compat.get('support_reason')}"
+            )
+
         return {
             "is_renpy": True,
             "has_source_scripts": has_source,
@@ -358,6 +534,7 @@ class RenPyAdapter(GameAdapter):
             "message": msg,
             "archive_details": arc_diag.get("archives", []),
             "image_text_inventory": self._inventory_image_assets(game_dir),
+            "runtime_compatibility": runtime_compat,
         }
 
     def _inventory_image_assets(self, game_dir: Path) -> Dict[str, Any]:
@@ -442,8 +619,19 @@ class RenPyAdapter(GameAdapter):
         if not diag["is_renpy"]:
             return False, "", 0.0
 
+        runtime_compat = diag.get("runtime_compatibility", {})
+        ver_tag = (
+            f"Ren'Py {runtime_compat['version']} "
+            if runtime_compat.get("version")
+            else "Ren'Py "
+        )
+
         if diag["has_source_scripts"]:
-            return True, f"Ren'Py Visual Novel ({diag['rpy_count']} script files)", 1.0
+            return (
+                True,
+                f"{ver_tag}Visual Novel ({diag['rpy_count']} script files)",
+                1.0,
+            )
 
         if diag.get("has_extractable_scripts"):
             total_count = (
@@ -454,19 +642,20 @@ class RenPyAdapter(GameAdapter):
             )
             mode = diag.get("extraction_mode", "")
             if "decompile" in mode:
-                desc = f"Ren'Py Visual Novel ({total_count} compiled scripts - decompiler ready)"
+                desc = f"{ver_tag}Visual Novel ({total_count} compiled scripts - decompiler ready)"
             else:
-                desc = f"Ren'Py Visual Novel ({total_count} scripts in archive)"
+                desc = f"{ver_tag}Visual Novel ({total_count} scripts in archive)"
             return True, desc, 1.0
 
         if diag.get("rpyc_count", 0) > 0 or diag.get("archive_rpyc_count", 0) > 0:
-            desc = "Ren'Py Visual Novel (Compiled .rpyc only - decompiler required)"
+            desc = f"{ver_tag}Visual Novel (Compiled .rpyc only - decompiler required)"
         elif diag.get("rpa_count", 0) > 0:
-            desc = "Ren'Py Visual Novel (Archived - source scripts required)"
+            desc = f"{ver_tag}Visual Novel (Archived - source scripts required)"
         else:
-            desc = "Ren'Py Visual Novel (Scripts required)"
+            desc = f"{ver_tag}Visual Novel (Scripts required)"
 
-        return True, desc, 0.5
+        conf = 0.5 if runtime_compat.get("support_level") != "unsupported" else 0.2
+        return True, desc, conf
 
     def _hash_text(self, text: str) -> str:
         return hashlib.sha256(text.encode("utf-8")).hexdigest()

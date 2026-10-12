@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List
 
+from gamelingo.adapters.renpy import detect_renpy_runtime
 from gamelingo.adapters.renpy_strings import (
     generate_activation_rpy,
     generate_strings_rpy,
@@ -79,6 +80,57 @@ def apply_plan(
         "recovery_status": None,
     }
 
+    try:
+        source_root_resolved = source_root.resolve(strict=True)
+    except Exception as e:
+        report["status"] = "failed"
+        report["errors"].append(f"Source root does not exist: {str(e)}")
+        return report
+
+    is_renpy = plan.get("adapter_id") == "renpy"
+
+    runtime_info = {}
+    if is_renpy:
+        runtime_info = plan.get("runtime_compatibility") or detect_renpy_runtime(
+            source_root_resolved
+        )
+        if runtime_info.get("support_level") == "unsupported":
+            report["status"] = "failed"
+            report["errors"].append(
+                f"Unsupported Ren'Py version: {runtime_info.get('version', 'legacy')}. "
+                f"{runtime_info.get('support_reason', '')}"
+            )
+            report["diagnostics"] = {
+                "engine": "renpy",
+                "detected_version": runtime_info.get("version"),
+                "python_family": runtime_info.get("python_family"),
+                "support_level": runtime_info.get("support_level"),
+                "translation_strategy": "unsupported",
+                "dynamic_text_fallback_installed": False,
+                "limitations": runtime_info.get("limitations", []),
+            }
+            return report
+
+    report["diagnostics"] = {
+        "engine": "renpy" if is_renpy else "rpgmaker_mv_mz",
+        "detected_version": runtime_info.get("version") if is_renpy else "mv_mz",
+        "python_family": runtime_info.get("python_family") if is_renpy else "n/a",
+        "support_level": runtime_info.get("support_level")
+        if is_renpy
+        else "fully_supported",
+        "translation_strategy": "native_strings_rpy"
+        if is_renpy
+        else "json_ast_patching",
+        "dynamic_text_fallback_installed": any(
+            e.get("action") == "create_activation_file"
+            or str(e.get("file_path", "")).endswith("gamelingo_activate.rpy")
+            for e in plan.get("edits", [])
+        )
+        if is_renpy
+        else False,
+        "limitations": runtime_info.get("limitations", []) if is_renpy else [],
+    }
+
     # Preflight Validation
     try:
         validate_plan(source_root, plan)
@@ -86,9 +138,6 @@ def apply_plan(
         report["status"] = "failed"
         report["errors"].append(f"Plan validation failed: {str(e)}")
         return report
-
-    source_root_resolved = source_root.resolve(strict=True)
-    is_renpy = plan.get("adapter_id") == "renpy"
 
     edits = plan.get("edits", [])
     valid_edits = [e for e in edits if e.get("status") == "valid"]
@@ -207,7 +256,8 @@ def apply_plan(
                             )
                             return report
                     new_content = generate_activation_rpy(
-                        plan.get("target_lang", "english")
+                        plan.get("target_lang", "english"),
+                        python_family=runtime_info.get("python_family", "auto"),
                     )
                 else:
                     existing_content = None
