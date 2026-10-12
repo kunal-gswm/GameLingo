@@ -127,9 +127,9 @@ A dedicated regression test suite was created in `tests/unit/test_renpy_ui_extra
 14. `test_diagnose_image_text_inventory`: Diagnostic inventory of likely text-bearing images.
 
 **Test Run Summary:**
-- `uv run pytest`: **181 passed** in 14.76s (100% pass rate).
+- `uv run pytest`: **185 passed** in 19.80s (100% pass rate).
 - `uv run ruff check`: **All checks passed**.
-- `uv run ruff format --check .`: **All checks passed** (77 files cleanly formatted).
+- `uv run ruff format --check .`: **All checks passed** (80 files cleanly formatted).
 
 ---
 
@@ -137,18 +137,20 @@ A dedicated regression test suite was created in `tests/unit/test_renpy_ui_extra
 
 The Windows distribution was compiled using `build_windows.ps1` with PyInstaller:
 - **Archive**: `dist/GameLingo-Windows-x64.zip`
-- **SHA-256 Checksum**: Checksum recorded in `dist/GameLingo-Windows-x64.zip.sha256`.
+- **SHA-256 Checksum**: `81C27CCE106561F20B2854C3D09E36DEF35B09C2D5E24EF1AD5CEC2877AD0629` (recorded in `dist/GameLingo-Windows-x64.zip.sha256`).
 
 ---
 
-## 6. Manual Verification Steps
+## 6. End-to-End Runtime Verification (GL-037.1)
 
-1. Launch GameLingo (`uv run gamelingo` or via the packaged executable).
-2. Select the game directory `D:\New folder\island-1.0-win`.
-3. In Dashboard, observe the image text diagnostic reporting likely text-bearing UI images.
-4. Proceed to Extraction: verify that 2,412 units are discovered, including HUD labels, action buttons, and quit prompts.
-5. In Review, search for `ゲームを終了しますか？` and `採取量` — approve translations.
-6. In Patch, generate and apply the patch with English activation.
-7. Launch `island.exe`:
-   - Open HUD: verify `採取量` displays translated text (e.g., `Harvest Rate`).
-   - Open Quit Confirmation dialog: verify the prompt displays `Are you sure you want to quit?` alongside `Yes` and `No` buttons.
+Full runtime verification has been completed on the running game `island-1.0-win` (disposable copy `D:\New folder\island-1.0-win-disposable`), proving that all 5 target screens render in English without engine errors:
+- See full verification report and captured screen proofs in [GL_037_1_End_to_End_RenPy_UI_Translation_Verification_Report.md](file:///e:/GameLingo/GL_037_1_End_to_End_RenPy_UI_Translation_Verification_Report.md).
+- Captured screenshots:
+  1. Main Menu (`docs/screenshots/screen_1_main_menu.png`)
+  2. Quit Confirmation Dialog (`docs/screenshots/screen_2_quit_confirmation.png`)
+  3. Tutorial Modal (`docs/screenshots/screen_3_tutorial_modal.png`)
+  4. Action Cards & Top HUD (`docs/screenshots/screen_4_hub_action_cards.png`)
+  5. Status Meters (`docs/screenshots/screen_5_status_panel.png`)
+
+**Overall Status:** **PASS**
+
