@@ -149,3 +149,30 @@ def test_blocking_validation(db):
     # Cannot approve
     with pytest.raises(ValueError, match="blocking errors"):
         service.approve("2")
+
+
+def test_approve_all(db):
+    service = ReviewService(db)
+    conn = db.connect()
+    with conn:
+        # Valid draft
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES ('u1', 'f1', 'l1', 'Hello', 'c', '[]', 'h1', 'draft')"
+        )
+        conn.execute(
+            "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) VALUES ('r1', 'u1', 'm', '1', 'Hola', 'Hola', '[]', 0, 0)"
+        )
+        # Unit with blocking error (missing placeholder)
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES ('u2', 'f1', 'l2', 'Hi %1', 'c', '[]', 'h2', 'draft')"
+        )
+        conn.execute(
+            "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) VALUES ('r2', 'u2', 'm', '1', 'Hola', 'Hola', '[]', 0, 0)"
+        )
+
+    res = service.approve_all("proj1")
+    assert res["approved"] == 1
+    assert res["skipped"] == 1
+
+    assert service.get_unit("u1")["status"] == "approved"
+    assert service.get_unit("u2")["status"] == "draft"

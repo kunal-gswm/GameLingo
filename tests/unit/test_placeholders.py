@@ -49,3 +49,12 @@ def test_no_placeholders():
     p = PlaceholderProtector()
     assert p.mask("Plain text") == "Plain text"
     assert p.restore("Plain text translated") == "Plain text translated"
+
+
+def test_fuzzy_sentinel_restoration():
+    p = PlaceholderProtector()
+    masked = p.mask("朝。[day_count]日目。")
+    assert "XXXTOKEN0XXX" in masked
+    # Model mangles XXXTOKEN0XXX to XXXTOKEN
+    restored = p.restore("Morning XXXTOKEN")
+    assert restored == "Morning [day_count]"

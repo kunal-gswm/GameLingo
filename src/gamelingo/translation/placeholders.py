@@ -62,34 +62,66 @@ class PlaceholderProtector:
     def restore(self, translated_text: str) -> str:
         """
         Restores sentinels in the translated text back to original placeholders.
+        Supports fuzzy matching for truncated or space-separated sentinels produced by NMT.
         Raises MaskingError if a sentinel is missing or duplicated.
         """
         if not translated_text and not self.token_map:
             return translated_text
 
-        # Verify all sentinels are present
-        for sentinel in self.token_map:
-            count = translated_text.count(sentinel)
-            if count == 0:
-                raise MaskingError(
-                    f"Sentinel '{sentinel}' is missing from the translation output."
-                )
-            if count > 1:
+        result = translated_text
+
+        # First pass: replace exact matches
+        remaining = {}
+        for sentinel, original in self.token_map.items():
+            count = result.count(sentinel)
+            if count == 1:
+                result = result.replace(sentinel, original)
+            elif count > 1:
                 raise MaskingError(
                     f"Sentinel '{sentinel}' was duplicated in the translation output."
                 )
+            else:
+                remaining[sentinel] = original
 
-        # We replace them back
-        # Replace in descending order of length or just replace directly since they are unique
-        result = translated_text
-        for sentinel, original in self.token_map.items():
-            result = result.replace(sentinel, original)
+        # Second pass: fuzzy match any sentinels mangled by NMT tokenizer
+        # (e.g. XXXTOKEN0XXX -> 'XXXTOKEN' or 'XXX TOKEN 0 XXX' or 'XXXTOKEN0')
+        for sentinel, original in remaining.items():
+            idx_match = re.search(r"(\d+)", sentinel)
+            idx = idx_match.group(1) if idx_match else ""
+            fuzzy_patterns = []
+            if idx:
+                fuzzy_patterns.extend(
+                    [
+                        rf"XXX\s*TOKEN\s*{idx}\s*(?:XXX)?",
+                        rf"XXX\s*TOKEN\s*{idx}",
+                    ]
+                )
+
+            # If only 1 sentinel was in token_map or single remaining, allow matching generic XXXTOKEN
+            if len(self.token_map) == 1 or len(remaining) == 1:
+                fuzzy_patterns.append(r"XXX\s*TOKEN(?:\s*XXX)?")
+
+            matched = False
+            for pat in fuzzy_patterns:
+                m = re.search(pat, result, re.IGNORECASE)
+                if m:
+                    all_matches = list(re.finditer(pat, result, re.IGNORECASE))
+                    if len(all_matches) > 1:
+                        raise MaskingError(
+                            f"Sentinel '{sentinel}' was duplicated in the translation output."
+                        )
+                    result = result[: m.start()] + original + result[m.end() :]
+                    matched = True
+                    break
+
+            if not matched:
+                raise MaskingError(
+                    f"Sentinel '{sentinel}' is missing from the translation output."
+                )
 
         # Check for residual XXXTOKEN occurrences that we didn't inject
         if "XXXTOKEN" in result:
-            # It could be the source text had XXXTOKEN natively, but if it did, that's an edge case
-            # Just ensure no actual matching sentinel pattern is left
-            if re.search(r"XXXTOKEN\d+XXX", result):
+            if re.search(r"XXX\s*TOKEN\d*XXX?", result, re.IGNORECASE):
                 raise MaskingError(
                     "Unexpected residual sentinel pattern found in the output."
                 )

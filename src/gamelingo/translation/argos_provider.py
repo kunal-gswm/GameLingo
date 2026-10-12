@@ -98,12 +98,20 @@ class ArgosTranslateProvider(TranslationProvider):
                 # Restore
                 final_text = protector.restore(translated_masked)
 
+                # Fallback to source text if translation is empty or whitespace
+                if not final_text or not final_text.strip():
+                    final_text = req.source_text
+
                 results.append(TranslationResult(req.id, final_text, "argos", "1.1"))
 
             except MaskingError as e:
                 results.append(
                     TranslationResult(
-                        req.id, "", "argos", "1.1", error=f"Placeholder error: {str(e)}"
+                        req.id,
+                        "",
+                        "argos",
+                        "1.1",
+                        error=f"Placeholder error: {str(e)}",
                     )
                 )
             except Exception as e:

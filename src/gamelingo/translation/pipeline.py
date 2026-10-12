@@ -156,7 +156,13 @@ class TranslationPipeline:
             "chunk_size": chunk_size,
         }
 
-        counts = {"total_units": len(units), "pending_requests": len(pending_requests)}
+        counts = {
+            "total": len(units),
+            "total_units": len(units),
+            "pending_requests": len(pending_requests),
+            "completed": 0,
+            "failed": 0,
+        }
 
         # Save job
         with conn:
@@ -211,7 +217,9 @@ class TranslationPipeline:
 
         return job_id
 
-    def resume_job(self, job_id: str) -> Dict[str, Any]:
+    def resume_job(
+        self, job_id: str, max_chunks: Optional[int] = None
+    ) -> Dict[str, Any]:
         import json
 
         conn = self.db.connect()
@@ -221,13 +229,30 @@ class TranslationPipeline:
         if not job_row:
             raise ValueError(f"Job {job_id} not found")
 
-        json.loads(job_row["settings_json"])
+        # If all chunks are currently failed and no pending chunks exist,
+        # reset failed chunks to pending (attempt=0) so the job can be retried/resumed
+        cur = conn.execute(
+            "SELECT status, COUNT(*) FROM job_chunks WHERE job_id = ? GROUP BY status",
+            (job_id,),
+        )
+        existing_status_counts = dict(cur.fetchall())
+        if (
+            existing_status_counts.get("pending", 0) == 0
+            and existing_status_counts.get("failed", 0) > 0
+        ):
+            with conn:
+                conn.execute(
+                    "UPDATE job_chunks SET status = 'pending', attempt = 0, error = NULL WHERE job_id = ? AND status = 'failed'",
+                    (job_id,),
+                )
 
         cur = conn.execute(
-            "SELECT * FROM job_chunks WHERE job_id = ? AND status != 'completed' ORDER BY created_at ASC",
+            "SELECT * FROM job_chunks WHERE job_id = ? AND status = 'pending' ORDER BY created_at ASC",
             (job_id,),
         )
         chunks = cur.fetchall()
+        if max_chunks is not None and max_chunks > 0:
+            chunks = chunks[:max_chunks]
 
         with conn:
             conn.execute(
@@ -266,12 +291,18 @@ class TranslationPipeline:
                 # Verify we got everything
                 result_map = {res.request_id: res for res in results}
 
+                all_failed = len(results) > 0 and all(
+                    (not res or not res.target_text or res.error) for res in results
+                )
+                if all_failed:
+                    raise Exception(
+                        "All translation requests in chunk failed or errored"
+                    )
+
                 with conn:
                     for req_data in chunk_data["requests"]:
                         req_id = req_data["id"]
                         res = result_map.get(req_id)
-
-                        import json
 
                         from gamelingo.translation.validation import (
                             validate_translation,
@@ -338,43 +369,84 @@ class TranslationPipeline:
                                     "UPDATE translation_units SET status = 'failed' WHERE id = ?",
                                     (unit_id,),
                                 )
-                            raise Exception("Result missing or errored")
 
                     conn.execute(
                         "UPDATE job_chunks SET status = 'completed', attempt = ?, updated_at = ? WHERE id = ?",
                         (attempt, time.time(), chunk_id),
                     )
             except Exception as e:
+                new_chunk_status = "failed" if attempt >= 3 else "pending"
                 with conn:
                     conn.execute(
-                        "UPDATE job_chunks SET status = 'pending', attempt = ?, error = ?, updated_at = ? WHERE id = ?",
-                        (attempt, str(e), time.time(), chunk_id),
+                        "UPDATE job_chunks SET status = ?, attempt = ?, error = ?, updated_at = ? WHERE id = ?",
+                        (new_chunk_status, attempt, str(e), time.time(), chunk_id),
                     )
                 # Break to stop job execution on chunk failure if we want, or continue to next chunk.
-                # Usually we want to stop and let the user retry if there's a provider error
                 break
 
-        # Check if job is done
+        # Check remaining chunks status
         cur = conn.execute(
-            "SELECT COUNT(*) FROM job_chunks WHERE job_id = ? AND status != 'completed'",
+            "SELECT status, COUNT(*) FROM job_chunks WHERE job_id = ? GROUP BY status",
             (job_id,),
         )
-        pending_chunks = cur.fetchone()[0]
+        chunk_counts = dict(cur.fetchall())
+        pending_chunks = chunk_counts.get("pending", 0)
+        completed_chunks = chunk_counts.get("completed", 0)
+        failed_chunks = chunk_counts.get("failed", 0)
 
-        status = "completed" if pending_chunks == 0 else "running"
+        if pending_chunks == 0:
+            status = (
+                "failed"
+                if (failed_chunks > 0 and completed_chunks == 0)
+                else "completed"
+            )
+        else:
+            status = "running"
+
+        # Calculate unit counts for progress
+        counts = {}
+        if job_row["counts"]:
+            try:
+                counts = json.loads(job_row["counts"])
+            except Exception:
+                counts = {}
+
+        total_units = counts.get("total", counts.get("total_units", 0))
+
+        cur = conn.execute(
+            """
+            SELECT tu.status, COUNT(*)
+            FROM translation_units tu
+            JOIN game_files gf ON tu.file_id = gf.id
+            WHERE gf.project_id = ?
+            GROUP BY tu.status
+            """,
+            (job_row["project_id"],),
+        )
+        tu_counts = dict(cur.fetchall())
+        completed_units = (
+            tu_counts.get("draft", 0)
+            + tu_counts.get("needs_review", 0)
+            + tu_counts.get("translated", 0)
+        )
+        failed_units = tu_counts.get("failed", 0)
+
+        counts["total"] = total_units
+        counts["total_units"] = total_units
+        counts["completed"] = completed_units
+        counts["failed"] = failed_units
 
         with conn:
             conn.execute(
-                "UPDATE jobs SET status = ?, updated_at = ? WHERE id = ?",
-                (status, time.time(), job_id),
+                "UPDATE jobs SET status = ?, counts = ?, updated_at = ? WHERE id = ?",
+                (status, json.dumps(counts), time.time(), job_id),
             )
-
-        # Get final report
-        cur = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
-        final_job = cur.fetchone()
 
         return {
             "job_id": job_id,
-            "status": final_job["status"],
-            "counts": json.loads(final_job["counts"]),
+            "status": status,
+            "total": total_units,
+            "completed": completed_units,
+            "failed": failed_units,
+            "counts": counts,
         }

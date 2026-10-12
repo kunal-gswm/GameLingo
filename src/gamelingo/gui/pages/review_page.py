@@ -96,6 +96,14 @@ class ReviewPage(QWidget):
         self.list_widget.itemSelectionChanged.connect(self.on_selection_changed)
         left_layout.addWidget(self.list_widget, stretch=1)
 
+        # Batch Action row
+        batch_bar = QHBoxLayout()
+        self.btn_batch_approve = QPushButton("Approve All in Queue")
+        style_success_button(self.btn_batch_approve)
+        self.btn_batch_approve.clicked.connect(self.on_approve_all)
+        batch_bar.addWidget(self.btn_batch_approve)
+        left_layout.addLayout(batch_bar)
+
         # CSV actions footer bar
         csv_bar = QHBoxLayout()
         self.btn_export = QPushButton("Export CSV")
@@ -189,6 +197,11 @@ class ReviewPage(QWidget):
         self.btn_approve.clicked.connect(self.on_approve)
         btn_bar.addWidget(self.btn_approve)
 
+        self.btn_approve_all = QPushButton("Approve All")
+        style_success_button(self.btn_approve_all)
+        self.btn_approve_all.clicked.connect(self.on_approve_all)
+        btn_bar.addWidget(self.btn_approve_all)
+
         self.btn_reject = QPushButton("Reject")
         style_danger_button(self.btn_reject)
         self.btn_reject.clicked.connect(self.on_reject)
@@ -267,6 +280,8 @@ class ReviewPage(QWidget):
             count += 1
 
         self.lbl_queue_count.setText(f"{count} units")
+        self.btn_batch_approve.setEnabled(count > 0)
+        self.btn_approve_all.setEnabled(count > 0)
         self.set_editor_enabled(False)
         self.current_unit_id = None
         self._original_text = ""
@@ -404,6 +419,39 @@ class ReviewPage(QWidget):
             self._refresh_current_item_display("APPROVED")
         except Exception as e:
             QMessageBox.critical(self, "Approval Error", str(e))
+
+    def on_approve_all(self):
+        if not self.service:
+            return
+
+        total_visible = self.list_widget.count()
+        if total_visible == 0:
+            QMessageBox.information(
+                self, "No Units", "No units available to approve in the current view."
+            )
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Confirm Batch Approval",
+            f"Are you sure you want to approve all {total_visible} units currently in the queue?\n\n"
+            "This will mark all eligible units as APPROVED and ready for patching.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        visible_ids = [
+            self.list_widget.item(i).data(Qt.UserRole)
+            for i in range(self.list_widget.count())
+        ]
+        result = self.service.approve_all("default", unit_ids=visible_ids)
+        self.load_units()
+        msg = f"Successfully approved {result['approved']} units."
+        if result["skipped"] > 0:
+            msg += f"\nSkipped {result['skipped']} units due to empty text or errors."
+        QMessageBox.information(self, "Batch Approval Complete", msg)
 
     def on_reject(self):
         if not self.current_unit_id or not self.service:

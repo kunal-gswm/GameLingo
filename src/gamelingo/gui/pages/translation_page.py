@@ -59,11 +59,12 @@ class TranslationWorker(QThread):
             pipeline = TranslationPipeline(local_db, provider)
 
             while not self.is_cancelled:
-                report = pipeline.resume_job(self.job_id)
+                report = pipeline.resume_job(self.job_id, max_chunks=1)
                 self.progress.emit(report)
                 if report["status"] in ("completed", "failed"):
                     self.finished.emit(report)
                     break
+                time.sleep(0.05)
 
         except Exception as e:
             self.error.emit(str(e))
@@ -391,7 +392,7 @@ class TranslationPage(QWidget):
             if r["counts"]:
                 try:
                     c = json.loads(r["counts"])
-                    total = c.get("total", 0)
+                    total = c.get("total", c.get("total_units", 0))
                     completed = c.get("completed", 0)
                     failed = c.get("failed", 0)
                     prog_text = f"{completed}/{total} completed"
@@ -497,8 +498,9 @@ class TranslationPage(QWidget):
             self.btn_stop.setEnabled(False)
 
     def on_worker_progress(self, report: dict):
-        total = report.get("total", 0)
-        completed = report.get("completed", 0)
+        counts = report.get("counts", {})
+        total = report.get("total", counts.get("total", counts.get("total_units", 0)))
+        completed = report.get("completed", counts.get("completed", 0))
         if total > 0:
             pct = int((completed / total) * 100)
             self.progress_bar.setValue(pct)
@@ -509,17 +511,19 @@ class TranslationPage(QWidget):
         self.worker = None
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
+        self.btn_resume.setEnabled(True)
         self.progress_bar.setValue(100)
         st = report.get("status", "completed")
-        self.lbl_status.setText(
-            f"Job {st}. Completed {report.get('completed', 0)} units."
-        )
+        counts = report.get("counts", {})
+        total = report.get("total", counts.get("total", counts.get("total_units", 0)))
+        completed = report.get("completed", counts.get("completed", 0))
+        self.lbl_status.setText(f"Job {st}. Completed {completed} of {total} units.")
         self.load_jobs()
         QMessageBox.information(
             self,
             "Translation Complete",
             f"Translation finished with status: {st}.\n"
-            f"Processed {report.get('completed', 0)} of {report.get('total', 0)} units.",
+            f"Processed {completed} of {total} units.",
         )
 
     def on_worker_error(self, err_msg: str):

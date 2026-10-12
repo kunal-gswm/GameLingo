@@ -409,7 +409,13 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
         if not file_path or not locator:
             raise PlanValidationError("Missing file_id or locator in valid edit.")
 
-        target = f"{file_path}::{locator}"
+        if is_renpy:
+            # In Ren'Py, all translations target strings.rpy; the unique edit
+            # location corresponds to the original source script and locator.
+            target = f"{edit.get('source_file_path', file_path)}::{locator}"
+        else:
+            target = f"{file_path}::{locator}"
+
         if target in seen_targets:
             raise PlanValidationError(f"Duplicate valid edit target: {target}")
         seen_targets.add(target)

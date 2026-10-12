@@ -128,6 +128,45 @@ class ReviewService:
                 (unit_id,),
             )
 
+    def approve_all(
+        self, project_id: Optional[str] = None, unit_ids: Optional[List[str]] = None
+    ) -> Dict[str, int]:
+        """Approves all eligible units that have translated text and no blocking errors."""
+        units = self.list_units_for_review(project_id)
+        if unit_ids is not None:
+            unit_ids_set = set(unit_ids)
+            units = [u for u in units if u["id"] in unit_ids_set]
+
+        approved_count = 0
+        skipped_count = 0
+        to_approve = []
+
+        for u in units:
+            text = u.get("translated_text") or ""
+            if not text:
+                skipped_count += 1
+                continue
+            issues = validate_translation(u["source_text"], text)
+            if any(i.severity == "error" for i in issues):
+                skipped_count += 1
+                continue
+            to_approve.append(u["id"])
+
+        if to_approve:
+            conn = self.db.connect()
+            with conn:
+                chunk_size = 500
+                for i in range(0, len(to_approve), chunk_size):
+                    chunk = to_approve[i : i + chunk_size]
+                    ph = ",".join(["?"] * len(chunk))
+                    conn.execute(
+                        f"UPDATE translation_units SET status = 'approved' WHERE id IN ({ph})",
+                        tuple(chunk),
+                    )
+            approved_count = len(to_approve)
+
+        return {"approved": approved_count, "skipped": skipped_count}
+
     def reject(self, unit_id: str, reason: str = ""):
         """Rejects a translation."""
         conn = self.db.connect()
