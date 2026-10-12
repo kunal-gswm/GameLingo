@@ -736,15 +736,17 @@ class DashboardPage(QWidget):
                 self.refresh()
                 self.game_selected.emit()
 
-                # Separate engine detection from source script availability
-                has_source = True
+                # Separate engine detection from extraction eligibility
+                can_extract = True
                 diag_msg = ""
                 if hasattr(adapter, "diagnose"):
                     diag = adapter.diagnose(path)
-                    has_source = diag.get("has_source_scripts", True)
+                    has_source = diag.get("has_source_scripts", False)
+                    has_extractable = diag.get("has_extractable_scripts", False)
+                    can_extract = has_source or has_extractable
                     diag_msg = diag.get("message", "")
 
-                if not has_source:
+                if not can_extract:
                     QMessageBox.warning(
                         self,
                         "Source Scripts Required",

@@ -883,3 +883,251 @@ def test_directory_switching_and_engine_detection_consistency(qapp, tmp_path):
         assert dash_page.selected_invalid_game_path is None
         assert "Structure Verified" in dash_page.lbl_structure_pill.text()
         assert "RPG Maker" in dash_page.lbl_structure_desc.text()
+
+
+def test_gui_renpy_loose_source_selection_success(qapp, tmp_path):
+    """A Ren'Py game with loose .rpy source files selects successfully with an info dialog and no warning."""
+    ws = tmp_path / "ws"
+    state = AppState()
+    state.open_workspace(ws)
+
+    win = MainWindow(state)
+    dash_page = win.pages[0]
+
+    renpy_dir = tmp_path / "renpy_loose"
+    renpy_dir.mkdir()
+    (renpy_dir / "game").mkdir()
+    (renpy_dir / "renpy").mkdir()
+    (renpy_dir / "game" / "options.rpy").write_text(
+        'define config.name = "LooseVN"\n', encoding="utf-8"
+    )
+    (renpy_dir / "game" / "script.rpy").write_text(
+        'label start:\n    "Hello"\n', encoding="utf-8"
+    )
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getExistingDirectory",
+            return_value=str(renpy_dir),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+    ):
+        dash_page.on_select_game()
+        assert mock_info.called
+        assert not mock_warn.called
+        assert mock_info.call_args[0][1] == "Success"
+        assert "Ren'Py Visual Novel" in mock_info.call_args[0][2]
+        assert state.game_path == renpy_dir
+        assert "Structure Verified" in dash_page.lbl_structure_pill.text()
+
+
+def test_gui_renpy_archived_compiled_selection_and_extraction(qapp, tmp_path):
+    """
+    A game with archived .rpyc scripts and an available decompiler selects successfully
+    without a source-required warning, and enables extraction on the extraction page.
+    """
+    from gamelingo.adapters.renpy_decompiler import RPYC2_HEADER
+    from gamelingo.adapters.renpy_rpa import create_synthetic_rpa
+
+    ws = tmp_path / "ws"
+    state = AppState()
+    state.open_workspace(ws)
+
+    win = MainWindow(state)
+    dash_page = win.pages[0]
+    extract_page = win.pages[1]
+
+    renpy_dir = tmp_path / "island-game"
+    renpy_dir.mkdir()
+    game_dir = renpy_dir / "game"
+    game_dir.mkdir()
+    (renpy_dir / "renpy").mkdir()
+    (renpy_dir / "island.exe").write_bytes(b"MZ\x90\x00")
+
+    arc_path = game_dir / "archive.rpa"
+    fake_rpyc = RPYC2_HEADER + b"\x00\x00\x00\x01fake_compiled_content_padding_here"
+    create_synthetic_rpa(
+        arc_path,
+        {"script.rpyc": fake_rpyc},
+        version="RPA-3.0",
+    )
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getExistingDirectory",
+            return_value=str(renpy_dir),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+    ):
+        dash_page.on_select_game()
+        # Verifies info dialog is called, NOT warning dialog
+        assert mock_info.called
+        assert not mock_warn.called
+        assert mock_info.call_args[0][1] == "Success"
+        assert "decompiler ready" in mock_info.call_args[0][2]
+        assert state.game_path == renpy_dir
+        assert "Structure Verified" in dash_page.lbl_structure_pill.text()
+        assert "Supported" in dash_page.pill_renpy.text()
+
+    # The same archived game enables extraction
+    extract_page.refresh()
+    assert extract_page.btn_extract.isEnabled()
+    assert "Ready" in extract_page.pill_state.text()
+    assert "Ready to decompile and extract text" in extract_page.lbl_info.text()
+
+
+def test_gui_renpy_archived_no_extractable_scripts_warning_and_blocks_extraction(
+    qapp,
+    tmp_path,
+):
+    """
+    An archived game with no extractable scripts (only non-script files like images)
+    still displays the 'Source Scripts Required' warning and blocks extraction.
+    """
+    from gamelingo.adapters.renpy_rpa import create_synthetic_rpa
+
+    ws = tmp_path / "ws"
+    state = AppState()
+    state.open_workspace(ws)
+
+    win = MainWindow(state)
+    dash_page = win.pages[0]
+    extract_page = win.pages[1]
+
+    renpy_dir = tmp_path / "image_only_game"
+    renpy_dir.mkdir()
+    game_dir = renpy_dir / "game"
+    game_dir.mkdir()
+    (renpy_dir / "renpy").mkdir()
+    (renpy_dir / "island.exe").write_bytes(b"MZ\x90\x00")
+
+    arc_path = game_dir / "archive.rpa"
+    create_synthetic_rpa(
+        arc_path,
+        {"images/bg.png": b"fake_png_data"},
+        version="RPA-3.0",
+    )
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getExistingDirectory",
+            return_value=str(renpy_dir),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+    ):
+        dash_page.on_select_game()
+        # Verifies warning dialog is called, NOT info dialog
+        assert mock_warn.called
+        assert not mock_info.called
+        assert mock_warn.call_args[0][1] == "Source Scripts Required"
+        assert "Source Required" in dash_page.pill_renpy.text()
+        assert "Source Missing" in dash_page.lbl_structure_pill.text()
+
+    # Extraction page blocks extraction
+    extract_page.refresh()
+    assert not extract_page.btn_extract.isEnabled()
+
+    with patch("PySide6.QtWidgets.QMessageBox.warning") as mock_extract_warn:
+        extract_page.on_extract()
+        assert mock_extract_warn.called
+        assert mock_extract_warn.call_args[0][1] == "Extraction Unsupported"
+
+
+def test_gui_renpy_archived_decompiler_unavailable_warning_and_blocks_extraction(
+    qapp,
+    tmp_path,
+):
+    """
+    When the decompiler is unavailable, selecting a compiled/archived Ren'Py game
+    produces the appropriate warning and blocks extraction.
+    """
+    from gamelingo.adapters.renpy_decompiler import RPYC2_HEADER
+    from gamelingo.adapters.renpy_rpa import create_synthetic_rpa
+
+    ws = tmp_path / "ws"
+    state = AppState()
+    state.open_workspace(ws)
+
+    win = MainWindow(state)
+    dash_page = win.pages[0]
+    extract_page = win.pages[1]
+
+    renpy_dir = tmp_path / "compiled_only_game"
+    renpy_dir.mkdir()
+    game_dir = renpy_dir / "game"
+    game_dir.mkdir()
+    (renpy_dir / "renpy").mkdir()
+    (renpy_dir / "island.exe").write_bytes(b"MZ\x90\x00")
+
+    arc_path = game_dir / "archive.rpa"
+    fake_rpyc = RPYC2_HEADER + b"\x00\x00\x00\x01fake_compiled_content_padding_here"
+    create_synthetic_rpa(
+        arc_path,
+        {"script.rpyc": fake_rpyc},
+        version="RPA-3.0",
+    )
+
+    with (
+        patch("gamelingo.adapters.renpy.is_decompiler_available", return_value=False),
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getExistingDirectory",
+            return_value=str(renpy_dir),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+    ):
+        dash_page.on_select_game()
+        assert mock_warn.called
+        assert not mock_info.called
+        assert mock_warn.call_args[0][1] == "Source Scripts Required"
+        assert "decompiler" in mock_warn.call_args[0][2].lower()
+
+    # Extraction page blocks extraction when decompiler unavailable
+    with patch("gamelingo.adapters.renpy.is_decompiler_available", return_value=False):
+        extract_page.refresh()
+        assert not extract_page.btn_extract.isEnabled()
+
+        with patch("PySide6.QtWidgets.QMessageBox.warning") as mock_extract_warn:
+            extract_page.on_extract()
+            assert mock_extract_warn.called
+            assert mock_extract_warn.call_args[0][1] == "Extraction Unsupported"
+
+
+def test_gui_rpgmaker_selection_unchanged(qapp, tmp_path):
+    """RPG Maker MV/MZ game selection remains unchanged, calling info dialog and verifying structure."""
+    ws = tmp_path / "ws"
+    state = AppState()
+    state.open_workspace(ws)
+
+    win = MainWindow(state)
+    dash_page = win.pages[0]
+    extract_page = win.pages[1]
+
+    rpg_dir = tmp_path / "rpg_game"
+    rpg_dir.mkdir()
+    (rpg_dir / "data").mkdir()
+    with open(rpg_dir / "data" / "System.json", "w", encoding="utf-8") as f:
+        json.dump({"gameTitle": "RPG Test", "versionId": 1}, f)
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getExistingDirectory",
+            return_value=str(rpg_dir),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+    ):
+        dash_page.on_select_game()
+        assert mock_info.called
+        assert not mock_warn.called
+        assert mock_info.call_args[0][1] == "Success"
+        assert "RPG Maker" in mock_info.call_args[0][2]
+        assert state.game_path == rpg_dir
+        assert "Structure Verified" in dash_page.lbl_structure_pill.text()
+        assert "RPG Maker" in dash_page.lbl_structure_desc.text()
+
+    extract_page.refresh()
+    assert extract_page.btn_extract.isEnabled()

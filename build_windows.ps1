@@ -11,7 +11,7 @@ Write-Host "Building with PyInstaller..."
 if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
 if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
 
-uv run pyinstaller GameLingo.spec --noconfirm
+uv run --python 3.12 pyinstaller GameLingo.spec --noconfirm
 
 Write-Host "Build complete! Preparing distribution..."
 Copy-Item README.md dist/GameLingo/

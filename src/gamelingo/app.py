@@ -97,7 +97,7 @@ def cmd_extract(args):
 
     if hasattr(adapter, "diagnose"):
         diag = adapter.diagnose(game_path)
-        if not diag.get("has_source_scripts", True):
+        if not (diag.get("has_source_scripts") or diag.get("has_extractable_scripts")):
             print(f"Extraction unsupported: {diag.get('message')}")
             sys.exit(1)
 
