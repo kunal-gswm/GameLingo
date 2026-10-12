@@ -113,9 +113,15 @@ def apply_plan(
             return report
 
         if runtime_info.get("support_level") == "best_effort":
-            report["warnings"].append(
-                f"Ren'Py version is unknown ({runtime_info.get('support_reason')}). Best-effort fallback applied."
-            )
+            ver = runtime_info.get("version")
+            if ver and ver != "unknown":
+                report["warnings"].append(
+                    f"Ren'Py version {ver} is unverified / untested ({runtime_info.get('support_reason')}). Best-effort fallback applied."
+                )
+            else:
+                report["warnings"].append(
+                    f"Ren'Py version is unknown ({runtime_info.get('support_reason')}). Best-effort fallback applied."
+                )
 
     report["diagnostics"] = {
         "engine": "renpy" if is_renpy else "rpgmaker_mv_mz",

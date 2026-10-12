@@ -2,6 +2,8 @@ import ast
 import textwrap
 from pathlib import Path
 
+import pytest
+
 from gamelingo.adapters.renpy import detect_renpy_runtime
 from gamelingo.adapters.renpy_strings import generate_activation_rpy
 from gamelingo.patching.apply import apply_plan
@@ -337,6 +339,110 @@ def test_detect_renpy_runtime_8_5_verified(tmp_path: Path):
     assert "verified on real engine" in info["support_reason"]
 
 
+def test_detect_renpy_runtime_different_8_5_build_not_verified(tmp_path: Path):
+    """Verify that a different 8.5.0 build is NOT classified as verified, but as best_effort."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        "branch = 'master'\nversion = '8.5.0.12345678'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == "8.5.0.12345678"
+    assert info["major_version"] == 8
+    assert info["support_level"] == "best_effort"
+    assert info["support_level"] != "verified"
+    assert info["features"]["real_engine_verified"] is False
+    assert "unverified / unlisted" in info["support_reason"]
+
+
+@pytest.mark.parametrize(
+    "version_str",
+    ["8.5.1", "8.6.0", "9.0.0"],
+)
+def test_detect_renpy_runtime_newer_and_future_versions_best_effort(
+    tmp_path: Path, version_str: str
+):
+    """Verify newer minor versions and future major versions fall under best_effort."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        f"branch = 'master'\nversion = '{version_str}'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == version_str
+    assert info["support_level"] == "best_effort"
+    assert info["features"]["real_engine_verified"] is False
+
+
+def test_detect_renpy_runtime_8_4_supported_with_fallback(tmp_path: Path):
+    """Verify Ren'Py 8.4.x is classified as supported_with_fallback."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        "branch = 'master'\nversion = '8.4.1.24030701'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == "8.4.1.24030701"
+    assert info["major_version"] == 8
+    assert info["minor_version"] == 4
+    assert info["support_level"] == "supported_with_fallback"
+    assert "8.0.0–8.4.x" in info["support_reason"]
+
+
+def test_detect_renpy_runtime_7_6_3_supported_with_fallback(tmp_path: Path):
+    """Verify Ren'Py 7.6.3 is within the 7.0.0-7.6.3 supported range."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        "branch = 'master'\nversion = '7.6.3.2140'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == "7.6.3.2140"
+    assert info["major_version"] == 7
+    assert info["minor_version"] == 6
+    assert info["support_level"] == "supported_with_fallback"
+    assert "7.0.0–7.6.3" in info["support_reason"]
+
+
+def test_detect_renpy_runtime_7_6_4_best_effort(tmp_path: Path):
+    """Verify Ren'Py 7.6.4 (outside 7.0.0-7.6.3) is classified as best_effort."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        "branch = 'master'\nversion = '7.6.4.9999'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == "7.6.4.9999"
+    assert info["major_version"] == 7
+    assert info["support_level"] == "best_effort"
+    assert "outside the documented" in info["support_reason"]
+
+
 def test_detect_renpy_runtime_7x_from_vc_version(tmp_path: Path):
     """Detect Ren'Py 7.x from vc_version.py."""
     game_dir = tmp_path / "game"
@@ -479,6 +585,46 @@ def test_unsupported_renpy_version_aborts_patch(tmp_path: Path):
     assert report["status"] == "failed"
     assert any("Unsupported Ren'Py version" in e for e in report["errors"])
     assert report["diagnostics"]["support_level"] == "unsupported"
+
+
+def test_diagnostics_for_unverified_known_version_in_apply_plan(tmp_path: Path):
+    """Verify diagnostics and warnings when applying a plan to an unverified engine like 8.5.1."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Text"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        "branch = 'master'\nversion = '8.5.1'\n", encoding="utf-8"
+    )
+
+    plan = {
+        "version": "1.0",
+        "plan_id": "test-plan-851",
+        "adapter_id": "renpy",
+        "target_lang": "english",
+        "edits": [
+            {
+                "file_path": "game/tl/english/strings.rpy",
+                "file_id": "game/script.rpy",
+                "source_file_path": "game/script.rpy",
+                "locator": "line:1",
+                "original_text": "テキスト",
+                "translated_text": "Text",
+                "status": "valid",
+            }
+        ],
+    }
+
+    report = apply_plan(tmp_path, plan, tmp_path / "backups", execute=False)
+    assert report["status"] == "preview"
+    assert "diagnostics" in report
+    diag = report["diagnostics"]
+    assert diag["detected_version"] == "8.5.1"
+    assert diag["support_level"] == "best_effort"
+    assert diag["translation_strategy"] == "best_effort_polyglot_fallback"
+    assert any("8.5.1 is unverified" in w for w in report["warnings"])
 
 
 def test_actual_game_island_runtime_detection():
