@@ -133,7 +133,7 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
                 content = vc_p.read_text(encoding="utf-8", errors="ignore")
                 match = re.search(r"version\s*=\s*['\"]([^'\"]+)['\"]", content)
                 if match:
-                    version_str = match.group(1)
+                    version_str = match.group(1).strip()
                     detection_source = f"vc_version.py ({vc_p.name})"
                     parts = version_str.split(".")
                     if len(parts) >= 1 and parts[0].isdigit():
@@ -211,15 +211,29 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
             except Exception:
                 pass
 
-    # Parse numeric components from version_str if available
+    # Strictly validate version metadata format.
+    # Legitimate Ren'Py version metadata strings consist exclusively of dot-separated decimal integers
+    # (e.g. "8.5.0.25111603", "7.6.3.2140", "7.4.11.2266", "8.3.2.24102902").
+    # Numeric-prefix matching (e.g. matching "3" from "3garbage" or "1" from "1alpha") is rejected.
     numeric_parts: List[int] = []
-    if version_str:
-        for p in version_str.split("."):
-            m = re.match(r"^(\d+)", p)
-            if m:
-                numeric_parts.append(int(m.group(1)))
+    is_malformed = False
+
+    if version_str and version_str != "unknown":
+        clean_ver = version_str.strip()
+        raw_parts = clean_ver.split(".")
+        if raw_parts and all(p.isdigit() for p in raw_parts):
+            numeric_parts = [int(p) for p in raw_parts]
+        else:
+            is_malformed = True
+            # For malformed strings, extract identifiable components solely for diagnostic and baseline checks
+            if len(raw_parts) >= 1 and raw_parts[0].isdigit():
+                if major_version is None:
+                    major_version = int(raw_parts[0])
+            if len(raw_parts) >= 2 and raw_parts[1].isdigit():
+                if minor_version is None:
+                    minor_version = int(raw_parts[1])
             else:
-                break
+                minor_version = None
 
     if len(numeric_parts) >= 1 and major_version is None:
         major_version = numeric_parts[0]
@@ -228,15 +242,18 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
 
     patch_version = numeric_parts[2] if len(numeric_parts) >= 3 else None
 
-    # A release is fully identified only when it has at least major, minor, and patch numbers (e.g. 7.6.3 or 8.4.1)
-    is_fully_identified = bool(version_str and len(numeric_parts) >= 3)
+    # A release is fully identified only when it is strictly valid and has at least major, minor, and patch numbers
+    is_fully_identified = bool(
+        not is_malformed and version_str and len(numeric_parts) >= 3
+    )
 
     # Classify support level according to strict empirical verification:
     # 1. verified: Only the exact tested engine build (Ren'Py 8.5.0.25111603)
     # 2. supported_with_fallback: Fully identified releases within 7.0.0–7.6.3 (Python 2.7) or 8.0.0–8.4.x (Python 3)
-    # 3. best_effort: Inferred versions (e.g. from lib/ or bytecode), incomplete versions (7, 7.6), unlisted/newer versions (7.6.4, 8.5.1, 9.0)
+    # 3. best_effort: Malformed but identifiable versions, inferred versions (e.g. from lib/ or bytecode),
+    #                 incomplete versions (7, 7.6), unlisted/newer versions (7.6.4, 8.5.1, 9.0)
     # 4. unsupported: Ren'Py < 7.0 (Screen Language 1); preflight blocks patching
-    is_real_engine_verified = version_str == "8.5.0.25111603"
+    is_real_engine_verified = bool(not is_malformed and version_str == "8.5.0.25111603")
 
     if major_version is not None and major_version < 7:
         support_level = "unsupported"
@@ -287,7 +304,12 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
         )
     elif version_str and version_str != "unknown":
         support_level = "best_effort"
-        if len(numeric_parts) < 3:
+        if is_malformed:
+            support_reason = (
+                f"Ren'Py version metadata '{version_str}' is malformed or non-standard; "
+                "cannot verify documented support tiers. Best-effort polyglot fallback applied."
+            )
+        elif len(numeric_parts) < 3:
             support_reason = (
                 f"Ren'Py version '{version_str}' is incomplete; cannot verify documented release range. "
                 "Best-effort polyglot fallback applied."

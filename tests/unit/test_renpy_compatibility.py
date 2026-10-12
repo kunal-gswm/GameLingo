@@ -691,6 +691,128 @@ def test_diagnostics_for_incomplete_version_in_apply_plan(tmp_path: Path):
     assert any("incomplete" in w for w in report["warnings"])
 
 
+@pytest.mark.parametrize(
+    "malformed_ver,expected_major",
+    [
+        ("7.6.3garbage", 7),
+        ("8.4.1alpha", 8),
+        ("7.x.3", 7),
+        ("8.5.0.25111603garbage", 8),
+        ("8.4.1-rc1", 8),
+    ],
+)
+def test_detect_renpy_runtime_malformed_versions_rejected_from_documented_tiers(
+    tmp_path: Path, malformed_ver: str, expected_major: int
+):
+    """Verify malformed versions cannot qualify for verified or supported_with_fallback tiers."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        f"branch = 'master'\nversion = '{malformed_ver}'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == malformed_ver
+    assert info["major_version"] == expected_major
+    assert info["support_level"] == "best_effort"
+    assert info["support_level"] != "verified"
+    assert info["support_level"] != "supported_with_fallback"
+    assert "malformed or non-standard" in info["support_reason"]
+
+
+def test_detect_renpy_runtime_malformed_below_minimum_unsupported(tmp_path: Path):
+    """Verify malformed version with major < 7 is still classified as unsupported."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        "branch = 'master'\nversion = '6.99.12garbage'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == "6.99.12garbage"
+    assert info["major_version"] == 6
+    assert info["support_level"] == "unsupported"
+    assert "legacy Screen Language 1" in info["support_reason"]
+
+
+@pytest.mark.parametrize(
+    "valid_suffixed_ver,expected_major,expected_tier",
+    [
+        ("8.5.0.25111603", 8, "verified"),
+        ("7.6.3.2140", 7, "supported_with_fallback"),
+        ("7.4.11.2266", 7, "supported_with_fallback"),
+        ("8.4.1.24030701", 8, "supported_with_fallback"),
+        ("8.3.2.24102902", 8, "supported_with_fallback"),
+    ],
+)
+def test_detect_renpy_runtime_valid_build_suffixed_versions_accepted(
+    tmp_path: Path, valid_suffixed_ver: str, expected_major: int, expected_tier: str
+):
+    """Verify valid build-suffixed versions (strictly numeric parts) are properly classified."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        f"branch = 'master'\nversion = '{valid_suffixed_ver}'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == valid_suffixed_ver
+    assert info["major_version"] == expected_major
+    assert info["support_level"] == expected_tier
+
+
+def test_diagnostics_for_malformed_version_in_apply_plan(tmp_path: Path):
+    """Verify diagnostics and warnings when applying a plan to a malformed version string like '7.6.3garbage'."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Text"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        "branch = 'master'\nversion = '7.6.3garbage'\n", encoding="utf-8"
+    )
+
+    plan = {
+        "version": "1.0",
+        "plan_id": "test-plan-malformed",
+        "adapter_id": "renpy",
+        "target_lang": "english",
+        "edits": [
+            {
+                "file_path": "game/tl/english/strings.rpy",
+                "file_id": "game/script.rpy",
+                "source_file_path": "game/script.rpy",
+                "locator": "line:1",
+                "original_text": "テキスト",
+                "translated_text": "Text",
+                "status": "valid",
+            }
+        ],
+    }
+
+    report = apply_plan(tmp_path, plan, tmp_path / "backups", execute=False)
+    assert report["status"] == "preview"
+    assert "diagnostics" in report
+    diag = report["diagnostics"]
+    assert diag["detected_version"] == "7.6.3garbage"
+    assert diag["support_level"] == "best_effort"
+    assert diag["translation_strategy"] == "best_effort_polyglot_fallback"
+    assert any("malformed" in w for w in report["warnings"])
+
+
 def test_actual_game_island_runtime_detection():
     """Verify runtime detection against the verified game island-1.0-win release."""
     target_path = Path("D:/New folder/island-1.0-win")
