@@ -279,17 +279,25 @@ def generate_activation_rpy(target_lang: str, python_family: str = "auto") -> st
         '                    if not in_init and getattr(renpy.game.preferences, "language", None):\n'
         "                        if isinstance(text, _gl_string_types):\n"
         "                            text = renpy.translation.translate_string(text)\n"
-        "                        elif isinstance(text, list):\n"
+        "                        elif isinstance(text, (list, tuple)):\n"
         "                            text = [\n"
         "                                renpy.translation.translate_string(x) if isinstance(x, _gl_string_types) else x\n"
         "                                for x in text\n"
         "                            ]\n"
-        "                except Exception:\n"
-        "                    pass\n"
+        "                except Exception as _gl_tx_err:\n"
+        "                    try:\n"
+        '                        if getattr(config, "developer", False):\n'
+        '                            renpy.display.log.write("GameLingo: Dynamic translation fallback to original text: %s" % _gl_tx_err)\n'
+        "                    except Exception:\n"
+        "                        pass\n"
         "\n"
         "                return renpy.text.text.Text._gl_orig_set_text(self, text, *args, **kwargs)\n"
         "\n"
         "            renpy.text.text.Text.set_text = _gl_set_text\n"
-        "    except Exception:\n"
-        "        pass\n"
+        "    except Exception as _gl_init_err:\n"
+        "        try:\n"
+        '            if getattr(config, "developer", False):\n'
+        '                renpy.display.log.write("GameLingo: Text.set_text hook installation deferred: %s" % _gl_init_err)\n'
+        "        except Exception:\n"
+        "            pass\n"
     )

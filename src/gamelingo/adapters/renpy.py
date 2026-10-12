@@ -211,30 +211,43 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
             except Exception:
                 pass
 
-    # Classify support level
+    # Classify support level according to strict empirical verification:
+    # 1. verified: Verified on real engine execution on host (Ren'Py 8.5.0)
+    # 2. supported_with_fallback: Recognized Ren'Py 7.x (Python 2.7) or 8.x releases with automated tests / documented fallback
+    # 3. best_effort: Unknown engine version; proceeds with universal polyglot script and diagnostics warning
+    # 4. unsupported: Ren'Py < 7.0; preflight blocks patching
+    is_real_engine_verified = bool(version_str and version_str.startswith("8.5.0"))
+
     if major_version is not None and major_version < 7:
         support_level = "unsupported"
         support_reason = (
             f"Ren'Py {major_version}.x uses legacy Screen Language 1 and obsolete bytecode formats. "
             "Unified string translation tables are not supported."
         )
-    elif major_version is not None and major_version >= 8:
-        support_level = "fully_supported"
+    elif is_real_engine_verified:
+        support_level = "verified"
         support_reason = (
-            f"Ren'Py {version_str or '8.x'} (Python 3) is fully supported with native strings.rpy "
-            "and dynamic runtime displayable hook."
+            f"Ren'Py {version_str} ({python_family}) is verified on real engine runtime with "
+            "native strings.rpy and dynamic Text.set_text hook."
+        )
+    elif major_version is not None and major_version >= 8:
+        support_level = "supported_with_fallback"
+        support_reason = (
+            f"Ren'Py {version_str or '8.x'} (Python 3) is supported with native strings.rpy "
+            "and dynamic runtime displayable hook (unverified on standalone SDK on this host)."
         )
     elif major_version == 7 or python_family == "python2":
         support_level = "supported_with_fallback"
         support_reason = (
             f"Ren'Py {version_str or '7.x'} (Python 2.7) is supported using polyglot Python 2/3 "
-            "activation script and native strings.rpy translation tables."
+            "activation script and native strings.rpy translation tables (unverified on real 7.x engine due to absent local SDK)."
         )
     else:
-        support_level = "supported_with_fallback"
+        version_str = "unknown"
+        support_level = "best_effort"
         support_reason = (
-            "Ren'Py version could not be uniquely identified; using universal polyglot Python 2/3 "
-            "activation script with safe fallback."
+            "Ren'Py engine version could not be uniquely identified; using universal polyglot Python 2/3 "
+            "activation script with safe best-effort fallback."
         )
 
     return {
@@ -249,6 +262,7 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
             "native_strings_rpy": support_level != "unsupported",
             "dynamic_text_fallback": support_level != "unsupported",
             "polyglot_python2_3": True,
+            "real_engine_verified": is_real_engine_verified,
         },
         "limitations": [
             "Text baked directly into bitmap images (PNG/WebP) requires image asset replacement."
@@ -263,6 +277,18 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
         + (
             ["Pre-Ren'Py 7.0 engine: unified string translation table is unavailable."]
             if support_level == "unsupported"
+            else []
+        )
+        + (
+            [
+                "Engine version is unverified on real engine on this host; behavior may differ across point releases."
+            ]
+            if support_level == "supported_with_fallback"
+            else []
+        )
+        + (
+            ["Engine version is unknown; manual in-game verification recommended."]
+            if support_level == "best_effort"
             else []
         ),
     }
@@ -622,7 +648,7 @@ class RenPyAdapter(GameAdapter):
         runtime_compat = diag.get("runtime_compatibility", {})
         ver_tag = (
             f"Ren'Py {runtime_compat['version']} "
-            if runtime_compat.get("version")
+            if runtime_compat.get("version") and runtime_compat["version"] != "unknown"
             else "Ren'Py "
         )
 

@@ -76,6 +76,7 @@ def apply_plan(
         "successfully_changed_files": [],
         "skipped_already_applied": [],
         "errors": [],
+        "warnings": [],
         "backup_id": None,
         "recovery_status": None,
     }
@@ -111,14 +112,29 @@ def apply_plan(
             }
             return report
 
+        if runtime_info.get("support_level") == "best_effort":
+            report["warnings"].append(
+                f"Ren'Py version is unknown ({runtime_info.get('support_reason')}). Best-effort fallback applied."
+            )
+
     report["diagnostics"] = {
         "engine": "renpy" if is_renpy else "rpgmaker_mv_mz",
         "detected_version": runtime_info.get("version") if is_renpy else "mv_mz",
         "python_family": runtime_info.get("python_family") if is_renpy else "n/a",
-        "support_level": runtime_info.get("support_level")
-        if is_renpy
-        else "fully_supported",
-        "translation_strategy": "native_strings_rpy"
+        "support_level": runtime_info.get("support_level") if is_renpy else "verified",
+        "translation_strategy": (
+            "native_strings_rpy + verified_real_engine_hook"
+            if runtime_info.get("support_level") == "verified"
+            else (
+                "best_effort_polyglot_fallback"
+                if runtime_info.get("support_level") == "best_effort"
+                else (
+                    "native_strings_rpy + polyglot_fallback_hook"
+                    if runtime_info.get("support_level") == "supported_with_fallback"
+                    else "native_strings_rpy"
+                )
+            )
+        )
         if is_renpy
         else "json_ast_patching",
         "dynamic_text_fallback_installed": any(

@@ -312,8 +312,29 @@ def test_detect_renpy_runtime_8x_from_vc_version(tmp_path: Path):
     assert info["version"] == "8.3.2.24102902"
     assert info["major_version"] == 8
     assert info["python_family"] == "python3"
-    assert info["support_level"] == "fully_supported"
+    assert info["support_level"] == "supported_with_fallback"
     assert "8.3.2" in info["support_reason"]
+
+
+def test_detect_renpy_runtime_8_5_verified(tmp_path: Path):
+    """Detect Ren'Py 8.5.0 as verified real engine tier."""
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
+
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir()
+    (renpy_dir / "vc_version.py").write_text(
+        "branch = 'master'\nversion = '8.5.0.25111603'\n", encoding="utf-8"
+    )
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == "8.5.0.25111603"
+    assert info["major_version"] == 8
+    assert info["python_family"] == "python3"
+    assert info["support_level"] == "verified"
+    assert info["features"]["real_engine_verified"] is True
+    assert "verified on real engine" in info["support_reason"]
 
 
 def test_detect_renpy_runtime_7x_from_vc_version(tmp_path: Path):
@@ -377,9 +398,9 @@ def test_detect_renpy_runtime_unknown_fallback(tmp_path: Path):
     (game_dir / "script.rpy").write_text('label start:\n    "Hi"\n', encoding="utf-8")
 
     info = detect_renpy_runtime(tmp_path)
-    assert info["version"] is None
-    assert info["support_level"] == "supported_with_fallback"
-    assert "universal polyglot" in info["support_reason"]
+    assert info["version"] == "unknown"
+    assert info["support_level"] == "best_effort"
+    assert "best-effort" in info["support_reason"]
 
 
 def test_diagnostics_reported_in_apply_plan(tmp_path: Path):
@@ -418,9 +439,10 @@ def test_diagnostics_reported_in_apply_plan(tmp_path: Path):
     assert "diagnostics" in report
     diag = report["diagnostics"]
     assert diag["engine"] == "renpy"
-    assert diag["translation_strategy"] == "native_strings_rpy"
+    assert diag["translation_strategy"] == "best_effort_polyglot_fallback"
     assert diag["dynamic_text_fallback_installed"] is True
-    assert diag["support_level"] == "supported_with_fallback"
+    assert diag["support_level"] == "best_effort"
+    assert len(report["warnings"]) == 1
 
 
 def test_unsupported_renpy_version_aborts_patch(tmp_path: Path):
@@ -469,5 +491,6 @@ def test_actual_game_island_runtime_detection():
         info = detect_renpy_runtime(target_path)
         assert info["major_version"] == 8
         assert info["python_family"] == "python3"
-        assert info["support_level"] == "fully_supported"
+        assert info["support_level"] == "verified"
         assert info["version"] == "8.5.0.25111603"
+        assert info["features"]["real_engine_verified"] is True
