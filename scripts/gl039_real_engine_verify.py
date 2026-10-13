@@ -30,6 +30,11 @@ ISOLATED_CONFIG_DIR = TEMP_BASE_DIR / "renpy_config"
 EVIDENCE_DIR = Path(
     "C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl039_evidence"
 )
+FALLBACK_EVIDENCE_FILE = (
+    Path(os.environ.get("TEMP", "C:/temp"))
+    / "gl039_evidence"
+    / "gl039_real_engine_verification_summary.json"
+)
 
 
 def compute_file_hash(path: Path) -> str:
@@ -50,6 +55,22 @@ def compute_manifest(directory: Path) -> Dict[str, Dict[str, Any]]:
                 "sha256": compute_file_hash(p),
             }
     return manifest
+
+
+def combine_traceback_states(
+    state1: Optional[bool], state2: Optional[bool]
+) -> Optional[bool]:
+    """
+    Combines two tri-state traceback detection values safely.
+    If either detected a traceback (True), returns True.
+    If either is unknown (None) and neither is True, returns None.
+    Returns False only when BOTH are known clean (False).
+    """
+    if state1 is True or state2 is True:
+        return True
+    if state1 is None or state2 is None:
+        return None
+    return False
 
 
 REQUIRED_SCENARIOS = (
@@ -78,6 +99,10 @@ SCENARIO_FIELD_REQUIREMENTS: Dict[str, Dict[str, Callable[[Any], bool]]] = {
         "initial_pref_language": lambda v: v == "english",
         "initial_translation_active": lambda v: v is True,
         "persistent_flag_set": lambda v: v is True,
+        "setup_log_captured": lambda v: v is True,
+        "setup_tracebacks_detected": lambda v: v is False,
+        "verification_log_captured": lambda v: v is True,
+        "verification_tracebacks_detected": lambda v: v is False,
         "log_captured": lambda v: v is True,
         "tracebacks_detected": lambda v: v is False,
         "error": lambda v: v is None,
@@ -86,6 +111,10 @@ SCENARIO_FIELD_REQUIREMENTS: Dict[str, Dict[str, Callable[[Any], bool]]] = {
         "initial_pref_language": lambda v: v == "spanish",
         "preserved_existing_language": lambda v: v is True,
         "not_overwritten_by_target": lambda v: v is True,
+        "setup_log_captured": lambda v: v is True,
+        "setup_tracebacks_detected": lambda v: v is False,
+        "verification_log_captured": lambda v: v is True,
+        "verification_tracebacks_detected": lambda v: v is False,
         "log_captured": lambda v: v is True,
         "tracebacks_detected": lambda v: v is False,
         "error": lambda v: v is None,
@@ -94,6 +123,10 @@ SCENARIO_FIELD_REQUIREMENTS: Dict[str, Dict[str, Callable[[Any], bool]]] = {
         "initial_pref_language": lambda v: v is None,
         "reversion_preserved": lambda v: v is True,
         "untranslated_source_restored": lambda v: v is True,
+        "setup_log_captured": lambda v: v is True,
+        "setup_tracebacks_detected": lambda v: v is False,
+        "verification_log_captured": lambda v: v is True,
+        "verification_tracebacks_detected": lambda v: v is False,
         "log_captured": lambda v: v is True,
         "tracebacks_detected": lambda v: v is False,
         "error": lambda v: v is None,
@@ -174,7 +207,9 @@ def evaluate_verification_results(scenario_results: Dict[str, Any]) -> Dict[str,
 
 
 def inspect_engine_log(
-    log_path: Path, config_dir: Optional[Path] = None
+    log_path: Path,
+    config_dir: Optional[Path] = None,
+    archive_name: str = "engine_log.txt",
 ) -> Dict[str, Any]:
     """
     Inspects an engine log file to confirm capture status and scan for tracebacks.
@@ -200,9 +235,7 @@ def inspect_engine_log(
                 or "Unhandled exception" in log_content
             )
             if config_dir is not None:
-                (config_dir / "engine_log.txt").write_text(
-                    log_content, encoding="utf-8"
-                )
+                (config_dir / archive_name).write_text(log_content, encoding="utf-8")
         except Exception as e:
             log_captured = False
             log_error = f"Failed to read engine log: {e}"
@@ -221,10 +254,13 @@ def evaluate_final_acceptance(
     scenario_evaluation: Dict[str, Any],
     cleanup_status: Dict[str, Any],
     integrity_status: Dict[str, Any],
+    evidence_status: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Evaluates final aggregate acceptance combining scenario results and safety checks.
-    Fails closed: cleanup failures or integrity violations override scenario results.
+    Evaluates final aggregate acceptance combining scenario results, safety checks,
+    and evidence persistence status.
+    Fails closed: cleanup failures, integrity violations, or evidence write failures
+    override scenario results.
     """
     failures: List[str] = list(scenario_evaluation.get("failures", []))
 
@@ -241,19 +277,112 @@ def evaluate_final_acceptance(
             f"Original game integrity violation: {len(mismatches)} file mismatch(es): {mismatches}"
         )
 
+    evidence_passed = True
+    if evidence_status is not None:
+        if not evidence_status.get("persisted", False):
+            evidence_passed = False
+            err = evidence_status.get("error")
+            err_msg = f": {err}" if err else ""
+            failures.append(
+                f"Evidence persistence failure: could not save evidence JSON{err_msg}"
+            )
+
     scenarios_passed = bool(scenario_evaluation.get("all_passed", False))
     cleanup_passed = bool(cleanup_status.get("cleaned", False))
     integrity_passed = bool(integrity_status.get("intact", False))
 
-    all_passed = scenarios_passed and cleanup_passed and integrity_passed
+    all_passed = (
+        scenarios_passed and cleanup_passed and integrity_passed and evidence_passed
+    )
 
     return {
         "all_passed": all_passed,
         "scenarios_passed": scenarios_passed,
         "cleanup_passed": cleanup_passed,
         "integrity_passed": integrity_passed,
+        "evidence_passed": evidence_passed,
         "failures": failures,
     }
+
+
+def save_evidence_payload(
+    payload: Dict[str, Any],
+    primary_path: Path,
+    fallback_path: Optional[Path] = None,
+) -> Tuple[bool, Dict[str, Any]]:
+    """
+    Attempts to persist the finalized evidence payload to disk.
+    If primary_path fails, attempts writing to fallback_path.
+    Embeds evidence_persistence status directly into the written payload.
+    Returns (success: bool, status_dict: Dict[str, Any]).
+    """
+    payload_to_write = dict(payload)
+    primary_err = None
+    fallback_err = None
+
+    # Try primary destination
+    try:
+        primary_path.parent.mkdir(parents=True, exist_ok=True)
+        payload_to_write["evidence_persistence"] = {
+            "persisted": True,
+            "path": str(primary_path.resolve()),
+            "is_fallback": False,
+            "error": None,
+        }
+        primary_path.write_text(
+            json.dumps(payload_to_write, indent=2), encoding="utf-8"
+        )
+        status = {
+            "persisted": True,
+            "path": str(primary_path.resolve()),
+            "is_fallback": False,
+            "error": None,
+            "primary_error": None,
+            "fallback_error": None,
+        }
+        return True, status
+    except Exception as e:
+        primary_err = str(e)
+
+    # If primary failed, try fallback
+    if fallback_path is not None:
+        try:
+            fallback_path.parent.mkdir(parents=True, exist_ok=True)
+            payload_to_write["evidence_persistence"] = {
+                "persisted": True,
+                "path": str(fallback_path.resolve()),
+                "is_fallback": True,
+                "primary_error": primary_err,
+                "error": None,
+            }
+            fallback_path.write_text(
+                json.dumps(payload_to_write, indent=2), encoding="utf-8"
+            )
+            status = {
+                "persisted": True,
+                "path": str(fallback_path.resolve()),
+                "is_fallback": True,
+                "error": None,
+                "primary_error": primary_err,
+                "fallback_error": None,
+            }
+            return True, status
+        except Exception as e:
+            fallback_err = str(e)
+
+    combined_err = f"Primary destination failed ({primary_err})"
+    if fallback_path is not None:
+        combined_err += f"; Fallback destination failed ({fallback_err})"
+
+    status = {
+        "persisted": False,
+        "path": None,
+        "is_fallback": False,
+        "error": combined_err,
+        "primary_error": primary_err,
+        "fallback_error": fallback_err,
+    }
+    return False, status
 
 
 def build_evidence_payload(
@@ -265,9 +394,10 @@ def build_evidence_payload(
     cleanup_status: Dict[str, Any],
     integrity_status: Dict[str, Any],
     final_evaluation: Dict[str, Any],
+    evidence_persistence: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Constructs the comprehensive final evidence payload."""
-    return {
+    payload = {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "test_game": test_game_info,
         "baseline_hashes": baseline_hashes,
@@ -279,10 +409,16 @@ def build_evidence_payload(
         "failures": final_evaluation.get("failures", []),
         "all_passed": final_evaluation.get("all_passed", False),
     }
+    if evidence_persistence is not None:
+        payload["evidence_persistence"] = evidence_persistence
+    return payload
 
 
 def run_renpy_engine(
-    game_path: Path, config_dir: Path, timeout_sec: int = 30
+    game_path: Path,
+    config_dir: Path,
+    timeout_sec: int = 30,
+    archive_name: str = "engine_log.txt",
 ) -> Tuple[subprocess.CompletedProcess, Dict[str, Any]]:
     """Runs the game executable with isolated config and save directories, capturing logs."""
     # Ensure probe compiled cache is removed so new probe rpy is always recompiled
@@ -325,7 +461,7 @@ def run_renpy_engine(
         env=env,
     )
 
-    log_summary = inspect_engine_log(engine_log, config_dir)
+    log_summary = inspect_engine_log(engine_log, config_dir, archive_name=archive_name)
     return proc, log_summary
 
 
@@ -570,7 +706,9 @@ label before_main_menu:
         renpy.quit(status=0)
 """
     (game_dir / "zz_probe.rpy").write_text(s2_setup_rpy, encoding="utf-8")
-    proc_setup, log_setup = run_renpy_engine(DISPOSABLE_GAME_PATH, s2_config)
+    proc_setup, log_setup = run_renpy_engine(
+        DISPOSABLE_GAME_PATH, s2_config, archive_name="setup_log.txt"
+    )
 
     # Verification run: launch game with gamelingo_activate.rpy active
     s2_probe_json = s2_config / "probe_s2.json"
@@ -601,23 +739,32 @@ label before_main_menu:
         renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s2_probe_rpy, encoding="utf-8")
-    proc, log_summary = run_renpy_engine(DISPOSABLE_GAME_PATH, s2_config)
+    proc, log_summary = run_renpy_engine(
+        DISPOSABLE_GAME_PATH, s2_config, archive_name="verification_log.txt"
+    )
     print(f"  Process exited with code {proc.returncode}")
 
-    logs_captured = bool(log_setup["log_captured"] and log_summary["log_captured"])
-    if logs_captured:
-        tb_detected = bool(
-            log_setup["tracebacks_detected"] or log_summary["tracebacks_detected"]
-        )
-        log_err = None
-    else:
-        tb_detected = None
-        missing_logs = []
-        if not log_setup["log_captured"]:
-            missing_logs.append(f"setup log: {log_setup.get('log_error')}")
-        if not log_summary["log_captured"]:
-            missing_logs.append(f"probe log: {log_summary.get('log_error')}")
-        log_err = f"Engine log missing or unreadable ({', '.join(missing_logs)})"
+    setup_log_captured = bool(log_setup["log_captured"])
+    setup_tb_detected = log_setup["tracebacks_detected"] if setup_log_captured else None
+
+    verify_log_captured = bool(log_summary["log_captured"])
+    verify_tb_detected = (
+        log_summary["tracebacks_detected"] if verify_log_captured else None
+    )
+
+    all_logs_captured = setup_log_captured and verify_log_captured
+    combined_tb = combine_traceback_states(setup_tb_detected, verify_tb_detected)
+
+    missing_logs = []
+    if not setup_log_captured:
+        missing_logs.append(f"setup log: {log_setup.get('log_error')}")
+    if not verify_log_captured:
+        missing_logs.append(f"verification log: {log_summary.get('log_error')}")
+    log_err = (
+        f"Engine log missing or unreadable ({', '.join(missing_logs)})"
+        if missing_logs
+        else None
+    )
 
     if proc.returncode != 0 or proc_setup.returncode != 0:
         print(
@@ -625,29 +772,52 @@ label before_main_menu:
         )
         scenario_results["scenario_2_existing_player"] = {
             "error": f"Process exited with code setup={proc_setup.returncode}, probe={proc.returncode}",
-            "log_captured": logs_captured,
-            "tracebacks_detected": tb_detected,
+            "setup_log_captured": setup_log_captured,
+            "setup_tracebacks_detected": setup_tb_detected,
+            "verification_log_captured": verify_log_captured,
+            "verification_tracebacks_detected": verify_tb_detected,
+            "log_captured": all_logs_captured,
+            "tracebacks_detected": combined_tb,
         }
     elif not s2_probe_json.is_file():
         print("  ERROR: Scenario 2 probe output not found!")
         scenario_results["scenario_2_existing_player"] = {
             "error": "Probe output was not created",
-            "log_captured": logs_captured,
-            "tracebacks_detected": tb_detected,
+            "setup_log_captured": setup_log_captured,
+            "setup_tracebacks_detected": setup_tb_detected,
+            "verification_log_captured": verify_log_captured,
+            "verification_tracebacks_detected": verify_tb_detected,
+            "log_captured": all_logs_captured,
+            "tracebacks_detected": combined_tb,
         }
-    elif not logs_captured:
+    elif not all_logs_captured:
         print(f"  ERROR: Scenario 2 engine log could not be captured: {log_err}")
         scenario_results["scenario_2_existing_player"] = {
             "error": log_err,
+            "setup_log_captured": setup_log_captured,
+            "setup_tracebacks_detected": setup_tb_detected,
+            "verification_log_captured": verify_log_captured,
+            "verification_tracebacks_detected": verify_tb_detected,
             "log_captured": False,
-            "tracebacks_detected": None,
+            "tracebacks_detected": combined_tb,
         }
     else:
         s2_data = json.loads(s2_probe_json.read_text(encoding="utf-8"))
+        s2_data["setup_log_captured"] = True
+        s2_data["setup_tracebacks_detected"] = setup_tb_detected
+        s2_data["verification_log_captured"] = True
+        s2_data["verification_tracebacks_detected"] = verify_tb_detected
         s2_data["log_captured"] = True
-        s2_data["tracebacks_detected"] = tb_detected
-        if tb_detected and s2_data.get("error") is None:
-            s2_data["error"] = "Traceback detected in engine log"
+        s2_data["tracebacks_detected"] = combined_tb
+        if combined_tb and s2_data.get("error") is None:
+            tb_sources = []
+            if setup_tb_detected:
+                tb_sources.append("setup")
+            if verify_tb_detected:
+                tb_sources.append("verification")
+            s2_data["error"] = (
+                f"Traceback detected in engine log ({', '.join(tb_sources)})"
+            )
         scenario_results["scenario_2_existing_player"] = s2_data
         print(f"  initial_pref_language: {s2_data.get('initial_pref_language')}")
         print(
@@ -657,6 +827,16 @@ label before_main_menu:
             f"  initial_translation_active: {s2_data.get('initial_translation_active')}"
         )
         print(f"  persistent_flag_set: {s2_data.get('persistent_flag_set')}")
+        print(f"  setup_log_captured: {s2_data.get('setup_log_captured')}")
+        print(
+            f"  setup_tracebacks_detected: {s2_data.get('setup_tracebacks_detected')}"
+        )
+        print(
+            f"  verification_log_captured: {s2_data.get('verification_log_captured')}"
+        )
+        print(
+            f"  verification_tracebacks_detected: {s2_data.get('verification_tracebacks_detected')}"
+        )
         print(f"  log_captured: {s2_data.get('log_captured')}")
         print(f"  tracebacks_detected: {s2_data.get('tracebacks_detected')}")
 
@@ -686,7 +866,9 @@ label before_main_menu:
         renpy.quit(status=0)
 """
     (game_dir / "zz_probe.rpy").write_text(s3_setup_rpy, encoding="utf-8")
-    proc_setup, log_setup = run_renpy_engine(DISPOSABLE_GAME_PATH, s3_config)
+    proc_setup, log_setup = run_renpy_engine(
+        DISPOSABLE_GAME_PATH, s3_config, archive_name="setup_log.txt"
+    )
 
     # Verification run: callback should NOT overwrite existing user language
     s3_probe_json = s3_config / "probe_s3.json"
@@ -713,23 +895,32 @@ label before_main_menu:
         renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s3_probe_rpy, encoding="utf-8")
-    proc, log_summary = run_renpy_engine(DISPOSABLE_GAME_PATH, s3_config)
+    proc, log_summary = run_renpy_engine(
+        DISPOSABLE_GAME_PATH, s3_config, archive_name="verification_log.txt"
+    )
     print(f"  Process exited with code {proc.returncode}")
 
-    logs_captured = bool(log_setup["log_captured"] and log_summary["log_captured"])
-    if logs_captured:
-        tb_detected = bool(
-            log_setup["tracebacks_detected"] or log_summary["tracebacks_detected"]
-        )
-        log_err = None
-    else:
-        tb_detected = None
-        missing_logs = []
-        if not log_setup["log_captured"]:
-            missing_logs.append(f"setup log: {log_setup.get('log_error')}")
-        if not log_summary["log_captured"]:
-            missing_logs.append(f"probe log: {log_summary.get('log_error')}")
-        log_err = f"Engine log missing or unreadable ({', '.join(missing_logs)})"
+    setup_log_captured = bool(log_setup["log_captured"])
+    setup_tb_detected = log_setup["tracebacks_detected"] if setup_log_captured else None
+
+    verify_log_captured = bool(log_summary["log_captured"])
+    verify_tb_detected = (
+        log_summary["tracebacks_detected"] if verify_log_captured else None
+    )
+
+    all_logs_captured = setup_log_captured and verify_log_captured
+    combined_tb = combine_traceback_states(setup_tb_detected, verify_tb_detected)
+
+    missing_logs = []
+    if not setup_log_captured:
+        missing_logs.append(f"setup log: {log_setup.get('log_error')}")
+    if not verify_log_captured:
+        missing_logs.append(f"verification log: {log_summary.get('log_error')}")
+    log_err = (
+        f"Engine log missing or unreadable ({', '.join(missing_logs)})"
+        if missing_logs
+        else None
+    )
 
     if proc.returncode != 0 or proc_setup.returncode != 0:
         print(
@@ -737,29 +928,52 @@ label before_main_menu:
         )
         scenario_results["scenario_3_existing_language"] = {
             "error": f"Process exited with code setup={proc_setup.returncode}, probe={proc.returncode}",
-            "log_captured": logs_captured,
-            "tracebacks_detected": tb_detected,
+            "setup_log_captured": setup_log_captured,
+            "setup_tracebacks_detected": setup_tb_detected,
+            "verification_log_captured": verify_log_captured,
+            "verification_tracebacks_detected": verify_tb_detected,
+            "log_captured": all_logs_captured,
+            "tracebacks_detected": combined_tb,
         }
     elif not s3_probe_json.is_file():
         print("  ERROR: Scenario 3 probe output not found!")
         scenario_results["scenario_3_existing_language"] = {
             "error": "Probe output was not created",
-            "log_captured": logs_captured,
-            "tracebacks_detected": tb_detected,
+            "setup_log_captured": setup_log_captured,
+            "setup_tracebacks_detected": setup_tb_detected,
+            "verification_log_captured": verify_log_captured,
+            "verification_tracebacks_detected": verify_tb_detected,
+            "log_captured": all_logs_captured,
+            "tracebacks_detected": combined_tb,
         }
-    elif not logs_captured:
+    elif not all_logs_captured:
         print(f"  ERROR: Scenario 3 engine log could not be captured: {log_err}")
         scenario_results["scenario_3_existing_language"] = {
             "error": log_err,
+            "setup_log_captured": setup_log_captured,
+            "setup_tracebacks_detected": setup_tb_detected,
+            "verification_log_captured": verify_log_captured,
+            "verification_tracebacks_detected": verify_tb_detected,
             "log_captured": False,
-            "tracebacks_detected": None,
+            "tracebacks_detected": combined_tb,
         }
     else:
         s3_data = json.loads(s3_probe_json.read_text(encoding="utf-8"))
+        s3_data["setup_log_captured"] = True
+        s3_data["setup_tracebacks_detected"] = setup_tb_detected
+        s3_data["verification_log_captured"] = True
+        s3_data["verification_tracebacks_detected"] = verify_tb_detected
         s3_data["log_captured"] = True
-        s3_data["tracebacks_detected"] = tb_detected
-        if tb_detected and s3_data.get("error") is None:
-            s3_data["error"] = "Traceback detected in engine log"
+        s3_data["tracebacks_detected"] = combined_tb
+        if combined_tb and s3_data.get("error") is None:
+            tb_sources = []
+            if setup_tb_detected:
+                tb_sources.append("setup")
+            if verify_tb_detected:
+                tb_sources.append("verification")
+            s3_data["error"] = (
+                f"Traceback detected in engine log ({', '.join(tb_sources)})"
+            )
         scenario_results["scenario_3_existing_language"] = s3_data
         print(f"  initial_pref_language: {s3_data.get('initial_pref_language')}")
         print(
@@ -767,6 +981,16 @@ label before_main_menu:
         )
         print(
             f"  not_overwritten_by_target: {s3_data.get('not_overwritten_by_target')}"
+        )
+        print(f"  setup_log_captured: {s3_data.get('setup_log_captured')}")
+        print(
+            f"  setup_tracebacks_detected: {s3_data.get('setup_tracebacks_detected')}"
+        )
+        print(
+            f"  verification_log_captured: {s3_data.get('verification_log_captured')}"
+        )
+        print(
+            f"  verification_tracebacks_detected: {s3_data.get('verification_tracebacks_detected')}"
         )
         print(f"  log_captured: {s3_data.get('log_captured')}")
         print(f"  tracebacks_detected: {s3_data.get('tracebacks_detected')}")
@@ -796,7 +1020,9 @@ label before_main_menu:
         renpy.quit(status=0)
 """
     (game_dir / "zz_probe.rpy").write_text(s4_setup_rpy, encoding="utf-8")
-    proc_setup, log_setup = run_renpy_engine(DISPOSABLE_GAME_PATH, s4_config)
+    proc_setup, log_setup = run_renpy_engine(
+        DISPOSABLE_GAME_PATH, s4_config, archive_name="setup_log.txt"
+    )
 
     # Verification run: restart should preserve None
     s4_probe_json = s4_config / "probe_s4.json"
@@ -824,23 +1050,32 @@ label before_main_menu:
         renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s4_probe_rpy, encoding="utf-8")
-    proc, log_summary = run_renpy_engine(DISPOSABLE_GAME_PATH, s4_config)
+    proc, log_summary = run_renpy_engine(
+        DISPOSABLE_GAME_PATH, s4_config, archive_name="verification_log.txt"
+    )
     print(f"  Process exited with code {proc.returncode}")
 
-    logs_captured = bool(log_setup["log_captured"] and log_summary["log_captured"])
-    if logs_captured:
-        tb_detected = bool(
-            log_setup["tracebacks_detected"] or log_summary["tracebacks_detected"]
-        )
-        log_err = None
-    else:
-        tb_detected = None
-        missing_logs = []
-        if not log_setup["log_captured"]:
-            missing_logs.append(f"setup log: {log_setup.get('log_error')}")
-        if not log_summary["log_captured"]:
-            missing_logs.append(f"probe log: {log_summary.get('log_error')}")
-        log_err = f"Engine log missing or unreadable ({', '.join(missing_logs)})"
+    setup_log_captured = bool(log_setup["log_captured"])
+    setup_tb_detected = log_setup["tracebacks_detected"] if setup_log_captured else None
+
+    verify_log_captured = bool(log_summary["log_captured"])
+    verify_tb_detected = (
+        log_summary["tracebacks_detected"] if verify_log_captured else None
+    )
+
+    all_logs_captured = setup_log_captured and verify_log_captured
+    combined_tb = combine_traceback_states(setup_tb_detected, verify_tb_detected)
+
+    missing_logs = []
+    if not setup_log_captured:
+        missing_logs.append(f"setup log: {log_setup.get('log_error')}")
+    if not verify_log_captured:
+        missing_logs.append(f"verification log: {log_summary.get('log_error')}")
+    log_err = (
+        f"Engine log missing or unreadable ({', '.join(missing_logs)})"
+        if missing_logs
+        else None
+    )
 
     if proc.returncode != 0 or proc_setup.returncode != 0:
         print(
@@ -848,34 +1083,67 @@ label before_main_menu:
         )
         scenario_results["scenario_4_player_reversion"] = {
             "error": f"Process exited with code setup={proc_setup.returncode}, probe={proc.returncode}",
-            "log_captured": logs_captured,
-            "tracebacks_detected": tb_detected,
+            "setup_log_captured": setup_log_captured,
+            "setup_tracebacks_detected": setup_tb_detected,
+            "verification_log_captured": verify_log_captured,
+            "verification_tracebacks_detected": verify_tb_detected,
+            "log_captured": all_logs_captured,
+            "tracebacks_detected": combined_tb,
         }
     elif not s4_probe_json.is_file():
         print("  ERROR: Scenario 4 probe output not found!")
         scenario_results["scenario_4_player_reversion"] = {
             "error": "Probe output was not created",
-            "log_captured": logs_captured,
-            "tracebacks_detected": tb_detected,
+            "setup_log_captured": setup_log_captured,
+            "setup_tracebacks_detected": setup_tb_detected,
+            "verification_log_captured": verify_log_captured,
+            "verification_tracebacks_detected": verify_tb_detected,
+            "log_captured": all_logs_captured,
+            "tracebacks_detected": combined_tb,
         }
-    elif not logs_captured:
+    elif not all_logs_captured:
         print(f"  ERROR: Scenario 4 engine log could not be captured: {log_err}")
         scenario_results["scenario_4_player_reversion"] = {
             "error": log_err,
+            "setup_log_captured": setup_log_captured,
+            "setup_tracebacks_detected": setup_tb_detected,
+            "verification_log_captured": verify_log_captured,
+            "verification_tracebacks_detected": verify_tb_detected,
             "log_captured": False,
-            "tracebacks_detected": None,
+            "tracebacks_detected": combined_tb,
         }
     else:
         s4_data = json.loads(s4_probe_json.read_text(encoding="utf-8"))
+        s4_data["setup_log_captured"] = True
+        s4_data["setup_tracebacks_detected"] = setup_tb_detected
+        s4_data["verification_log_captured"] = True
+        s4_data["verification_tracebacks_detected"] = verify_tb_detected
         s4_data["log_captured"] = True
-        s4_data["tracebacks_detected"] = tb_detected
-        if tb_detected and s4_data.get("error") is None:
-            s4_data["error"] = "Traceback detected in engine log"
+        s4_data["tracebacks_detected"] = combined_tb
+        if combined_tb and s4_data.get("error") is None:
+            tb_sources = []
+            if setup_tb_detected:
+                tb_sources.append("setup")
+            if verify_tb_detected:
+                tb_sources.append("verification")
+            s4_data["error"] = (
+                f"Traceback detected in engine log ({', '.join(tb_sources)})"
+            )
         scenario_results["scenario_4_player_reversion"] = s4_data
         print(f"  initial_pref_language: {s4_data.get('initial_pref_language')}")
         print(f"  reversion_preserved: {s4_data.get('reversion_preserved')}")
         print(
             f"  untranslated_source_restored: {s4_data.get('untranslated_source_restored')}"
+        )
+        print(f"  setup_log_captured: {s4_data.get('setup_log_captured')}")
+        print(
+            f"  setup_tracebacks_detected: {s4_data.get('setup_tracebacks_detected')}"
+        )
+        print(
+            f"  verification_log_captured: {s4_data.get('verification_log_captured')}"
+        )
+        print(
+            f"  verification_tracebacks_detected: {s4_data.get('verification_tracebacks_detected')}"
         )
         print(f"  log_captured: {s4_data.get('log_captured')}")
         print(f"  tracebacks_detected: {s4_data.get('tracebacks_detected')}")
@@ -1150,7 +1418,7 @@ label before_main_menu:
 
 def main():
     print("=" * 60)
-    print("GL-039.7: Real-Engine Fail-Closed Acceptance Gate & Safety Finalization")
+    print("GL-039.8: Real-Engine Fail-Closed Acceptance Gate & Evidence Finalization")
     print("=" * 60)
 
     # 1. Inspect original game
@@ -1193,6 +1461,12 @@ def main():
         "mismatches": [],
     }
     final_evaluation: Dict[str, Any] = {"all_passed": False, "failures": []}
+    evidence_status: Dict[str, Any] = {
+        "persisted": False,
+        "path": None,
+        "is_fallback": False,
+        "error": "Not attempted",
+    }
     s1_screenshot_name: Optional[str] = None
     evidence_file = EVIDENCE_DIR / "gl039_real_engine_verification_summary.json"
 
@@ -1266,7 +1540,7 @@ def main():
 
         # 7. Finalize Evidence JSON AFTER cleanup and integrity checks
         print("\n[Step 7] Finalizing aggregate evidence after safety checks...")
-        final_evaluation = evaluate_final_acceptance(
+        pre_evidence_eval = evaluate_final_acceptance(
             scenario_evaluation=scenario_evaluation,
             cleanup_status=cleanup_status,
             integrity_status=integrity_status,
@@ -1280,16 +1554,36 @@ def main():
             scenario_evaluation=scenario_evaluation,
             cleanup_status=cleanup_status,
             integrity_status=integrity_status,
-            final_evaluation=final_evaluation,
+            final_evaluation=pre_evidence_eval,
         )
 
-        try:
-            evidence_file.write_text(
-                json.dumps(evidence_payload, indent=2), encoding="utf-8"
+        saved_ok, evidence_status = save_evidence_payload(
+            payload=evidence_payload,
+            primary_path=evidence_file,
+            fallback_path=FALLBACK_EVIDENCE_FILE,
+        )
+
+        # Final evaluation incorporating evidence persistence status
+        final_evaluation = evaluate_final_acceptance(
+            scenario_evaluation=scenario_evaluation,
+            cleanup_status=cleanup_status,
+            integrity_status=integrity_status,
+            evidence_status=evidence_status,
+        )
+
+        if saved_ok:
+            if evidence_status.get("is_fallback"):
+                print(
+                    f"  WARNING: Primary evidence write failed; saved to fallback at {evidence_status['path']}"
+                )
+            else:
+                print(
+                    f"  Saved finalized evidence summary to {evidence_status['path']}"
+                )
+        else:
+            print(
+                f"  ERROR: Failed to save evidence payload: {evidence_status['error']}"
             )
-            print(f"  Saved finalized evidence summary to {evidence_file}")
-        except Exception as e:
-            print(f"  ERROR saving evidence payload: {e}")
 
     # Step 8: Final Gate Enforcement
     all_passed = final_evaluation["all_passed"]
@@ -1301,13 +1595,16 @@ def main():
         print("=" * 60)
         for idx, f in enumerate(failures, 1):
             print(f"  [{idx}] {f}")
-        print(f"\nEvidence JSON: {evidence_file}")
+        if evidence_status.get("persisted"):
+            print(f"\nEvidence JSON: {evidence_status['path']}")
+        else:
+            print(f"\nEvidence JSON: NOT SAVED ({evidence_status.get('error')})")
         sys.exit(1)
 
     print("\n========================================================")
-    print("GL-039.7 REAL-ENGINE VERIFICATION COMPLETED SUCCESSFULLY")
+    print("GL-039.8 REAL-ENGINE VERIFICATION COMPLETED SUCCESSFULLY")
     print("========================================================")
-    print(f"Evidence JSON: {evidence_file}")
+    print(f"Evidence JSON: {evidence_status['path']}")
     sys.exit(0)
 
 

@@ -343,10 +343,20 @@ In GL-039.7, `scripts/gl039_real_engine_verify.py` and `tests/unit/test_acceptan
 - **Post-Safety Evidence Finalization**: `evaluate_final_acceptance()` and `build_evidence_payload()` finalize the aggregate evidence summary (`gl039_real_engine_verification_summary.json`) *after* the `finally` cleanup and original-file baseline integrity checks execute. The JSON explicitly embeds `cleanup_status`, `integrity_status`, `scenario_status`, `failures`, and aggregate `all_passed`. A failure in either cleanup or baseline integrity overrides passing scenario results.
 - **Comprehensive Unit Regression Tests**: Expanded `tests/unit/test_acceptance_gate.py` from 8 to **16 unit tests**, verifying fatal exit on cleanup failure, fatal exit on baseline integrity mismatch, safety override of passing scenarios, fail-closed handling of missing or unreadable logs, rejection of missing `log_captured` fields, and full evidence payload structure embedding.
 
-### 5.7 Evidence Artifacts
-- **Screenshot**: `gl039_real_engine_startup_screenshot.png` (32,916 bytes, visual proof of dynamic expression rendering).
+### 5.7 Invocation Log Validation and Final Evidence Persistence (GL-039.8)
+
+In GL-039.8, `scripts/gl039_real_engine_verify.py` and `tests/unit/test_acceptance_gate.py` were hardened to validate every engine invocation independently and guarantee evidence persistence:
+- **Independent Setup and Verification Log Validation**: Scenarios 2, 3, and 4 each perform a setup run followed by a verification run. Both invocations independently archive their logs (`setup_log.txt` and `verification_log.txt`) and record separate status fields (`setup_log_captured`, `setup_tracebacks_detected`, `verification_log_captured`, `verification_tracebacks_detected`).
+- **Fail-Closed Tri-State Traceback Logic**: Introduced `combine_traceback_states(setup_tb, verify_tb)` implementing strict tri-state logic: returns `True` if either invocation detected a traceback, `None` if either is unknown/unreadable (preventing boolean `or` coercion of `None or False -> False`), and `False` only when both invocations are confirmed clean.
+- **Required Field Gate**: Added `setup_log_captured`, `setup_tracebacks_detected`, `verification_log_captured`, and `verification_tracebacks_detected` to `SCENARIO_FIELD_REQUIREMENTS` for all multi-run scenarios.
+- **Mandatory Final Evidence Persistence**: `save_evidence_payload()` attempts writing the final summary to primary storage (`EVIDENCE_DIR`) and falls back to user temporary storage (`FALLBACK_EVIDENCE_FILE`). If neither succeeds, `evidence_status["persisted"]` is `False`, `evaluate_final_acceptance()` sets `all_passed: False`, the runner terminates with exit code 1, and the success completion banner is strictly suppressed.
+- **Evidence Persistence Status Embedding**: The finalized evidence JSON embeds `evidence_persistence` (`persisted`, `path`, `is_fallback`, `error`), auditing its own persistence destination.
+- **Comprehensive Unit Regression Tests**: Expanded `tests/unit/test_acceptance_gate.py` to **24 unit tests** (up from 16), covering tri-state traceback combinations, missing/unreadable setup logs, setup-only tracebacks, simultaneous setup/verification log failures, persistence failure override of passing checks, fallback write success, complete write failure, and success banner suppression.
+
+### 5.8 Evidence Artifacts
+- **Screenshot**: `gl039_real_engine_startup_screenshot.png` (32,766 bytes, visual proof of dynamic expression rendering).
 - **Sanitized Engine Log**: `gl039_real_engine_island_log.txt` (isolated log from Scenario 5 reload run, verifying clean gl2 renderer startup and zero tracebacks).
-- **Summary Evidence JSON**: `gl039_real_engine_verification_summary.json` (4,717 bytes, containing full scenario results, log capture status, cleanup status, integrity status, and aggregate validation).
+- **Summary Evidence JSON**: `gl039_real_engine_verification_summary.json` (5,493 bytes, containing full scenario results, independent setup/verification log status, cleanup status, integrity status, and evidence persistence verification).
 
 ---
 
@@ -389,13 +399,14 @@ In strict accordance with GL-039 requirements, cleanup of dedicated test targets
 
 ## 9. Final Acceptance Conclusion
 
-All acceptance criteria for GL-039, GL-039.2, GL-039.3, GL-039.4, GL-039.5, GL-039.6, and GL-039.7 have been fully met:
+All acceptance criteria for GL-039, GL-039.2, GL-039.3, GL-039.4, GL-039.5, GL-039.6, GL-039.7, and GL-039.8 have been fully met:
 - **4 Real Games Verified**: Strange Dates Demo (8.2), Before The Rain Stops (8.5 compiled), Summer on Your Side (8.5 RPA), The Question (7.6 Py2).
 - **Startup Activation Resolved & Real-Engine Verified**: Root cause of initial inactive probe readings identified and confirmed; activation script updated with `init 999` ordering and `config.start_callbacks` hook; verified across all 6 lifecycle scenarios on genuine Ren'Py 8.5.0 engine runtime.
 - **Dynamic Text Hooking Proved**: Proved three-way distinction (native static translation, dynamic hook translation, and untranslated original language mode). Dynamic screen expression rendering confirmed via native visual UI screenshot (`gl039_real_engine_startup_screenshot.png`).
 - **Actual Script Reload (`renpy.reload_script`) Proved**: Exercised documented development reload path with developer mode enabled; confirmed single wrapping, preservation of original function identity, reinitialization idempotency, post-reload dynamic rendering, and 0 tracebacks.
-- **Fail-Closed Acceptance Gate & Safety Finalization (GL-039.6 & GL-039.7)**: Enforced aggregate validation with exit code 1 on any failure, three-state engine log capture validation, fatal cleanup failure exit, guaranteed baseline integrity verification, and post-safety evidence finalization backed by 16 unit tests in `tests/unit/test_acceptance_gate.py`.
-- **Code Quality**: Full pytest suite passing with **252 passed** tests; Ruff linting (`ruff check`) and formatting (`ruff format --check`) passing cleanly with 0 errors across 87 files.
+- **Fail-Closed Gate & Evidence Finalization (GL-039.6 & GL-039.7)**: Enforced aggregate validation with exit code 1 on any failure, three-state engine log capture validation, fatal cleanup failure exit, guaranteed baseline integrity verification, and post-safety evidence finalization.
+- **Independent Invocation Validation & Mandatory Persistence (GL-039.8)**: Validated setup and verification logs independently for all multi-run scenarios, enforced strict tri-state traceback logic without boolean conversion of unknown values, guaranteed fallback and fatal exit on evidence persistence failure, backed by 24 unit tests in `tests/unit/test_acceptance_gate.py`.
+- **Code Quality**: Full pytest suite passing with **260 passed** tests; Ruff linting (`ruff check`) and formatting (`ruff format --check`) passing cleanly with 0 errors across 87 files.
 - **Safe Cleanup**: Confirmed and maintained across all temporary test directories without altering reference or original game assets.
 - **Distribution Package**: Standalone Windows zip rebuilt and verified (`SHA-256: B780BECFC9A9CA1F5818C4ACD646A1343A20F4DAF2301C8720E2F3B679215998`).
 - **Final Status**: **Pass** across all acceptance criteria.
