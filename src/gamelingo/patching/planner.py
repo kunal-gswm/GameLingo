@@ -173,13 +173,15 @@ def create_plan(
                 continue
 
             if not source_file.exists():
-                # For Ren'Py, scripts may reside inside .rpa archive packages
+                # For Ren'Py, scripts may reside inside .rpa archive packages or exist as compiled .rpyc files
+                rpyc_file = source_file.with_suffix(".rpyc")
+                rpyc_exists = rpyc_file.exists()
                 game_sub = source_root_resolved / "game"
                 rpa_exists = any(game_sub.glob("*.rpa")) if game_sub.is_dir() else False
                 if not rpa_exists:
                     rpa_exists = any(source_root_resolved.glob("*.rpa"))
 
-                if not rpa_exists:
+                if not rpa_exists and not rpyc_exists:
                     plan["edits"].append(
                         {
                             "unit_id": unit.id,
@@ -457,11 +459,13 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
                     f"Source script outside source root: {source_file_rel}"
                 )
             if not source_file.exists():
+                rpyc_file = source_file.with_suffix(".rpyc")
+                rpyc_exists = rpyc_file.exists()
                 game_sub = source_root_resolved / "game"
                 rpa_exists = any(game_sub.glob("*.rpa")) if game_sub.is_dir() else False
                 if not rpa_exists:
                     rpa_exists = any(source_root_resolved.glob("*.rpa"))
-                if not rpa_exists:
+                if not rpa_exists and not rpyc_exists:
                     raise PlanValidationError(
                         f"Source script not found: {source_file_rel}"
                     )

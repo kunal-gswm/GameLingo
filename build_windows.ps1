@@ -17,6 +17,7 @@ Write-Host "Build complete! Preparing distribution..."
 Copy-Item README.md dist/GameLingo/
 Copy-Item LICENSE dist/GameLingo/
 Copy-Item THIRD_PARTY_NOTICES.txt dist/GameLingo/
+Start-Sleep -Seconds 3
 Compress-Archive -Path "dist\GameLingo" -DestinationPath "dist\GameLingo-Windows-x64.zip" -Force
 
 Write-Host "Generating Checksum..."

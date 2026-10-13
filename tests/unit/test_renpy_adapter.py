@@ -434,3 +434,55 @@ def test_detect_adapter_registry_resolves_correct_engines(tmp_path: Path):
     assert adapter is None
     assert desc == ""
     assert conf == 0.0
+
+
+def test_extract_excludes_multiline_define_dict_keys_and_style_language(
+    tmp_path: Path,
+):
+    """
+    Verify that Python dictionary keys in multiline define/default structures
+    and Ren'Py style properties (e.g. language 'unicode') are not falsely
+    extracted as dialogue or narration.
+    """
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "options.rpy").write_text(
+        'define config.name = "Test"\n', encoding="utf-8"
+    )
+
+    script_content = """# Test script with definitions and styles
+style default:
+    language "unicode"
+
+define cg_gallery_items = [
+    {
+        "key": "arrival_alexander",
+        "title": _("Arrival"),
+        "category": "alexander",
+        "image": "cg arrival_alexander",
+    },
+]
+
+label start:
+    "Real Narration"
+    e "Real Dialogue"
+"""
+    (game_dir / "script.rpy").write_text(script_content, encoding="utf-8")
+
+    adapter = RenPyAdapter()
+    units = list(adapter.extract(tmp_path))
+    texts = [u.source_text for u in units]
+
+    # Valid translatable strings:
+    assert "Real Narration" in texts
+    assert "Real Dialogue" in texts
+    assert "Arrival" in texts
+
+    # False positives that must NOT be extracted:
+    assert "unicode" not in texts
+    assert "key" not in texts
+    assert "arrival_alexander" not in texts
+    assert "title" not in texts
+    assert "category" not in texts
+    assert "alexander" not in texts
+    assert "image" not in texts

@@ -826,3 +826,28 @@ def test_actual_game_island_runtime_detection():
         assert info["support_level"] == "verified"
         assert info["version"] == "8.5.0.25111603"
         assert info["features"]["real_engine_verified"] is True
+
+
+def test_detect_renpy_runtime_py2_unicode_literal_vc_version(tmp_path: Path):
+    """Verify that Python 2 Ren'Py vc_version.py with unicode u-prefix is parsed properly."""
+    renpy_dir = tmp_path / "renpy"
+    renpy_dir.mkdir(parents=True)
+    vc_file = renpy_dir / "vc_version.py"
+    vc_file.write_text(
+        "branch = u'fix'\n"
+        "nightly = False\n"
+        "official = True\n"
+        "version = u'7.6.3.23091805'\n"
+        "version_name = u'To Boldy Go'\n",
+        encoding="utf-8",
+    )
+    lib_dir = tmp_path / "lib" / "windows-i686"
+    lib_dir.mkdir(parents=True)
+
+    info = detect_renpy_runtime(tmp_path)
+    assert info["version"] == "7.6.3.23091805"
+    assert info["major_version"] == 7
+    assert info["minor_version"] == 6
+    assert info["python_family"] == "python2"
+    assert info["support_level"] == "supported_with_fallback"
+    assert info["detection_source"] == "vc_version.py (vc_version.py)"

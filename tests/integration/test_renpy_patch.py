@@ -412,3 +412,57 @@ def test_renpy_activation_script_safety_check_prevents_overwrite(tmp_path: Path)
     assert any("Safety check" in err for err in report["errors"])
     # Ensure original user script was not modified or overwritten
     assert "User custom script" in user_act.read_text(encoding="utf-8")
+
+
+def test_renpy_plan_creation_with_compiled_rpyc_only(tmp_path: Path):
+    """
+    Verify that create_plan and validate_plan accept a Ren'Py translation unit
+    when the game contains compiled-only .rpyc scripts without loose .rpy or .rpa files.
+    """
+    source_dir = tmp_path / "compiled_game"
+    game_dir = source_dir / "game"
+    game_dir.mkdir(parents=True)
+
+    # Provide only compiled .rpyc, no .rpy and no .rpa
+    rpyc_file = game_dir / "story.rpyc"
+    rpyc_file.write_bytes(b"RENPY RPC-2 fake bytecode")
+
+    u1 = TranslationUnit(
+        id="game/story.rpy::line:10",
+        file_id="game/story.rpy",
+        locator="line:10",
+        source_text="Welcome traveler",
+        context="Narration",
+        tokens_json="[]",
+        source_hash="h1",
+        status="approved",
+    )
+    r1 = TranslationRecord(
+        id="r1",
+        unit_id=u1.id,
+        provider="mock",
+        model="m",
+        draft_text="Bienvenue voyageur",
+        final_text="Bienvenue voyageur",
+        quality_flags="",
+        created_at=0.0,
+        updated_at=0.0,
+    )
+
+    plan = create_plan(
+        source_dir,
+        "proj_compiled",
+        [u1],
+        [r1],
+        adapter_id="renpy",
+        target_lang="fr",
+    )
+
+    assert plan["adapter_id"] == "renpy"
+    assert plan["target_lang"] == "french"
+    valid_edits = [e for e in plan["edits"] if e["status"] == "valid"]
+    assert len(valid_edits) == 1
+    assert valid_edits[0]["unit_id"] == u1.id
+    assert valid_edits[0]["file_path"] == "game/tl/french/strings.rpy"
+
+    assert validate_plan(source_dir, plan) is True

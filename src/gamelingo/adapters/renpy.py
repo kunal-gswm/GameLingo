@@ -41,6 +41,7 @@ NON_DIALOGUE_KEYWORDS = {
     "translate",
     "pause",
     "window",
+    "language",
 }
 
 # Regex to safely extract _("...") or __("...") translatable strings
@@ -126,12 +127,13 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
         root_dir / "renpy" / "vc_version.py",
         game_dir.parent / "renpy" / "vc_version.py",
         install_path / "renpy" / "vc_version.py",
+        install_path.parent / "renpy" / "vc_version.py",
     ]
     for vc_p in vc_paths:
         if vc_p.is_file():
             try:
                 content = vc_p.read_text(encoding="utf-8", errors="ignore")
-                match = re.search(r"version\s*=\s*['\"]([^'\"]+)['\"]", content)
+                match = re.search(r"version\s*=\s*[uU]?['\"]([^'\"]+)['\"]", content)
                 if match:
                     version_str = match.group(1).strip()
                     detection_source = f"vc_version.py ({vc_p.name})"
@@ -149,6 +151,7 @@ def detect_renpy_runtime(install_path: Path) -> Dict[str, Any]:
         root_dir / "lib",
         game_dir.parent / "lib",
         install_path / "lib",
+        install_path.parent / "lib",
     ]
     has_py3_lib = False
     has_py2_lib = False
@@ -980,6 +983,7 @@ class RenPyAdapter(GameAdapter):
         multiline_buffer: List[str] = []
         multiline_start_line = 0
         multiline_context = ""
+        open_definition_brackets = 0
 
         i = 0
         while i < len(lines):
@@ -1020,6 +1024,21 @@ class RenPyAdapter(GameAdapter):
                 continue
 
             if not stripped:
+                i += 1
+                continue
+
+            # Track multi-line define / default data structure containers
+            if open_definition_brackets > 0:
+                yield from self._extract_marked_strings(
+                    line, line_num, file_id, archive_name=archive_name
+                )
+                open_definition_brackets += (
+                    stripped.count("(") + stripped.count("[") + stripped.count("{")
+                )
+                open_definition_brackets -= (
+                    stripped.count(")") + stripped.count("]") + stripped.count("}")
+                )
+                open_definition_brackets = max(0, open_definition_brackets)
                 i += 1
                 continue
 
@@ -1127,6 +1146,14 @@ class RenPyAdapter(GameAdapter):
             # Check if line begins with a non-dialogue engine keyword
             first_word = clean_line.split()[0].rstrip(":")
             if first_word in NON_DIALOGUE_KEYWORDS:
+                if first_word in {"define", "default"}:
+                    diff = (
+                        stripped.count("(") + stripped.count("[") + stripped.count("{")
+                    ) - (
+                        stripped.count(")") + stripped.count("]") + stripped.count("}")
+                    )
+                    if diff > 0:
+                        open_definition_brackets = diff
                 i += 1
                 continue
 
@@ -1203,17 +1230,20 @@ class RenPyAdapter(GameAdapter):
                             if unit:
                                 yield unit
                     else:
-                        text = renpy_unescape_string(raw_str)
-                        if text and text.strip():
-                            unit = self._create_unit(
-                                file_id,
-                                f"line:{line_num}",
-                                text,
-                                "Narration",
-                                archive_name=archive_name,
-                            )
-                            if unit:
-                                yield unit
+                        # Exclude dictionary key-value entries (e.g. "key": "val")
+                        # and comma-separated container items (e.g. "item",)
+                        if not rest.startswith(":") and not clean_line.endswith(","):
+                            text = renpy_unescape_string(raw_str)
+                            if text and text.strip():
+                                unit = self._create_unit(
+                                    file_id,
+                                    f"line:{line_num}",
+                                    text,
+                                    "Narration",
+                                    archive_name=archive_name,
+                                )
+                                if unit:
+                                    yield unit
                     i += 1
                     continue
 
@@ -1227,6 +1257,10 @@ class RenPyAdapter(GameAdapter):
             )
             if char_match:
                 who = char_match.group(1).strip()
+                first_who = who.split()[0]
+                if first_who in NON_DIALOGUE_KEYWORDS:
+                    i += 1
+                    continue
                 if who in {
                     "thumb",
                     "background",
