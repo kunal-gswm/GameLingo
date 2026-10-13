@@ -13,7 +13,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Callable, Dict, List, Tuple
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -52,15 +52,138 @@ def compute_manifest(directory: Path) -> Dict[str, Dict[str, Any]]:
     return manifest
 
 
+REQUIRED_SCENARIOS = (
+    "scenario_1_fresh_launch",
+    "scenario_2_existing_player",
+    "scenario_3_existing_language",
+    "scenario_4_player_reversion",
+    "scenario_5_reload_safety",
+    "scenario_6_error_handling",
+)
+
+SCENARIO_FIELD_REQUIREMENTS: Dict[str, Dict[str, Callable[[Any], bool]]] = {
+    "scenario_1_fresh_launch": {
+        "initial_pref_language": lambda v: v == "english",
+        "initial_translation_active": lambda v: v is True,
+        "outcome_1_native_static": lambda v: v is True,
+        "outcome_2_dynamic_hook_translated": lambda v: v is True,
+        "outcome_3_dynamic_hook_untranslated_in_none": lambda v: v is True,
+        "reversion_verified": lambda v: v is True,
+        "screenshot_captured": lambda v: v is True,
+        "tracebacks_detected": lambda v: v is False,
+        "error": lambda v: v is None,
+    },
+    "scenario_2_existing_player": {
+        "initial_pref_language": lambda v: v == "english",
+        "initial_translation_active": lambda v: v is True,
+        "persistent_flag_set": lambda v: v is True,
+        "tracebacks_detected": lambda v: v is False,
+        "error": lambda v: v is None,
+    },
+    "scenario_3_existing_language": {
+        "initial_pref_language": lambda v: v == "spanish",
+        "preserved_existing_language": lambda v: v is True,
+        "not_overwritten_by_target": lambda v: v is True,
+        "tracebacks_detected": lambda v: v is False,
+        "error": lambda v: v is None,
+    },
+    "scenario_4_player_reversion": {
+        "initial_pref_language": lambda v: v is None,
+        "reversion_preserved": lambda v: v is True,
+        "untranslated_source_restored": lambda v: v is True,
+        "tracebacks_detected": lambda v: v is False,
+        "error": lambda v: v is None,
+    },
+    "scenario_5_reload_safety": {
+        "reloaded_via_reload_script": lambda v: v is True,
+        "developer_mode": lambda v: v is True,
+        "orig_function_name": lambda v: v == "set_text",
+        "curr_function_name": lambda v: v == "_gl_set_text",
+        "orig_fn_not_replaced_by_wrapper": lambda v: v is True,
+        "wrapped_only_once": lambda v: v is True,
+        "post_reload_dynamic_hook_working": lambda v: v is True,
+        "idempotent_no_mangling": lambda v: v is True,
+        "reload_safe": lambda v: v is True,
+        "tracebacks_detected": lambda v: v is False,
+        "error": lambda v: v is None,
+    },
+    "scenario_6_error_handling": {
+        "error_handled_cleanly": lambda v: v is True,
+        "tracebacks_detected": lambda v: v is False,
+        "error": lambda v: v is None,
+    },
+}
+
+
+def evaluate_verification_results(scenario_results: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Evaluates scenario results against strict acceptance criteria.
+    Fails closed: missing scenarios, missing fields, or failed assertions
+    cause all_passed to be False.
+    """
+    failures: List[str] = []
+    scenario_status: Dict[str, Dict[str, Any]] = {}
+
+    for scen in REQUIRED_SCENARIOS:
+        scen_failures = []
+        if scen not in scenario_results:
+            scen_failures.append(f"Missing scenario output for '{scen}'")
+        else:
+            data = scenario_results[scen]
+            if not isinstance(data, dict):
+                scen_failures.append(f"Scenario '{scen}' data is not a dictionary")
+            else:
+                reqs = SCENARIO_FIELD_REQUIREMENTS.get(scen, {})
+                for field, validator in reqs.items():
+                    if field not in data:
+                        scen_failures.append(
+                            f"Missing required field '{field}' in '{scen}'"
+                        )
+                    else:
+                        val = data[field]
+                        valid = False
+                        try:
+                            valid = bool(validator(val))
+                        except Exception as e:
+                            scen_failures.append(
+                                f"Validator exception for '{field}' in '{scen}': {e}"
+                            )
+                        else:
+                            if not valid:
+                                scen_failures.append(
+                                    f"Failed required assertion '{field}' in '{scen}' (actual: {val!r})"
+                                )
+
+        scenario_status[scen] = {
+            "passed": len(scen_failures) == 0,
+            "failures": scen_failures,
+        }
+        failures.extend(scen_failures)
+
+    return {
+        "all_passed": len(failures) == 0,
+        "failures": failures,
+        "scenario_status": scenario_status,
+    }
+
+
 def run_renpy_engine(
     game_path: Path, config_dir: Path, timeout_sec: int = 30
-) -> subprocess.CompletedProcess:
-    """Runs the game executable with isolated config and save directories."""
+) -> Tuple[subprocess.CompletedProcess, Dict[str, Any]]:
+    """Runs the game executable with isolated config and save directories, capturing logs."""
     # Ensure probe compiled cache is removed so new probe rpy is always recompiled
     probe_rpyc = game_path / "game" / "zz_probe.rpyc"
     if probe_rpyc.exists():
         try:
             probe_rpyc.unlink()
+        except Exception:
+            pass
+
+    # Clear log.txt before run so we capture strictly logs from this invocation
+    engine_log = game_path / "log.txt"
+    if engine_log.exists():
+        try:
+            engine_log.unlink()
         except Exception:
             pass
 
@@ -87,37 +210,32 @@ def run_renpy_engine(
         stderr=subprocess.DEVNULL,
         env=env,
     )
-    return proc
+
+    log_content = ""
+    has_tracebacks = False
+    if engine_log.exists():
+        try:
+            log_content = engine_log.read_text(encoding="utf-8", errors="replace")
+            has_tracebacks = (
+                "Traceback (most recent call last)" in log_content
+                or "Unhandled exception" in log_content
+            )
+            # Archive per-scenario engine log in isolated config dir
+            (config_dir / "engine_log.txt").write_text(log_content, encoding="utf-8")
+        except Exception as e:
+            log_content = f"Failed to read engine log: {e}"
+
+    log_summary = {
+        "log_size": len(log_content),
+        "tracebacks_detected": has_tracebacks,
+        "log_tail": log_content[-500:],
+        "log_content": log_content,
+    }
+    return proc, log_summary
 
 
-def main():
-    print("=" * 60)
-    print("GL-039.5: Real-Engine Verification of Dynamic Text & Script Reload")
-    print("=" * 60)
-
-    # 1. Inspect original game
-    print("\n[Step 1] Inspecting original game installation...")
-    if not ORIGINAL_GAME_PATH.is_dir():
-        print(f"ERROR: Original game path {ORIGINAL_GAME_PATH} does not exist!")
-        sys.exit(1)
-
-    runtime_info = detect_renpy_runtime(ORIGINAL_GAME_PATH)
-    print(f"  Detected version: {runtime_info['version']}")
-    print(f"  Python family: {runtime_info['python_family']}")
-    print(f"  Support level: {runtime_info['support_level']}")
-
-    print(
-        "  Calculating baseline hashes of original game (excluding temporary logs/saves)..."
-    )
-    original_top_files = [
-        f for f in ORIGINAL_GAME_PATH.iterdir() if f.is_file() and f.name != "log.txt"
-    ]
-    baseline_hashes = {f.name: compute_file_hash(f) for f in original_top_files}
-    archive_rpa_path = ORIGINAL_GAME_PATH / "game" / "archive.rpa"
-    if archive_rpa_path.is_file():
-        baseline_hashes["game/archive.rpa"] = compute_file_hash(archive_rpa_path)
-    print(f"  Baseline recorded for {len(baseline_hashes)} critical files.")
-
+def execute_verification_scenarios() -> Tuple[Dict[str, Any], Path]:
+    """Executes isolated scenarios 1 through 6 against a disposable game copy."""
     # 2. Prepare disposable working copy
     print("\n[Step 2] Creating disposable working copy...")
     if TEMP_BASE_DIR.exists():
@@ -177,6 +295,8 @@ def main():
     s1_config.mkdir(parents=True, exist_ok=True)
 
     s1_probe_json = s1_config / "probe_s1.json"
+    if s1_probe_json.exists():
+        s1_probe_json.unlink()
     s1_screenshot_png = EVIDENCE_DIR / "gl039_real_engine_startup_screenshot.png"
     if s1_screenshot_png.exists():
         s1_screenshot_png.unlink()
@@ -266,11 +386,26 @@ label before_main_menu:
         renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s1_probe_rpy, encoding="utf-8")
-    proc = run_renpy_engine(DISPOSABLE_GAME_PATH, s1_config)
+    proc, log_summary = run_renpy_engine(DISPOSABLE_GAME_PATH, s1_config)
     print(f"  Process exited with code {proc.returncode}")
 
-    if s1_probe_json.exists():
+    if proc.returncode != 0:
+        print(f"  ERROR: Scenario 1 process failed with returncode {proc.returncode}")
+        scenario_results["scenario_1_fresh_launch"] = {
+            "error": f"Process exited with code {proc.returncode}",
+            "tracebacks_detected": log_summary["tracebacks_detected"],
+        }
+    elif not s1_probe_json.is_file():
+        print("  ERROR: Scenario 1 probe output not found!")
+        scenario_results["scenario_1_fresh_launch"] = {
+            "error": "Probe output was not created",
+            "tracebacks_detected": log_summary["tracebacks_detected"],
+        }
+    else:
         s1_data = json.loads(s1_probe_json.read_text(encoding="utf-8"))
+        s1_data["tracebacks_detected"] = log_summary["tracebacks_detected"]
+        if log_summary["tracebacks_detected"] and s1_data.get("error") is None:
+            s1_data["error"] = "Traceback detected in engine log"
         scenario_results["scenario_1_fresh_launch"] = s1_data
         print(f"  initial_pref_language: {s1_data.get('initial_pref_language')}")
         print(
@@ -290,15 +425,11 @@ label before_main_menu:
         )
         print(f"  reversion_verified: {s1_data.get('reversion_verified')}")
         print(f"  screenshot_captured: {s1_data.get('screenshot_captured')}")
+        print(f"  tracebacks_detected: {s1_data.get('tracebacks_detected')}")
         if s1_screenshot_png.exists():
             print(
                 f"  Screenshot saved to {s1_screenshot_png} ({s1_screenshot_png.stat().st_size} bytes)"
             )
-    else:
-        print("  ERROR: Scenario 1 probe output not found!")
-        scenario_results["scenario_1_fresh_launch"] = {
-            "error": "Probe did not write output"
-        }
 
     # -------------------------------------------------------------------------
     # Scenario 2: Existing Player First Launch (_set_preferences=True, language=None)
@@ -328,10 +459,12 @@ label before_main_menu:
         renpy.quit(status=0)
 """
     (game_dir / "zz_probe.rpy").write_text(s2_setup_rpy, encoding="utf-8")
-    run_renpy_engine(DISPOSABLE_GAME_PATH, s2_config)
+    proc_setup, log_setup = run_renpy_engine(DISPOSABLE_GAME_PATH, s2_config)
 
     # Verification run: launch game with gamelingo_activate.rpy active
     s2_probe_json = s2_config / "probe_s2.json"
+    if s2_probe_json.exists():
+        s2_probe_json.unlink()
     s2_probe_rpy = f'''# Scenario 2 Verification Probe
 label before_main_menu:
     python:
@@ -357,11 +490,29 @@ label before_main_menu:
         renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s2_probe_rpy, encoding="utf-8")
-    proc = run_renpy_engine(DISPOSABLE_GAME_PATH, s2_config)
+    proc, log_summary = run_renpy_engine(DISPOSABLE_GAME_PATH, s2_config)
     print(f"  Process exited with code {proc.returncode}")
 
-    if s2_probe_json.exists():
+    tb_detected = log_setup["tracebacks_detected"] or log_summary["tracebacks_detected"]
+    if proc.returncode != 0 or proc_setup.returncode != 0:
+        print(
+            f"  ERROR: Scenario 2 process failed (setup: {proc_setup.returncode}, probe: {proc.returncode})"
+        )
+        scenario_results["scenario_2_existing_player"] = {
+            "error": f"Process exited with code setup={proc_setup.returncode}, probe={proc.returncode}",
+            "tracebacks_detected": tb_detected,
+        }
+    elif not s2_probe_json.is_file():
+        print("  ERROR: Scenario 2 probe output not found!")
+        scenario_results["scenario_2_existing_player"] = {
+            "error": "Probe output was not created",
+            "tracebacks_detected": tb_detected,
+        }
+    else:
         s2_data = json.loads(s2_probe_json.read_text(encoding="utf-8"))
+        s2_data["tracebacks_detected"] = tb_detected
+        if tb_detected and s2_data.get("error") is None:
+            s2_data["error"] = "Traceback detected in engine log"
         scenario_results["scenario_2_existing_player"] = s2_data
         print(f"  initial_pref_language: {s2_data.get('initial_pref_language')}")
         print(
@@ -371,11 +522,7 @@ label before_main_menu:
             f"  initial_translation_active: {s2_data.get('initial_translation_active')}"
         )
         print(f"  persistent_flag_set: {s2_data.get('persistent_flag_set')}")
-    else:
-        print("  ERROR: Scenario 2 probe output not found!")
-        scenario_results["scenario_2_existing_player"] = {
-            "error": "Probe did not write output"
-        }
+        print(f"  tracebacks_detected: {s2_data.get('tracebacks_detected')}")
 
     # -------------------------------------------------------------------------
     # Scenario 3: Existing Non-Default Language (e.g. language="spanish")
@@ -403,10 +550,12 @@ label before_main_menu:
         renpy.quit(status=0)
 """
     (game_dir / "zz_probe.rpy").write_text(s3_setup_rpy, encoding="utf-8")
-    run_renpy_engine(DISPOSABLE_GAME_PATH, s3_config)
+    proc_setup, log_setup = run_renpy_engine(DISPOSABLE_GAME_PATH, s3_config)
 
     # Verification run: callback should NOT overwrite existing user language
     s3_probe_json = s3_config / "probe_s3.json"
+    if s3_probe_json.exists():
+        s3_probe_json.unlink()
     s3_probe_rpy = f'''# Scenario 3 Verification Probe
 label before_main_menu:
     python:
@@ -428,11 +577,29 @@ label before_main_menu:
         renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s3_probe_rpy, encoding="utf-8")
-    proc = run_renpy_engine(DISPOSABLE_GAME_PATH, s3_config)
+    proc, log_summary = run_renpy_engine(DISPOSABLE_GAME_PATH, s3_config)
     print(f"  Process exited with code {proc.returncode}")
 
-    if s3_probe_json.exists():
+    tb_detected = log_setup["tracebacks_detected"] or log_summary["tracebacks_detected"]
+    if proc.returncode != 0 or proc_setup.returncode != 0:
+        print(
+            f"  ERROR: Scenario 3 process failed (setup: {proc_setup.returncode}, probe: {proc.returncode})"
+        )
+        scenario_results["scenario_3_existing_language"] = {
+            "error": f"Process exited with code setup={proc_setup.returncode}, probe={proc.returncode}",
+            "tracebacks_detected": tb_detected,
+        }
+    elif not s3_probe_json.is_file():
+        print("  ERROR: Scenario 3 probe output not found!")
+        scenario_results["scenario_3_existing_language"] = {
+            "error": "Probe output was not created",
+            "tracebacks_detected": tb_detected,
+        }
+    else:
         s3_data = json.loads(s3_probe_json.read_text(encoding="utf-8"))
+        s3_data["tracebacks_detected"] = tb_detected
+        if tb_detected and s3_data.get("error") is None:
+            s3_data["error"] = "Traceback detected in engine log"
         scenario_results["scenario_3_existing_language"] = s3_data
         print(f"  initial_pref_language: {s3_data.get('initial_pref_language')}")
         print(
@@ -441,11 +608,7 @@ label before_main_menu:
         print(
             f"  not_overwritten_by_target: {s3_data.get('not_overwritten_by_target')}"
         )
-    else:
-        print("  ERROR: Scenario 3 probe output not found!")
-        scenario_results["scenario_3_existing_language"] = {
-            "error": "Probe did not write output"
-        }
+        print(f"  tracebacks_detected: {s3_data.get('tracebacks_detected')}")
 
     # -------------------------------------------------------------------------
     # Scenario 4: Player Reversion Preserved on Restart
@@ -472,10 +635,12 @@ label before_main_menu:
         renpy.quit(status=0)
 """
     (game_dir / "zz_probe.rpy").write_text(s4_setup_rpy, encoding="utf-8")
-    run_renpy_engine(DISPOSABLE_GAME_PATH, s4_config)
+    proc_setup, log_setup = run_renpy_engine(DISPOSABLE_GAME_PATH, s4_config)
 
     # Verification run: restart should preserve None
     s4_probe_json = s4_config / "probe_s4.json"
+    if s4_probe_json.exists():
+        s4_probe_json.unlink()
     s4_probe_rpy = f'''# Scenario 4 Verification Probe
 label before_main_menu:
     python:
@@ -498,22 +663,36 @@ label before_main_menu:
         renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s4_probe_rpy, encoding="utf-8")
-    proc = run_renpy_engine(DISPOSABLE_GAME_PATH, s4_config)
+    proc, log_summary = run_renpy_engine(DISPOSABLE_GAME_PATH, s4_config)
     print(f"  Process exited with code {proc.returncode}")
 
-    if s4_probe_json.exists():
+    tb_detected = log_setup["tracebacks_detected"] or log_summary["tracebacks_detected"]
+    if proc.returncode != 0 or proc_setup.returncode != 0:
+        print(
+            f"  ERROR: Scenario 4 process failed (setup: {proc_setup.returncode}, probe: {proc.returncode})"
+        )
+        scenario_results["scenario_4_player_reversion"] = {
+            "error": f"Process exited with code setup={proc_setup.returncode}, probe={proc.returncode}",
+            "tracebacks_detected": tb_detected,
+        }
+    elif not s4_probe_json.is_file():
+        print("  ERROR: Scenario 4 probe output not found!")
+        scenario_results["scenario_4_player_reversion"] = {
+            "error": "Probe output was not created",
+            "tracebacks_detected": tb_detected,
+        }
+    else:
         s4_data = json.loads(s4_probe_json.read_text(encoding="utf-8"))
+        s4_data["tracebacks_detected"] = tb_detected
+        if tb_detected and s4_data.get("error") is None:
+            s4_data["error"] = "Traceback detected in engine log"
         scenario_results["scenario_4_player_reversion"] = s4_data
         print(f"  initial_pref_language: {s4_data.get('initial_pref_language')}")
         print(f"  reversion_preserved: {s4_data.get('reversion_preserved')}")
         print(
             f"  untranslated_source_restored: {s4_data.get('untranslated_source_restored')}"
         )
-    else:
-        print("  ERROR: Scenario 4 probe output not found!")
-        scenario_results["scenario_4_player_reversion"] = {
-            "error": "Probe did not write output"
-        }
+        print(f"  tracebacks_detected: {s4_data.get('tracebacks_detected')}")
 
     # -------------------------------------------------------------------------
     # Scenario 5: Real Script Reload via renpy.reload_script() & Idempotency
@@ -533,8 +712,14 @@ label before_main_menu:
     disposable_saves.mkdir(parents=True, exist_ok=True)
 
     s5_probe_json = s5_config / "probe_s5.json"
+    if s5_probe_json.exists():
+        s5_probe_json.unlink()
     s5_marker_file = s5_config / "reload_marker.txt"
+    if s5_marker_file.exists():
+        s5_marker_file.unlink()
     s5_pre_state_file = s5_config / "pre_reload_state.json"
+    if s5_pre_state_file.exists():
+        s5_pre_state_file.unlink()
 
     s5_probe_rpy = f'''# Scenario 5 Real Script Reload Probe
 init -100 python:
@@ -631,11 +816,31 @@ label before_main_menu:
             renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s5_probe_rpy, encoding="utf-8")
-    proc = run_renpy_engine(DISPOSABLE_GAME_PATH, s5_config)
+    proc, log_summary = run_renpy_engine(DISPOSABLE_GAME_PATH, s5_config)
     print(f"  Process exited with code {proc.returncode}")
 
-    if s5_probe_json.exists():
+    # Archive Scenario 5 log to EVIDENCE_DIR
+    sanitized_log = EVIDENCE_DIR / "gl039_real_engine_island_log.txt"
+    sanitized_log.write_text(log_summary["log_content"], encoding="utf-8")
+    print(f"  Saved reload engine log to {sanitized_log}")
+
+    if proc.returncode != 0:
+        print(f"  ERROR: Scenario 5 process failed with returncode {proc.returncode}")
+        scenario_results["scenario_5_reload_safety"] = {
+            "error": f"Process exited with code {proc.returncode}",
+            "tracebacks_detected": log_summary["tracebacks_detected"],
+        }
+    elif not s5_probe_json.is_file():
+        print("  ERROR: Scenario 5 probe output not found!")
+        scenario_results["scenario_5_reload_safety"] = {
+            "error": "Probe output was not created",
+            "tracebacks_detected": log_summary["tracebacks_detected"],
+        }
+    else:
         s5_data = json.loads(s5_probe_json.read_text(encoding="utf-8"))
+        s5_data["tracebacks_detected"] = log_summary["tracebacks_detected"]
+        if log_summary["tracebacks_detected"] and s5_data.get("error") is None:
+            s5_data["error"] = "Traceback detected in engine log"
         scenario_results["scenario_5_reload_safety"] = s5_data
         print(
             f"  reloaded_via_reload_script: {s5_data.get('reloaded_via_reload_script')}"
@@ -652,11 +857,7 @@ label before_main_menu:
         )
         print(f"  idempotent_no_mangling: {s5_data.get('idempotent_no_mangling')}")
         print(f"  reload_safe: {s5_data.get('reload_safe')}")
-    else:
-        print("  ERROR: Scenario 5 probe output not found!")
-        scenario_results["scenario_5_reload_safety"] = {
-            "error": "Probe did not write output"
-        }
+        print(f"  tracebacks_detected: {s5_data.get('tracebacks_detected')}")
 
     # -------------------------------------------------------------------------
     # Scenario 6: Error Handling & Engine Log Verification
@@ -673,6 +874,8 @@ label before_main_menu:
     disposable_saves.mkdir(parents=True, exist_ok=True)
 
     s6_probe_json = s6_config / "probe_s6.json"
+    if s6_probe_json.exists():
+        s6_probe_json.unlink()
     s6_probe_rpy = f'''# Scenario 6 Error Handling Probe
 label before_main_menu:
     python:
@@ -699,127 +902,177 @@ label before_main_menu:
         renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s6_probe_rpy, encoding="utf-8")
-    proc = run_renpy_engine(DISPOSABLE_GAME_PATH, s6_config)
+    proc, log_summary = run_renpy_engine(DISPOSABLE_GAME_PATH, s6_config)
     print(f"  Process exited with code {proc.returncode}")
 
-    if s6_probe_json.exists():
-        s6_data = json.loads(s6_probe_json.read_text(encoding="utf-8"))
-        scenario_results["scenario_6_error_handling"] = s6_data
-        print(f"  error_handled_cleanly: {s6_data.get('error_handled_cleanly')}")
-    else:
+    if proc.returncode != 0:
+        print(f"  ERROR: Scenario 6 process failed with returncode {proc.returncode}")
+        scenario_results["scenario_6_error_handling"] = {
+            "error": f"Process exited with code {proc.returncode}",
+            "tracebacks_detected": log_summary["tracebacks_detected"],
+        }
+    elif not s6_probe_json.is_file():
         print("  ERROR: Scenario 6 probe output not found!")
         scenario_results["scenario_6_error_handling"] = {
-            "error": "Probe did not write output"
+            "error": "Probe output was not created",
+            "tracebacks_detected": log_summary["tracebacks_detected"],
         }
+    else:
+        s6_data = json.loads(s6_probe_json.read_text(encoding="utf-8"))
+        s6_data["tracebacks_detected"] = log_summary["tracebacks_detected"]
+        if log_summary["tracebacks_detected"] and s6_data.get("error") is None:
+            s6_data["error"] = "Traceback detected in engine log"
+        scenario_results["scenario_6_error_handling"] = s6_data
+        print(f"  error_handled_cleanly: {s6_data.get('error_handled_cleanly')}")
+        print(f"  tracebacks_detected: {s6_data.get('tracebacks_detected')}")
 
-    # Engine log inspection
-    engine_log = DISPOSABLE_GAME_PATH / "log.txt"
-    log_content = ""
-    if engine_log.exists():
-        log_content = engine_log.read_text(encoding="utf-8", errors="replace")
-        has_tracebacks = "Traceback (most recent call last)" in log_content
-        print(
-            f"  Engine log.txt inspected: {len(log_content)} chars, Tracebacks present: {has_tracebacks}"
-        )
-        scenario_results["engine_log_summary"] = {
-            "log_size": len(log_content),
-            "tracebacks_detected": has_tracebacks,
-            "log_tail": log_content[-500:],
-        }
-        # Save sanitized log excerpt to evidence directory
-        sanitized_log = EVIDENCE_DIR / "gl039_real_engine_island_log.txt"
-        sanitized_log.write_text(log_content, encoding="utf-8")
-        print(f"  Saved engine log excerpt to {sanitized_log}")
+    return scenario_results, s1_screenshot_png
 
-    # 4. Save aggregated evidence JSON
-    evidence_file = EVIDENCE_DIR / "gl039_real_engine_verification_summary.json"
-    evidence_payload = {
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "test_game": {
-            "name": "island-1.0-win",
-            "engine_version": runtime_info["version"],
-            "python_family": runtime_info["python_family"],
-            "support_level": runtime_info["support_level"],
-        },
-        "baseline_hashes": baseline_hashes,
-        "screenshot_evidence": str(s1_screenshot_png.name),
-        "scenarios": scenario_results,
-        "all_passed": all(
-            [
-                scenario_results.get("scenario_1_fresh_launch", {}).get(
-                    "initial_translation_active"
-                )
-                is True,
-                scenario_results.get("scenario_1_fresh_launch", {}).get(
-                    "outcome_1_native_static"
-                )
-                is True,
-                scenario_results.get("scenario_1_fresh_launch", {}).get(
-                    "outcome_2_dynamic_hook_translated"
-                )
-                is True,
-                scenario_results.get("scenario_1_fresh_launch", {}).get(
-                    "outcome_3_dynamic_hook_untranslated_in_none"
-                )
-                is True,
-                scenario_results.get("scenario_2_existing_player", {}).get(
-                    "initial_translation_active"
-                )
-                is True,
-                scenario_results.get("scenario_3_existing_language", {}).get(
-                    "preserved_existing_language"
-                )
-                is True,
-                scenario_results.get("scenario_4_player_reversion", {}).get(
-                    "reversion_preserved"
-                )
-                is True,
-                scenario_results.get("scenario_5_reload_safety", {}).get("reload_safe")
-                is True,
-                scenario_results.get("scenario_5_reload_safety", {}).get(
-                    "reloaded_via_reload_script"
-                )
-                is True,
-                scenario_results.get("scenario_6_error_handling", {}).get(
-                    "error_handled_cleanly"
-                )
-                is True,
-            ]
-        ),
-    }
-    evidence_file.write_text(json.dumps(evidence_payload, indent=2), encoding="utf-8")
-    print(f"\n[Step 4] Saved full evidence summary to {evidence_file}")
-    print(f"  Overall scenarios passed: {evidence_payload['all_passed']}")
 
-    # 5. Safe cleanup of disposable directory
-    print("\n[Step 5] Cleaning up disposable test directory...")
-    shutil.rmtree(TEMP_BASE_DIR)
-    disposable_exists = TEMP_BASE_DIR.exists()
-    print(f"  Verified TEMP_BASE_DIR removed: {not disposable_exists}")
+def main():
+    print("=" * 60)
+    print("GL-039.6: Real-Engine Fail-Closed Acceptance Gate")
+    print("=" * 60)
 
-    # 6. Verify original game integrity
-    print("\n[Step 6] Verifying original game integrity...")
-    post_hashes = {f.name: compute_file_hash(f) for f in original_top_files}
-    if archive_rpa_path.is_file():
-        post_hashes["game/archive.rpa"] = compute_file_hash(archive_rpa_path)
+    # 1. Inspect original game
+    print("\n[Step 1] Inspecting original game installation...")
+    if not ORIGINAL_GAME_PATH.is_dir():
+        print(f"ERROR: Original game path {ORIGINAL_GAME_PATH} does not exist!")
+        sys.exit(1)
 
-    mismatches = []
-    for k, v in baseline_hashes.items():
-        if post_hashes.get(k) != v:
-            mismatches.append(k)
+    runtime_info = detect_renpy_runtime(ORIGINAL_GAME_PATH)
+    print(f"  Detected version: {runtime_info['version']}")
+    print(f"  Python family: {runtime_info['python_family']}")
+    print(f"  Support level: {runtime_info['support_level']}")
 
     print(
-        f"  Original files checked: {len(baseline_hashes)}, Mismatches: {len(mismatches)}"
+        "  Calculating baseline hashes of original game (excluding temporary logs/saves)..."
     )
-    if mismatches:
-        print(f"  ERROR: Baseline integrity violation on: {mismatches}")
+    original_top_files = [
+        f for f in ORIGINAL_GAME_PATH.iterdir() if f.is_file() and f.name != "log.txt"
+    ]
+    baseline_hashes = {f.name: compute_file_hash(f) for f in original_top_files}
+    archive_rpa_path = ORIGINAL_GAME_PATH / "game" / "archive.rpa"
+    if archive_rpa_path.is_file():
+        baseline_hashes["game/archive.rpa"] = compute_file_hash(archive_rpa_path)
+    print(f"  Baseline recorded for {len(baseline_hashes)} critical files.")
+
+    all_passed = False
+    failures: List[str] = []
+    cleanup_success = False
+    baseline_intact = False
+    evidence_file = EVIDENCE_DIR / "gl039_real_engine_verification_summary.json"
+    scenario_results: Dict[str, Any] = {}
+    s1_screenshot_png = EVIDENCE_DIR / "gl039_real_engine_startup_screenshot.png"
+
+    try:
+        scenario_results, s1_screenshot_png = execute_verification_scenarios()
+
+        # 4. Save aggregated evidence JSON and evaluate gate
+        print("\n[Step 4] Evaluating scenario results against acceptance gate...")
+        evaluation = evaluate_verification_results(scenario_results)
+        all_passed = evaluation["all_passed"]
+        failures = evaluation["failures"]
+
+        evidence_payload = {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "test_game": {
+                "name": "island-1.0-win",
+                "engine_version": runtime_info["version"],
+                "python_family": runtime_info["python_family"],
+                "support_level": runtime_info["support_level"],
+            },
+            "baseline_hashes": baseline_hashes,
+            "screenshot_evidence": str(s1_screenshot_png.name),
+            "scenarios": scenario_results,
+            "scenario_status": evaluation["scenario_status"],
+            "failures": failures,
+            "all_passed": all_passed,
+        }
+        evidence_file.write_text(
+            json.dumps(evidence_payload, indent=2), encoding="utf-8"
+        )
+        print(f"  Saved full evidence summary to {evidence_file}")
+        print(f"  Aggregate acceptance passed: {all_passed}")
+        if failures:
+            print(f"  Failures detected ({len(failures)}):")
+            for idx, f in enumerate(failures, 1):
+                print(f"    [{idx}] {f}")
+
+    except Exception as exc:
+        print(f"\nCRITICAL EXCEPTION DURING EXECUTION: {exc}")
+        failures.append(f"Execution exception: {exc}")
+        all_passed = False
+        try:
+            partial_payload = {
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "test_game": {
+                    "name": "island-1.0-win",
+                    "engine_version": runtime_info.get("version"),
+                },
+                "scenarios": scenario_results,
+                "failures": failures,
+                "all_passed": False,
+                "fatal_error": str(exc),
+            }
+            evidence_file.write_text(
+                json.dumps(partial_payload, indent=2), encoding="utf-8"
+            )
+        except Exception:
+            pass
+    finally:
+        # 5. Safe cleanup of disposable directory
+        print("\n[Step 5] Cleaning up disposable test directory...")
+        if TEMP_BASE_DIR.exists():
+            try:
+                shutil.rmtree(TEMP_BASE_DIR)
+            except Exception as e:
+                print(f"  WARNING: Error during cleanup: {e}")
+        disposable_exists = TEMP_BASE_DIR.exists()
+        cleanup_success = not disposable_exists
+        print(f"  Verified TEMP_BASE_DIR removed: {cleanup_success}")
+
+        # 6. Verify original game integrity
+        print("\n[Step 6] Verifying original game integrity...")
+        post_hashes = {f.name: compute_file_hash(f) for f in original_top_files}
+        if archive_rpa_path.is_file():
+            post_hashes["game/archive.rpa"] = compute_file_hash(archive_rpa_path)
+
+        mismatches = []
+        for k, v in baseline_hashes.items():
+            if post_hashes.get(k) != v:
+                mismatches.append(k)
+
+        print(
+            f"  Original files checked: {len(baseline_hashes)}, Mismatches: {len(mismatches)}"
+        )
+        if mismatches:
+            print(f"  ERROR: Baseline integrity violation on: {mismatches}")
+            baseline_intact = False
+        else:
+            print("  Original game is 100% PRISTINE and UNCHANGED.")
+            baseline_intact = True
+
+    if not cleanup_success:
+        print("\nFATAL: Disposable directory could not be cleaned up completely.")
+    if not baseline_intact:
+        print("\nFATAL: Original game integrity violated!")
         sys.exit(1)
-    else:
-        print("  Original game is 100% PRISTINE and UNCHANGED.")
+
+    if not all_passed:
+        print("\n" + "=" * 60)
+        print(f"ACCEPTANCE VERIFICATION FAILED: {len(failures)} issue(s) detected")
+        print("=" * 60)
+        for idx, f in enumerate(failures, 1):
+            print(f"  [{idx}] {f}")
+        print(f"\nEvidence JSON: {evidence_file}")
+        sys.exit(1)
 
     print("\n========================================================")
-    print("GL-039.5 REAL-ENGINE VERIFICATION COMPLETED SUCCESSFULLY")
+    print("GL-039.6 REAL-ENGINE VERIFICATION COMPLETED SUCCESSFULLY")
     print("========================================================")
+    print(f"Evidence JSON: {evidence_file}")
+    sys.exit(0)
 
 
 if __name__ == "__main__":
