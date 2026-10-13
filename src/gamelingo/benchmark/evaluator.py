@@ -4,15 +4,16 @@ GL-040.2 Translation Benchmark Evaluator Module
 Provides reproducible, objective evaluation of game translation outputs.
 Separates:
 1. Programmatic structural validity and error detection
-2. Programmatic placeholder and tag integrity verification
-3. Intentional passthrough handling based on expected_behavior
-4. Human semantic & linguistic quality scoring via decoupled, hash-pinned annotations
+2. Programmatic placeholder and tag integrity verification (with strict multiplicity checking)
+3. Intentional passthrough handling based on explicit metadata and strict safeguards
+4. Human semantic & linguistic quality scoring via decoupled, context- and target-hash-pinned annotations
 5. Metric aggregation with explicit, documented denominators
 """
 
 import hashlib
 import json
 import re
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -21,42 +22,49 @@ from gamelingo.translation.placeholders import PLACEHOLDER_REGEX
 # Regex for Japanese character ranges (Hiragana, Katakana, Kanji)
 JP_CHAR_REGEX = re.compile(r"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]")
 
-# Keywords in expected_behavior indicating intentional passthrough
-PASSTHROUGH_KEYWORDS = [
-    "without translation",
-    "without modification",
-    "unchanged",
-    "remain unchanged",
-    "untranslated",
-    "preserve exact",
-    "preserve standard",
-    "preserve internal",
-    "preserve terminal",
-    "preserve system",
-    "preserve separator",
-    "preserve dotted",
-]
-
 
 def hash_translation_target(target_text: str) -> str:
-    """Computes a deterministic SHA-256 hash of the normalized target text."""
-    return hashlib.sha256(target_text.strip().encode("utf-8")).hexdigest()
+    """
+    Computes a strict, exact UTF-8 SHA-256 hash of the target text without stripping whitespace.
+    Leading, trailing, or internal whitespace changes produce a distinct hash.
+    """
+    return hashlib.sha256(target_text.encode("utf-8")).hexdigest()
+
+
+def compute_annotation_context_hash(
+    item_id: str,
+    category: str,
+    source_text: str,
+    reference: str,
+    reviewed_target_text: str,
+) -> str:
+    """
+    Computes a deterministic SHA-256 context hash binding an annotation to its exact
+    evaluated environment: item ID, category, source text, reference text, and reviewed target text.
+    """
+    payload = f"{item_id}\x00{category}\x00{source_text}\x00{reference}\x00{reviewed_target_text}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def is_passthrough_expected(item: Dict[str, Any]) -> bool:
     """
-    Determines whether a benchmark item is intentionally expected to remain unchanged
-    (e.g. technical identifiers, pure markup/formatting codes, code variables).
-    Uses source_text, reference, and expected_behavior.
+    Determines whether a benchmark item is intentionally expected to remain unchanged.
+    1. Primary authority: explicit metadata 'passthrough_expected' (bool).
+    2. Strict fallback safeguard (if metadata missing):
+       - Text containing Japanese characters is NEVER a passthrough.
+       - Must have exact match between reference and source_text.
     """
-    ref = item.get("reference", "").strip()
+    if "passthrough_expected" in item:
+        return bool(item["passthrough_expected"])
+
     src = item.get("source_text", "").strip()
-    exp = item.get("expected_behavior", "").lower()
+    ref = item.get("reference", "").strip()
 
-    if ref == src:
-        return True
+    # Strict safeguard: Any string containing Japanese characters is never passthrough
+    if JP_CHAR_REGEX.search(src):
+        return False
 
-    return any(kw in exp for kw in PASSTHROUGH_KEYWORDS)
+    return ref == src
 
 
 def evaluate_placeholder_integrity(
@@ -64,8 +72,8 @@ def evaluate_placeholder_integrity(
 ) -> Dict[str, Any]:
     """
     Programmatically verifies that variables, formatting tags, and newlines
-    present in the source are preserved intact in the target output.
-    Completely decoupled from human semantic scoring.
+    present in the source are preserved intact in the target output, comparing
+    the exact multiplicity of each token to catch dropped repeated occurrences.
     """
     if error and "Placeholder error" in error:
         return {
@@ -75,6 +83,8 @@ def evaluate_placeholder_integrity(
         }
 
     source_tokens = [m.group(0) for m in PLACEHOLDER_REGEX.finditer(source_text)]
+    target_tokens = [m.group(0) for m in PLACEHOLDER_REGEX.finditer(target_text)]
+
     source_newlines = source_text.count("\n")
     target_newlines = target_text.count("\n")
 
@@ -82,21 +92,32 @@ def evaluate_placeholder_integrity(
     if not has_markup:
         return {"status": "N/A", "has_markup": False, "details": "No markup in source"}
 
-    missing_tokens = [tok for tok in source_tokens if tok not in target_text]
-    newline_mismatch = source_newlines != target_newlines
+    source_counts = Counter(source_tokens)
+    target_counts = Counter(target_tokens)
 
-    if missing_tokens or newline_mismatch:
-        errs = []
-        if missing_tokens:
-            errs.append(f"Missing tokens: {missing_tokens}")
-        if newline_mismatch:
-            errs.append(
-                f"Newline mismatch: expected {source_newlines}, got {target_newlines}"
+    mismatches = []
+    # Check for dropped or duplicated token occurrences
+    for tok, expected_cnt in source_counts.items():
+        actual_cnt = target_counts.get(tok, 0)
+        if actual_cnt < expected_cnt:
+            mismatches.append(
+                f"Missing tokens / dropped occurrence(s): token '{tok}' expected {expected_cnt}, got {actual_cnt}"
             )
+        elif actual_cnt > expected_cnt:
+            mismatches.append(
+                f"Duplicated tokens: token '{tok}' expected {expected_cnt}, got {actual_cnt}"
+            )
+
+    if source_newlines != target_newlines:
+        mismatches.append(
+            f"Newline mismatch: expected {source_newlines}, got {target_newlines}"
+        )
+
+    if mismatches:
         return {
             "status": "Fail",
             "has_markup": True,
-            "details": "; ".join(errs),
+            "details": "; ".join(mismatches),
         }
 
     return {
@@ -172,10 +193,10 @@ def evaluate_translation_item(
 ) -> Dict[str, Any]:
     """
     Evaluates a single benchmark item output:
-    1. Determines passthrough expectation.
+    1. Determines passthrough expectation using explicit metadata or strict safeguard.
     2. Evaluates structural status.
-    3. Programmatically verifies placeholder & formatting integrity.
-    4. Looks up pinned human annotation; invalidates score if target text changed.
+    3. Programmatically verifies placeholder & formatting integrity (with multiplicity).
+    4. Looks up pinned human annotation; invalidates score if target text OR context changed.
     """
     bid = item["id"]
     cat = item["category"]
@@ -188,17 +209,21 @@ def evaluate_translation_item(
         item, target_text, error, val_issues
     )
 
-    # 2. Programmatic placeholder integrity
+    # 2. Programmatic placeholder integrity (with multiplicity check)
     placeholder_result = evaluate_placeholder_integrity(src, target_text, error)
 
     # 3. Intentional passthrough check
     if passthrough:
-        passthrough_status = "Pass" if target_text.strip() == src.strip() else "Mutated"
+        passthrough_status = "Pass" if target_text == src else "Mutated"
     else:
         passthrough_status = "N/A"
 
-    # 4. Pinned Human Annotation Lookup
+    # 4. Context- and Target-Hash Pinned Human Annotation Lookup
     target_hash = hash_translation_target(target_text)
+    current_context_hash = compute_annotation_context_hash(
+        bid, cat, src, ref, target_text
+    )
+
     review_status = "pending_review"
     meaning_score = None
     grammar_score = None
@@ -207,10 +232,34 @@ def evaluate_translation_item(
 
     if annotations_store and bid in annotations_store:
         annot = annotations_store[bid]
-        reviewed_hash = annot.get("reviewed_target_hash")
+        reviewed_target = annot.get("reviewed_target_text", "")
+        reviewed_context_h = annot.get("reviewed_context_hash")
 
-        # Strict hash comparison: only assign human quality scores if the exact target text was reviewed
-        if reviewed_hash == target_hash:
+        # Fallback to compute context hash if not stored in legacy entry
+        if not reviewed_context_h:
+            annot_cat = annot.get("category", cat)
+            annot_src = annot.get("source_text", src)
+            annot_ref = annot.get("reference", ref)
+            reviewed_context_h = compute_annotation_context_hash(
+                bid, annot_cat, annot_src, annot_ref, reviewed_target
+            )
+
+        # 1. Exact UTF-8 target check (no whitespace stripping)
+        if target_text != reviewed_target:
+            review_status = "stale"
+            evaluator_notes = (
+                f"Output {repr(target_text)} differs from reviewed target "
+                f"{repr(reviewed_target)}; previous annotation invalidated."
+            )
+        # 2. Context hash check (source, reference, category parity)
+        elif current_context_hash != reviewed_context_h:
+            review_status = "stale"
+            evaluator_notes = (
+                f"Evaluation context for {bid} has changed (source, reference, or category modified); "
+                "previous annotation invalidated."
+            )
+        # 3. Exact target and context verified!
+        else:
             review_status = "reviewed"
             meaning_score = annot.get("meaning_score")
             grammar_score = annot.get("grammar_score")
@@ -218,12 +267,6 @@ def evaluate_translation_item(
             evaluator_notes = annot.get("evaluator_notes", "")
             if annot.get("failure_type"):
                 failure_type = annot["failure_type"]
-        else:
-            review_status = "stale"
-            evaluator_notes = (
-                f"Output '{target_text}' differs from reviewed target "
-                f"'{annot.get('reviewed_target_text')}'; previous annotation invalidated."
-            )
 
     return {
         "id": bid,
@@ -232,6 +275,7 @@ def evaluate_translation_item(
         "reference": ref,
         "target_text": target_text,
         "target_hash": target_hash,
+        "context_hash": current_context_hash,
         "error": error,
         "is_passthrough_expected": passthrough,
         "passthrough_status": passthrough_status,

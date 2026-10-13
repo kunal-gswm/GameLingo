@@ -10,7 +10,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Untranslated Fallback",
-    "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese."
+    "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese.",
+    "reviewed_context_hash": "d21794ea80ab1c05d6c94c761a7511a1290be1f68d2ad26f83efa51f598cbcc0"
   },
   "bench_002": {
     "id": "bench_002",
@@ -23,7 +24,8 @@
     "grammar_score": 1,
     "terminology_status": "N/A",
     "failure_type": "Content Loss",
-    "evaluator_notes": "Dialogue text completely dropped, only ellipsis '......' returned."
+    "evaluator_notes": "Dialogue text completely dropped, only ellipsis '......' returned.",
+    "reviewed_context_hash": "47367ad6d2a3778b2f079caaf53a7da0c358fd78fa57a49c12aa6bf285c4bcfe"
   },
   "bench_003": {
     "id": "bench_003",
@@ -36,7 +38,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": "Semantic Distortion",
-    "evaluator_notes": "Distorted: '効かない。男にはまるで。' translated as 'Not effective. Like a man.' instead of 'Not at all on men.'"
+    "evaluator_notes": "Distorted: '効かない。男にはまるで。' translated as 'Not effective. Like a man.' instead of 'Not at all on men.'",
+    "reviewed_context_hash": "315fa4516ca1ff9a3ef93803b8324c8e119e3ae21df8157b6eb79f93e6e5f9b3"
   },
   "bench_004": {
     "id": "bench_004",
@@ -49,7 +52,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Accurate and concise: 'Why?'"
+    "evaluator_notes": "Accurate and concise: 'Why?'",
+    "reviewed_context_hash": "e61cc03b204375705a557f8cccdd0563314e6bc4a6e86d994db282816c57ad5f"
   },
   "bench_005": {
     "id": "bench_005",
@@ -62,7 +66,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Untranslated Fallback",
-    "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese."
+    "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese.",
+    "reviewed_context_hash": "1a6a2c7393785cc431682993cdfb768950fa22e6aeb47c3784ebdb53c4ea425d"
   },
   "bench_006": {
     "id": "bench_006",
@@ -75,7 +80,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": "Content Truncation",
-    "evaluator_notes": "Truncated to 'That's it!', omitting all reference to eating the strange fruit."
+    "evaluator_notes": "Truncated to 'That's it!', omitting all reference to eating the strange fruit.",
+    "reviewed_context_hash": "978ad74b8207d7a7add1b5e1bfe620d14aba1217e6f4b9630892b1263fd207d4"
   },
   "bench_007": {
     "id": "bench_007",
@@ -88,7 +94,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Understood: 'The body suddenly gets hot...', minor omission of conditional 'After eating'."
+    "evaluator_notes": "Understood: 'The body suddenly gets hot...', minor omission of conditional 'After eating'.",
+    "reviewed_context_hash": "8f9ffc861d4df34c7e276918ce5bc163feaf93bad3036e27d72d644fe632e701"
   },
   "bench_008": {
     "id": "bench_008",
@@ -101,7 +108,8 @@
     "grammar_score": 2,
     "terminology_status": "N/A",
     "failure_type": "Kanji Remnant",
-    "evaluator_notes": "Unfinished translation containing untranslated kanji 'back muscles震ed'."
+    "evaluator_notes": "Unfinished translation containing untranslated kanji 'back muscles震ed'.",
+    "reviewed_context_hash": "672f386ea6fbb9a69879ce4ae4c8123566ccbf84092102f2d690a508640c3478"
   },
   "bench_009": {
     "id": "bench_009",
@@ -114,7 +122,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": "Inverted Meaning",
-    "evaluator_notes": "Inverted question 'How many survivors are there?' into assertion 'There are many people who live.'"
+    "evaluator_notes": "Inverted question 'How many survivors are there?' into assertion 'There are many people who live.'",
+    "reviewed_context_hash": "8a4f4ef0816d56a204e6d6690a61d76cdec732eac2dcc24e5f468e21665095e6"
   },
   "bench_010": {
     "id": "bench_010",
@@ -127,7 +136,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": "Content Loss",
-    "evaluator_notes": "Lost island setting and helplessness context, translated as 'I don't know where to help.'"
+    "evaluator_notes": "Lost island setting and helplessness context, translated as 'I don't know where to help.'",
+    "reviewed_context_hash": "f32924067006e6365c6732c4fe0134a71517634fd6597e1071227d7a8e1c8b33"
   },
   "bench_011": {
     "id": "bench_011",
@@ -140,7 +150,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Conveys core meaning despite repetitive phrasing: 'The more you think, the more you feel, the more your head is full.'"
+    "evaluator_notes": "Conveys core meaning despite repetitive phrasing: 'The more you think, the more you feel, the more your head is full.'",
+    "reviewed_context_hash": "33a62a65f0a6c39757835d09fd904741012d395d3b02ad7296a9a76f9afbdaa6"
   },
   "bench_012": {
     "id": "bench_012",
@@ -153,7 +164,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Clear and natural: 'First of all, you have to move.'"
+    "evaluator_notes": "Clear and natural: 'First of all, you have to move.'",
+    "reviewed_context_hash": "c7266636cc5ad32ad4667665c5d6484745ba7ef2f290fe7964712e8523ba1a8d"
   },
   "bench_013": {
     "id": "bench_013",
@@ -166,7 +178,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Odd spacing artifact: 'Walking in the d  forest with food.'"
+    "evaluator_notes": "Odd spacing artifact: 'Walking in the d  forest with food.'",
+    "reviewed_context_hash": "6f3734b26b085c8a88691b41c0946d989fb3992dee06a82772e3cae5276da792"
   },
   "bench_014": {
     "id": "bench_014",
@@ -179,7 +192,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": "Severe Mistranslation",
-    "evaluator_notes": "Mistranslated crouching girl (しゃがみ込んでいた) as 'sneezed in the shade'."
+    "evaluator_notes": "Mistranslated crouching girl (しゃがみ込んでいた) as 'sneezed in the shade'.",
+    "reviewed_context_hash": "a81d116cb717023d7dfe5a99fc11d054f203e5c334bd84c6f58120ca89e5722d"
   },
   "bench_015": {
     "id": "bench_015",
@@ -192,7 +206,8 @@
     "grammar_score": 1,
     "terminology_status": "N/A",
     "failure_type": "Hallucination",
-    "evaluator_notes": "Hallucinated: Hungry girl's line 'うぅ……おなか、すいた……' translated as 'Home'."
+    "evaluator_notes": "Hallucinated: Hungry girl's line 'うぅ……おなか、すいた……' translated as 'Home'.",
+    "reviewed_context_hash": "367a5037e473229d002e0cbdcf26d04e2cd14fa4b93e8ce3533ef903108ff7f1"
   },
   "bench_016": {
     "id": "bench_016",
@@ -205,7 +220,8 @@
     "grammar_score": 2,
     "terminology_status": "N/A",
     "failure_type": "Mistranslation",
-    "evaluator_notes": "Mistranslated hoodie (パーカー) as 'sandals' and face (あどけない顔) as 'I can't face'."
+    "evaluator_notes": "Mistranslated hoodie (パーカー) as 'sandals' and face (あどけない顔) as 'I can't face'.",
+    "reviewed_context_hash": "9bff5733582cb94df2bc150fe1bf48e362a8e0e2b8e90c733e5c78a0e4b2ba68"
   },
   "bench_017": {
     "id": "bench_017",
@@ -218,7 +234,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Accurate greeting: 'Hello'."
+    "evaluator_notes": "Accurate greeting: 'Hello'.",
+    "reviewed_context_hash": "201bd856ef6b70debf6ccae02df28aef8abddba0b69672f6423476fa2bd132eb"
   },
   "bench_018": {
     "id": "bench_018",
@@ -231,7 +248,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Accurate greeting: 'Hello'."
+    "evaluator_notes": "Accurate greeting: 'Hello'.",
+    "reviewed_context_hash": "6cc1c9c2ff3d2873249b32e03b85d1f17b714d08918324b10577c973d382cff8"
   },
   "bench_019": {
     "id": "bench_019",
@@ -244,7 +262,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Understood: 'Do you have food?', lost polite hesitation."
+    "evaluator_notes": "Understood: 'Do you have food?', lost polite hesitation.",
+    "reviewed_context_hash": "aa3f3d343d8100eb2c24d6e6901c36f8ab496da01a2146948d33c414bde766d9"
   },
   "bench_020": {
     "id": "bench_020",
@@ -257,7 +276,8 @@
     "grammar_score": 2,
     "terminology_status": "N/A",
     "failure_type": "Corrupted Phrasing",
-    "evaluator_notes": "Hallucinated 'Contact Us' from Japanese syntax."
+    "evaluator_notes": "Hallucinated 'Contact Us' from Japanese syntax.",
+    "reviewed_context_hash": "095f678628f9e38ca2ba85c8ba6bc0d66b71c3a7d87d679afb1b5bbf7232ff53"
   },
   "bench_021": {
     "id": "bench_021",
@@ -270,7 +290,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Faithful: 'But to survive. If this power is true, it becomes a good weapon.'"
+    "evaluator_notes": "Faithful: 'But to survive. If this power is true, it becomes a good weapon.'",
+    "reviewed_context_hash": "72925f015531d82153c77e9658041ad652e15d3ff13e03cfba6a19a2bb38f4f2"
   },
   "bench_022": {
     "id": "bench_022",
@@ -283,7 +304,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Terse: 'I see the eyes.' lost 'hesitating' and 'gazed'."
+    "evaluator_notes": "Terse: 'I see the eyes.' lost 'hesitating' and 'gazed'.",
+    "reviewed_context_hash": "52b664e9b9d22aea1566cdc4fd0ab32a28863e02e00ba847d3fa31e511322d9f"
   },
   "bench_023": {
     "id": "bench_023",
@@ -296,7 +318,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": "Inverted Meaning",
-    "evaluator_notes": "Inverted meaning: '何か食べないと' (must eat something) became 'Don't eat anything.'"
+    "evaluator_notes": "Inverted meaning: '何か食べないと' (must eat something) became 'Don't eat anything.'",
+    "reviewed_context_hash": "005e1155b3a30e2400397e10419cf4bf6069de11557e50bd1f7c6f53199e4623"
   },
   "bench_024": {
     "id": "bench_024",
@@ -309,7 +332,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": "Mistranslation",
-    "evaluator_notes": "Mistranslated airplane meal and shore as 'sashiki box of fish flowing'."
+    "evaluator_notes": "Mistranslated airplane meal and shore as 'sashiki box of fish flowing'.",
+    "reviewed_context_hash": "8615e6f2d48a14780ce0b4c35d9b8103d673bb2ad9b4cc01166fdf515171840f"
   },
   "bench_025": {
     "id": "bench_025",
@@ -322,7 +346,8 @@
     "grammar_score": 1,
     "terminology_status": "N/A",
     "failure_type": "Content Loss",
-    "evaluator_notes": "'あった……っ' dropped to '......'."
+    "evaluator_notes": "'あった……っ' dropped to '......'.",
+    "reviewed_context_hash": "fceae74f03c16210b23f2e6681ae7b7281604b44945f255b1ad362d3fa079e1b"
   },
   "bench_026": {
     "id": "bench_026",
@@ -335,7 +360,8 @@
     "grammar_score": 2,
     "terminology_status": "N/A",
     "failure_type": "Model Truncation",
-    "evaluator_notes": "Output ends abruptly with space artifact: 'The box is  .'"
+    "evaluator_notes": "Output ends abruptly with space artifact: 'The box is  .'",
+    "reviewed_context_hash": "77286f6bbd47e3c0e090ec8341abf09aaef18a33b458f7c66250af36dc47a89d"
   },
   "bench_027": {
     "id": "bench_027",
@@ -348,7 +374,8 @@
     "grammar_score": 1,
     "terminology_status": "N/A",
     "failure_type": "Hallucination",
-    "evaluator_notes": "Colloquial dialogue 'わりぃな。俺の方が先だ' hallucinated as 'Home'."
+    "evaluator_notes": "Colloquial dialogue 'わりぃな。俺の方が先だ' hallucinated as 'Home'.",
+    "reviewed_context_hash": "fe85bd5bc816e98bda2221bd1a4b963751bc8c5d36686c9d0d38fba6afe234ed"
   },
   "bench_028": {
     "id": "bench_028",
@@ -361,7 +388,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Very natural: 'A man like a mass of muscle.'"
+    "evaluator_notes": "Very natural: 'A man like a mass of muscle.'",
+    "reviewed_context_hash": "0d9b53d773e9179f4df4d8013db179bffd63bde46f4e520c4516b00c8860fbf0"
   },
   "bench_029": {
     "id": "bench_029",
@@ -374,7 +402,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Awkward translation of character departure."
+    "evaluator_notes": "Awkward translation of character departure.",
+    "reviewed_context_hash": "84aaaac1ec2c08ecb321ef167270ce5fb6175c823abad5cf8b3abad29c11beb1"
   },
   "bench_030": {
     "id": "bench_030",
@@ -387,7 +416,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Understood: 'That's it.', lost dismayed tone."
+    "evaluator_notes": "Understood: 'That's it.', lost dismayed tone.",
+    "reviewed_context_hash": "58fc76cdc3224b60dda0ad088ce28865816738ef513ee5714d706ddfe080e9b9"
   },
   "bench_031": {
     "id": "bench_031",
@@ -400,7 +430,8 @@
     "grammar_score": 2,
     "terminology_status": "N/A",
     "failure_type": "Grammar Breakdown",
-    "evaluator_notes": "Fragmented: 'I took away. No resistance or can be done.'"
+    "evaluator_notes": "Fragmented: 'I took away. No resistance or can be done.'",
+    "reviewed_context_hash": "4295d2ddf2e63dc7e973427e37e9682c256461b596329f9facd0b5078668a4a1"
   },
   "bench_032": {
     "id": "bench_032",
@@ -413,7 +444,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Awkward phrasing: 'However, it was just to stand out.'"
+    "evaluator_notes": "Awkward phrasing: 'However, it was just to stand out.'",
+    "reviewed_context_hash": "53f1164397f1a779a7b6afdae209ab8f8e4525d0c4af7ce588064df12d870646"
   },
   "bench_033": {
     "id": "bench_033",
@@ -426,7 +458,8 @@
     "grammar_score": 2,
     "terminology_status": "N/A",
     "failure_type": "Hallucination",
-    "evaluator_notes": "Hallucinated 'Dutch Comment' from '——いた。ちょっと、あんた'."
+    "evaluator_notes": "Hallucinated 'Dutch Comment' from '——いた。ちょっと、あんた'.",
+    "reviewed_context_hash": "9de5720a35dd208c267ec90fe125afe5949703b79f1c2c842070906336613ec1"
   },
   "bench_034": {
     "id": "bench_034",
@@ -439,7 +472,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Distorted 'お嬢様' into 'lady of the plan'."
+    "evaluator_notes": "Distorted 'お嬢様' into 'lady of the plan'.",
+    "reviewed_context_hash": "2aada78d5d50c1c42bddd42c2c68ff1a1ad8a81c2d71079e0e4fd194d852099b"
   },
   "bench_035": {
     "id": "bench_035",
@@ -452,7 +486,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Conveys gist: 'Not searched. It's a staff. Why are you looking for your food?'"
+    "evaluator_notes": "Conveys gist: 'Not searched. It's a staff. Why are you looking for your food?'",
+    "reviewed_context_hash": "e45636eaed762b00f600a1b08db7fb85c58bd8f47754881a2f998c1798e4b275"
   },
   "bench_036": {
     "id": "bench_036",
@@ -465,7 +500,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Settings'."
+    "evaluator_notes": "Clean: 'Settings'.",
+    "reviewed_context_hash": "56c5363551aab9534fdfe15d64f66f5a97e90da2f29e6321d64033a5e8773fa6"
   },
   "bench_037": {
     "id": "bench_037",
@@ -478,7 +514,8 @@
     "grammar_score": 1,
     "terminology_status": "Fail",
     "failure_type": "Katakana Truncation",
-    "evaluator_notes": "Truncated 'セーブ' to single kana 'ブ'."
+    "evaluator_notes": "Truncated 'セーブ' to single kana 'ブ'.",
+    "reviewed_context_hash": "2d2ae742c41d140ec4a51489ea742349713acb28a7067bb19d70c5b2b13ecbf1"
   },
   "bench_038": {
     "id": "bench_038",
@@ -491,7 +528,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Load'."
+    "evaluator_notes": "Clean: 'Load'.",
+    "reviewed_context_hash": "9b38ae9a9690d402a7e1dfd9b718969ab327af746e1e87b650dc4dfaf2c9de2a"
   },
   "bench_039": {
     "id": "bench_039",
@@ -504,7 +542,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Untranslated Fallback",
-    "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese."
+    "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese.",
+    "reviewed_context_hash": "16a5146486ff0fe60529d634f06c8e75a2d66c9c66a02b7188657ffded5f5267"
   },
   "bench_040": {
     "id": "bench_040",
@@ -517,7 +556,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Untranslated Fallback",
-    "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese."
+    "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese.",
+    "reviewed_context_hash": "545370c359918a6faded09032208e0b21c32386c4144fce4a95d31497b6d20a2"
   },
   "bench_041": {
     "id": "bench_041",
@@ -530,7 +570,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Start'."
+    "evaluator_notes": "Clean: 'Start'.",
+    "reviewed_context_hash": "1d67a204cc8933698fdd033da4e0f80d2b39d4e7448a9fae902bdf8bf8e60d0b"
   },
   "bench_042": {
     "id": "bench_042",
@@ -543,7 +584,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'History'."
+    "evaluator_notes": "Clean: 'History'.",
+    "reviewed_context_hash": "bc3185bd87ae6a0423fc23cee1d3dd1c093c0282bd19e8ee4d6e15056242e2a5"
   },
   "bench_043": {
     "id": "bench_043",
@@ -556,7 +598,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Rewind'."
+    "evaluator_notes": "Clean: 'Rewind'.",
+    "reviewed_context_hash": "910198948104e2da92bb83f22fb8e5fb9a6f673d8000a45511a56ca318d1046e"
   },
   "bench_044": {
     "id": "bench_044",
@@ -569,7 +612,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Q.Save'."
+    "evaluator_notes": "Clean: 'Q.Save'.",
+    "reviewed_context_hash": "b30efa4d7c008cfcc2a612c610d02479200527f95667110cf145e489b78dc904"
   },
   "bench_045": {
     "id": "bench_045",
@@ -582,7 +626,8 @@
     "grammar_score": 4,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Understood: 'Q. Loading'."
+    "evaluator_notes": "Understood: 'Q. Loading'.",
+    "reviewed_context_hash": "70d5ceaf26d95b358aa8438a140bf3fe5a870efa8c0ad6be0ec2007480929ccd"
   },
   "bench_046": {
     "id": "bench_046",
@@ -595,7 +640,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Back to Title'."
+    "evaluator_notes": "Clean: 'Back to Title'.",
+    "reviewed_context_hash": "3eef171af88868b6e4b4d44313389cbcbbb34aea52481aff4866686fe19a88d4"
   },
   "bench_047": {
     "id": "bench_047",
@@ -608,7 +654,8 @@
     "grammar_score": 4,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Replay End'."
+    "evaluator_notes": "Clean: 'Replay End'.",
+    "reviewed_context_hash": "42bcc5113e48c91f587373c0fae3f4eba69e49c59d5d540c063cad54c5eb5bc3"
   },
   "bench_048": {
     "id": "bench_048",
@@ -621,7 +668,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Understood: 'Is it good?'"
+    "evaluator_notes": "Understood: 'Is it good?'",
+    "reviewed_context_hash": "a774e253ad08243c58a8696b728d5aa0a9040a4abe4e8e3ef4cba82f062b8262"
   },
   "bench_049": {
     "id": "bench_049",
@@ -634,7 +682,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'End the game?'"
+    "evaluator_notes": "Clean: 'End the game?'",
+    "reviewed_context_hash": "7b313391cc2d89b6641924fb8df394bbba58af17bf84f5fc96e4fba40e2071d5"
   },
   "bench_050": {
     "id": "bench_050",
@@ -647,7 +696,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Remove this save?'"
+    "evaluator_notes": "Clean: 'Remove this save?'",
+    "reviewed_context_hash": "75055e711e65f43bf5e2bedc5c8b8b6c5c324febe87e1e87379f977b3295ab83"
   },
   "bench_051": {
     "id": "bench_051",
@@ -660,7 +710,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Overwrite save?'"
+    "evaluator_notes": "Clean: 'Overwrite save?'",
+    "reviewed_context_hash": "c311267bd495031072f097890ba0469c662a611167b450e1cbeb138455b77652"
   },
   "bench_052": {
     "id": "bench_052",
@@ -673,7 +724,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'End Replay?'"
+    "evaluator_notes": "Clean: 'End Replay?'",
+    "reviewed_context_hash": "86138488eb7167b84c461f5c49f23b75f98e4586d2f7e2a8fcc5052dfdf9ff05"
   },
   "bench_053": {
     "id": "bench_053",
@@ -686,7 +738,8 @@
     "grammar_score": 5,
     "terminology_status": "Pass",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Start skipping?'"
+    "evaluator_notes": "Clean: 'Start skipping?'",
+    "reviewed_context_hash": "dbd0cbe47d5425c7b06ac17d1a49968752b0d2041fe31d019c289da89363a92d"
   },
   "bench_054": {
     "id": "bench_054",
@@ -699,7 +752,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "'Dogs' for 野犬."
+    "evaluator_notes": "'Dogs' for 野犬.",
+    "reviewed_context_hash": "f9b607dfe136f56db58611cb8d1f33d957f600ace2ee7d96a22ee85d1c865fc2"
   },
   "bench_055": {
     "id": "bench_055",
@@ -712,7 +766,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": "Content Loss",
-    "evaluator_notes": "Dropped swarm and rats, translated as 'Islands'."
+    "evaluator_notes": "Dropped swarm and rats, translated as 'Islands'.",
+    "reviewed_context_hash": "b2726e2cc27ff378f0fca7d729e84e33226b62f7f7dd8d01ccb22067e1ce211b"
   },
   "bench_056": {
     "id": "bench_056",
@@ -725,7 +780,8 @@
     "grammar_score": 1,
     "terminology_status": "N/A",
     "failure_type": "Kanji Remnant",
-    "evaluator_notes": "Single untranslated kanji '大'."
+    "evaluator_notes": "Single untranslated kanji '大'.",
+    "reviewed_context_hash": "b0d93c4ff7e48f29da821141662388f8bc36969cc2fad4186e8b35c18e54a781"
   },
   "bench_057": {
     "id": "bench_057",
@@ -738,7 +794,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Poison Snake'."
+    "evaluator_notes": "Clean: 'Poison Snake'.",
+    "reviewed_context_hash": "6114d849f797d85ba406754620bb1113360359a558a09ddf1e1888fe61c5ba77"
   },
   "bench_058": {
     "id": "bench_058",
@@ -751,7 +808,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": "Severe Mistranslation",
-    "evaluator_notes": "Ruffian/rogue translated as 'Others'."
+    "evaluator_notes": "Ruffian/rogue translated as 'Others'.",
+    "reviewed_context_hash": "7697649035152216fe52131957b8c01e7742074ba790b2ef2c398c13d1a601cb"
   },
   "bench_059": {
     "id": "bench_059",
@@ -764,7 +822,8 @@
     "grammar_score": 1,
     "terminology_status": "N/A",
     "failure_type": "Kanji Remnant",
-    "evaluator_notes": "Single untranslated kanji '大'."
+    "evaluator_notes": "Single untranslated kanji '大'.",
+    "reviewed_context_hash": "f3cdbd01e556ed5e839271188b428c20f8d27d11fd120671ea21c29f3d2d20e8"
   },
   "bench_060": {
     "id": "bench_060",
@@ -777,7 +836,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Understood: 'smart man'."
+    "evaluator_notes": "Understood: 'smart man'.",
+    "reviewed_context_hash": "4bde5a86ca77e82602f3e5323ff4976b1ecc6417098e2d1baf85ce52ddabaa68"
   },
   "bench_061": {
     "id": "bench_061",
@@ -790,7 +850,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": "State Ambiguity",
-    "evaluator_notes": "Both opposing battle conditions translated as identical 'This is pressed'."
+    "evaluator_notes": "Both opposing battle conditions translated as identical 'This is pressed'.",
+    "reviewed_context_hash": "4d16e9b9c3f5b6a37c69263ee0525055e1c3670cdf7b01fe580e774ad28d7c65"
   },
   "bench_062": {
     "id": "bench_062",
@@ -803,7 +864,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": "State Ambiguity",
-    "evaluator_notes": "Both opposing battle conditions translated as identical 'This is pressed'."
+    "evaluator_notes": "Both opposing battle conditions translated as identical 'This is pressed'.",
+    "reviewed_context_hash": "546e6640288c45cf04a1d6f9b68a73c42709f9a65daba03c29b176451309eede"
   },
   "bench_063": {
     "id": "bench_063",
@@ -816,7 +878,8 @@
     "grammar_score": 2,
     "terminology_status": "N/A",
     "failure_type": "Gibberish",
-    "evaluator_notes": "Garbled output: 'Reciprocating Angle'."
+    "evaluator_notes": "Garbled output: 'Reciprocating Angle'.",
+    "reviewed_context_hash": "621686e787579f154aa9357e3a40f7d06466278f1b17c619ecb6dc01e9d84d2f"
   },
   "bench_064": {
     "id": "bench_064",
@@ -829,7 +892,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Understood: 'Resolve alertness'."
+    "evaluator_notes": "Understood: 'Resolve alertness'.",
+    "reviewed_context_hash": "8c8aa353a4e52393130dfcb83f5f8b4c5205b0830349a9b075df0dec11341abd"
   },
   "bench_065": {
     "id": "bench_065",
@@ -842,7 +906,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Distorted to corporate-style 'Trust Our Partners'."
+    "evaluator_notes": "Distorted to corporate-style 'Trust Our Partners'.",
+    "reviewed_context_hash": "21b37090ba83735fdc956ecceda33bb3ee7fc59aca25fca61f43f8fb36b06845"
   },
   "bench_066": {
     "id": "bench_066",
@@ -855,7 +920,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Truncated to 'Shy'."
+    "evaluator_notes": "Truncated to 'Shy'.",
+    "reviewed_context_hash": "3b1b9548a2fa0ce5394613a09ca413df76c24e245585c4e3acd8cb2cbf1fde54"
   },
   "bench_067": {
     "id": "bench_067",
@@ -868,7 +934,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Truncated to 'skin'."
+    "evaluator_notes": "Truncated to 'skin'.",
+    "reviewed_context_hash": "40aadea1cb4818d45890bc9de937f2bc530163d724799c811a1c9de05daffca2"
   },
   "bench_068": {
     "id": "bench_068",
@@ -881,7 +948,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Understood: 'NEW Sign up for the book'."
+    "evaluator_notes": "Understood: 'NEW Sign up for the book'.",
+    "reviewed_context_hash": "35b804ba17ed08e0eefb74faf5be3f2bd0e0b91f05f2a1f5a2aee84d76177ff6"
   },
   "bench_069": {
     "id": "bench_069",
@@ -894,7 +962,8 @@
     "grammar_score": 2,
     "terminology_status": "N/A",
     "failure_type": "Label Loss",
-    "evaluator_notes": "Variables preserved perfectly, but Japanese labels dropped."
+    "evaluator_notes": "Variables preserved perfectly, but Japanese labels dropped.",
+    "reviewed_context_hash": "3c78c4516eb16f5a1b30de1da2180f7566580752c0d45e152a7b16c58c28dee5"
   },
   "bench_070": {
     "id": "bench_070",
@@ -907,7 +976,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Placeholder Loss (Fail-Closed)",
-    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output."
+    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
+    "reviewed_context_hash": "0bb327ffd5660fed60cf436dbf2926b197463e57844cf46e7f30a8891464a0f0"
   },
   "bench_071": {
     "id": "bench_071",
@@ -920,7 +990,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Placeholder Loss (Fail-Closed)",
-    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN2XXX' is missing from the translation output."
+    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN2XXX' is missing from the translation output.",
+    "reviewed_context_hash": "9429e2fbe1bd76d56628db06e507eec56819042f2c322d0433e65f4d56a78579"
   },
   "bench_072": {
     "id": "bench_072",
@@ -933,7 +1004,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Placeholder Loss (Fail-Closed)",
-    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output."
+    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
+    "reviewed_context_hash": "14ac12ffd897019a40d8702bf5f4d31b5ec8f77d8a0cc27619600e40b8b60e1f"
   },
   "bench_073": {
     "id": "bench_073",
@@ -946,7 +1018,8 @@
     "grammar_score": 2,
     "terminology_status": "N/A",
     "failure_type": "Text Loss",
-    "evaluator_notes": "Placeholder '%s' preserved, but entire verb dropped."
+    "evaluator_notes": "Placeholder '%s' preserved, but entire verb dropped.",
+    "reviewed_context_hash": "41cf80ca73e1c8a9b5d40aafa165d9b1e49b7cb0ba121f8389dba320e6242218"
   },
   "bench_074": {
     "id": "bench_074",
@@ -959,7 +1032,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Placeholder Loss (Fail-Closed)",
-    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output."
+    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
+    "reviewed_context_hash": "5c7a50d43e01b0810519de7a302a9f4340bd1338e156d04af95ec10137e07995"
   },
   "bench_075": {
     "id": "bench_075",
@@ -972,7 +1046,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Placeholder Loss (Fail-Closed)",
-    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output."
+    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
+    "reviewed_context_hash": "81832bcb58cfc4b1f516e1ed22b2ad78e72448b717ec928ed78dbd9ca3bd619b"
   },
   "bench_076": {
     "id": "bench_076",
@@ -985,7 +1060,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Excellent: 'I couldn't run away! %d Damage', formatting specifier preserved."
+    "evaluator_notes": "Excellent: 'I couldn't run away! %d Damage', formatting specifier preserved.",
+    "reviewed_context_hash": "2e9342c7aa9898ab87200abaff6e048ba4fad57928d8e7193f7478e57d748c7a"
   },
   "bench_077": {
     "id": "bench_077",
@@ -998,7 +1074,8 @@
     "grammar_score": 4,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Good: '%s rejected. (Food + 2)', placeholder preserved."
+    "evaluator_notes": "Good: '%s rejected. (Food + 2)', placeholder preserved.",
+    "reviewed_context_hash": "9bec8e587135a452b39d7ec3f3d9f21062194c08fb89ded8cd124b623998438d"
   },
   "bench_078": {
     "id": "bench_078",
@@ -1011,7 +1088,8 @@
     "grammar_score": 3,
     "terminology_status": "N/A",
     "failure_type": "Kanji Remnant",
-    "evaluator_notes": "Placeholder preserved, but minor Japanese artifacts in parenthetical stats."
+    "evaluator_notes": "Placeholder preserved, but minor Japanese artifacts in parenthetical stats.",
+    "reviewed_context_hash": "435644bf39d864a011619a91fb58b483c1760adde53eecbd692338277566dfc4"
   },
   "bench_079": {
     "id": "bench_079",
@@ -1024,7 +1102,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Placeholder Loss (Fail-Closed)",
-    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output."
+    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
+    "reviewed_context_hash": "947f257bd1d52fe50ff57919bc40513116601416834c7fae6a5effe65d24be43"
   },
   "bench_080": {
     "id": "bench_080",
@@ -1037,7 +1116,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Clean: 'Set trap (%d)', specifier preserved."
+    "evaluator_notes": "Clean: 'Set trap (%d)', specifier preserved.",
+    "reviewed_context_hash": "f53b489ace35a741778a8354fd7cc9a6f3e5c46b991a4ff48bcb7b2ab36095e8"
   },
   "bench_081": {
     "id": "bench_081",
@@ -1050,7 +1130,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Dotted variable expression preserved unchanged as expected."
+    "evaluator_notes": "Dotted variable expression preserved unchanged as expected.",
+    "reviewed_context_hash": "26be5f24b9593f74f2f56b6eb38a3cda9f8744b3f82c97cd9772acb6b23dc18f"
   },
   "bench_082": {
     "id": "bench_082",
@@ -1063,7 +1144,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Placeholder Loss (Fail-Closed)",
-    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output."
+    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
+    "reviewed_context_hash": "8f8337fe3f824990f2cb117bac963f4018e92294f398bb06497b5c3b979db758"
   },
   "bench_083": {
     "id": "bench_083",
@@ -1076,7 +1158,8 @@
     "grammar_score": 0,
     "terminology_status": "N/A",
     "failure_type": "Placeholder Loss (Fail-Closed)",
-    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output."
+    "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
+    "reviewed_context_hash": "f36c55d1a38ead1d0b9e340357ed1b8179be139960ad357d950f6d30df4f702c"
   },
   "bench_084": {
     "id": "bench_084",
@@ -1089,7 +1172,8 @@
     "grammar_score": 3,
     "terminology_status": "Inconsistent",
     "failure_type": null,
-    "evaluator_notes": "Newlines preserved. '昼に稼ぎ、夜に堕とす' translated as 'earn at lunch and fall at night'."
+    "evaluator_notes": "Newlines preserved. '昼に稼ぎ、夜に堕とす' translated as 'earn at lunch and fall at night'.",
+    "reviewed_context_hash": "70314cbd088af83d424515b41bc5ed967495751d19144b9bab9ca99dbc5d36cd"
   },
   "bench_085": {
     "id": "bench_085",
@@ -1102,7 +1186,8 @@
     "grammar_score": 2,
     "terminology_status": "Inconsistent",
     "failure_type": "Kanji Remnant",
-    "evaluator_notes": "Newlines preserved. Untranslated kana remnants (罠, Fiを) and mistranslation of Explore/Fish."
+    "evaluator_notes": "Newlines preserved. Untranslated kana remnants (罠, Fiを) and mistranslation of Explore/Fish.",
+    "reviewed_context_hash": "7ec36c2c8e8d6918780d5c2287e72049be4adbe39a1cb5a59047aa272fc0320d"
   },
   "bench_086": {
     "id": "bench_086",
@@ -1115,7 +1200,8 @@
     "grammar_score": 2,
     "terminology_status": "Inconsistent",
     "failure_type": null,
-    "evaluator_notes": "Newlines preserved. Game terms distorted (H events denied instead of unlocked)."
+    "evaluator_notes": "Newlines preserved. Game terms distorted (H events denied instead of unlocked).",
+    "reviewed_context_hash": "903a889f5efa1fa6b0f11fff8db701bed59c3185290043e543502961b8ca2d15"
   },
   "bench_087": {
     "id": "bench_087",
@@ -1128,7 +1214,8 @@
     "grammar_score": 3,
     "terminology_status": "Inconsistent",
     "failure_type": null,
-    "evaluator_notes": "Newlines and bullet point (*) preserved. Awkward phrasing of co-sleeping rules."
+    "evaluator_notes": "Newlines and bullet point (*) preserved. Awkward phrasing of co-sleeping rules.",
+    "reviewed_context_hash": "3070d63f65583fd66ab05ffd37744d6b1b561d88d309e1b863b89e5b31605abe"
   },
   "bench_088": {
     "id": "bench_088",
@@ -1141,7 +1228,8 @@
     "grammar_score": 2,
     "terminology_status": "Inconsistent",
     "failure_type": "Kanji Remnant",
-    "evaluator_notes": "Newlines preserved. Suspicion (バレ度) mistranslated as 'ballet', Japanese remnant '守り'."
+    "evaluator_notes": "Newlines preserved. Suspicion (バレ度) mistranslated as 'ballet', Japanese remnant '守り'.",
+    "reviewed_context_hash": "da69af8d9ea722874af447b8a2238faf98d420fd58f71eda504eb609bb74233a"
   },
   "bench_089": {
     "id": "bench_089",
@@ -1154,7 +1242,8 @@
     "grammar_score": 3,
     "terminology_status": "Inconsistent",
     "failure_type": null,
-    "evaluator_notes": "Newlines preserved. 'セリフ' transliterated as 'serif' (font), '隙' translated as 'Sky'."
+    "evaluator_notes": "Newlines preserved. 'セリフ' transliterated as 'serif' (font), '隙' translated as 'Sky'.",
+    "reviewed_context_hash": "b8e2e65f92d854100e0d84ac4825b6df660b5f87e4e72ae4db1b6c369b32ceaa"
   },
   "bench_090": {
     "id": "bench_090",
@@ -1167,7 +1256,8 @@
     "grammar_score": 2,
     "terminology_status": "Inconsistent",
     "failure_type": null,
-    "evaluator_notes": "Newlines preserved. Awakening risk terminology distorted."
+    "evaluator_notes": "Newlines preserved. Awakening risk terminology distorted.",
+    "reviewed_context_hash": "f7c5d4439cacf2c6ec4cffce23177bd66b37cb09c32874cb6963be19c0f29192"
   },
   "bench_091": {
     "id": "bench_091",
@@ -1180,7 +1270,8 @@
     "grammar_score": 3,
     "terminology_status": "Inconsistent",
     "failure_type": null,
-    "evaluator_notes": "Newlines preserved. Multiplier (2x) and quotation structure preserved."
+    "evaluator_notes": "Newlines preserved. Multiplier (2x) and quotation structure preserved.",
+    "reviewed_context_hash": "39e5754aa7969822d2b3930d8e7f6fa44f8a0a8ceff1fdbc6fd3dc11df23867b"
   },
   "bench_092": {
     "id": "bench_092",
@@ -1193,7 +1284,8 @@
     "grammar_score": 3,
     "terminology_status": "Inconsistent",
     "failure_type": null,
-    "evaluator_notes": "Newlines and arrows (→) preserved. Cyclical tutorial flow understandable."
+    "evaluator_notes": "Newlines and arrows (→) preserved. Cyclical tutorial flow understandable.",
+    "reviewed_context_hash": "be9ae686b5980ad8a0d23e15cbffa6e48b55edca8944b44188349dc83fb54d52"
   },
   "bench_093": {
     "id": "bench_093",
@@ -1206,7 +1298,8 @@
     "grammar_score": 3,
     "terminology_status": "Inconsistent",
     "failure_type": null,
-    "evaluator_notes": "Newlines preserved. Mental states wavering between states translated awkwardly."
+    "evaluator_notes": "Newlines preserved. Mental states wavering between states translated awkwardly.",
+    "reviewed_context_hash": "b9b396acd3768ae0f7257e64e0fa1dbbee635fed406dea2a00e4cf2d42319260"
   },
   "bench_094": {
     "id": "bench_094",
@@ -1219,7 +1312,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Technical identifier preserved unchanged as expected."
+    "evaluator_notes": "Technical identifier preserved unchanged as expected.",
+    "reviewed_context_hash": "694608fe1b0f153da797ae19933413313fd4ebc0e41c1022c725309f05586328"
   },
   "bench_095": {
     "id": "bench_095",
@@ -1232,7 +1326,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Internal resource token capitalized by MT model."
+    "evaluator_notes": "Internal resource token capitalized by MT model.",
+    "reviewed_context_hash": "da702e8f527546c2ac235569d9b7a61ec15b79efbc171eb5833bb6c53a8352cc"
   },
   "bench_096": {
     "id": "bench_096",
@@ -1245,7 +1340,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Internal resource code capitalized by MT model."
+    "evaluator_notes": "Internal resource code capitalized by MT model.",
+    "reviewed_context_hash": "1d32a69cc49eb5ca6864cd3a1dcc3fd76c978679c56e8158d187f91a097b232c"
   },
   "bench_097": {
     "id": "bench_097",
@@ -1258,7 +1354,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Technical token preserved unchanged as expected."
+    "evaluator_notes": "Technical token preserved unchanged as expected.",
+    "reviewed_context_hash": "6e86c464a7d484d8baf156ef7c5036934944f31b6a0d286fca08604346c15114"
   },
   "bench_098": {
     "id": "bench_098",
@@ -1271,7 +1368,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Terminal state keyword preserved unchanged as expected."
+    "evaluator_notes": "Terminal state keyword preserved unchanged as expected.",
+    "reviewed_context_hash": "b636b7e74970bb264b679559110980269b0631c2f6b234180c33b2682c034cbf"
   },
   "bench_099": {
     "id": "bench_099",
@@ -1284,7 +1382,8 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": "Hallucination",
-    "evaluator_notes": "Unexpected mutation: CONFIG translated as HOME."
+    "evaluator_notes": "Unexpected mutation: CONFIG translated as HOME.",
+    "reviewed_context_hash": "59ec6bc6d2b58bc1711db519f6b1d7dfa5ee5562c2b6175ee5ad807820c337fb"
   },
   "bench_100": {
     "id": "bench_100",
@@ -1297,6 +1396,7 @@
     "grammar_score": 5,
     "terminology_status": "N/A",
     "failure_type": null,
-    "evaluator_notes": "Separator divider preserved unchanged as expected."
+    "evaluator_notes": "Separator divider preserved unchanged as expected.",
+    "reviewed_context_hash": "b8e32765570aaa366a62e0edcd16509ad2408e012eeec8df53ebda6d75cf1359"
   }
 }

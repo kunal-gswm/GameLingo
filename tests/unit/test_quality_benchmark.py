@@ -3,6 +3,7 @@ from pathlib import Path
 
 from gamelingo.benchmark.evaluator import (
     aggregate_benchmark_metrics,
+    compute_annotation_context_hash,
     evaluate_placeholder_integrity,
     evaluate_structural_status,
     evaluate_translation_item,
@@ -339,3 +340,283 @@ def test_metrics_use_correct_denominators_and_deterministic():
     assert m1["human_quality_evaluation"]["avg_meaning_score"] == 2.81
     assert m1["human_quality_evaluation"]["avg_grammar_score"] == 3.08
     assert m1["human_quality_evaluation"]["acceptable_quality_count"] == 54
+
+
+def test_exact_whitespace_invalidates_annotation():
+    """Proves that leading or trailing whitespace changes invalidate annotations under exact UTF-8 hashing."""
+    mock_item = {
+        "id": "bench_099",
+        "category": "ui",
+        "source_text": "設定",
+        "reference": "Settings",
+        "expected_behavior": "Standard UI setting label.",
+    }
+    exact_target = "Settings"
+    target_hash = hash_translation_target(exact_target)
+    context_hash = compute_annotation_context_hash(
+        "bench_099", "ui", "設定", "Settings", exact_target
+    )
+    mock_annotations = {
+        "bench_099": {
+            "id": "bench_099",
+            "category": "ui",
+            "source_text": "設定",
+            "reference": "Settings",
+            "reviewed_target_text": exact_target,
+            "reviewed_target_hash": target_hash,
+            "reviewed_context_hash": context_hash,
+            "meaning_score": 5,
+            "grammar_score": 5,
+            "evaluator_notes": "Perfect match.",
+        }
+    }
+
+    # Exact match -> reviewed
+    res_exact = evaluate_translation_item(
+        mock_item, exact_target, error=None, annotations_store=mock_annotations
+    )
+    assert res_exact["review_status"] == "reviewed"
+    assert res_exact["meaning_score"] == 5
+
+    # Leading whitespace -> invalidates annotation
+    res_leading = evaluate_translation_item(
+        mock_item, " Settings", error=None, annotations_store=mock_annotations
+    )
+    assert res_leading["review_status"] == "stale"
+    assert res_leading["meaning_score"] is None
+    assert res_leading["grammar_score"] is None
+    assert "differs from reviewed target" in res_leading["evaluator_notes"]
+
+    # Trailing whitespace -> invalidates annotation
+    res_trailing = evaluate_translation_item(
+        mock_item, "Settings ", error=None, annotations_store=mock_annotations
+    )
+    assert res_trailing["review_status"] == "stale"
+    assert res_trailing["meaning_score"] is None
+
+    # Trailing newline -> invalidates annotation
+    res_newline = evaluate_translation_item(
+        mock_item, "Settings\n", error=None, annotations_store=mock_annotations
+    )
+    assert res_newline["review_status"] == "stale"
+    assert res_newline["meaning_score"] is None
+
+
+def test_context_change_invalidates_annotation():
+    """Proves that modifying source text, reference text, or category invalidates annotation even if target matches."""
+    target_text = "Good morning."
+    base_item = {
+        "id": "bench_042",
+        "category": "dialogue",
+        "source_text": "おはよう。",
+        "reference": "Good morning.",
+        "expected_behavior": "Casual morning greeting.",
+    }
+    c_hash = compute_annotation_context_hash(
+        "bench_042", "dialogue", "おはよう。", "Good morning.", target_text
+    )
+    mock_annotations = {
+        "bench_042": {
+            "id": "bench_042",
+            "category": "dialogue",
+            "source_text": "おはよう。",
+            "reference": "Good morning.",
+            "reviewed_target_text": target_text,
+            "reviewed_target_hash": hash_translation_target(target_text),
+            "reviewed_context_hash": c_hash,
+            "meaning_score": 5,
+            "grammar_score": 5,
+            "evaluator_notes": "Accurate greeting.",
+        }
+    }
+
+    # Case 1: Unchanged context -> reviewed
+    res_ok = evaluate_translation_item(
+        base_item, target_text, error=None, annotations_store=mock_annotations
+    )
+    assert res_ok["review_status"] == "reviewed"
+    assert res_ok["meaning_score"] == 5
+
+    # Case 2: Source text modified -> stale
+    changed_src_item = dict(base_item, source_text="おはようございます。")
+    res_changed_src = evaluate_translation_item(
+        changed_src_item, target_text, error=None, annotations_store=mock_annotations
+    )
+    assert res_changed_src["review_status"] == "stale"
+    assert res_changed_src["meaning_score"] is None
+    assert (
+        "Evaluation context for bench_042 has changed"
+        in res_changed_src["evaluator_notes"]
+    )
+
+    # Case 3: Reference text modified -> stale
+    changed_ref_item = dict(base_item, reference="Morning.")
+    res_changed_ref = evaluate_translation_item(
+        changed_ref_item, target_text, error=None, annotations_store=mock_annotations
+    )
+    assert res_changed_ref["review_status"] == "stale"
+    assert res_changed_ref["meaning_score"] is None
+    assert (
+        "Evaluation context for bench_042 has changed"
+        in res_changed_ref["evaluator_notes"]
+    )
+
+    # Case 4: Category modified -> stale
+    changed_cat_item = dict(base_item, category="ui")
+    res_changed_cat = evaluate_translation_item(
+        changed_cat_item, target_text, error=None, annotations_store=mock_annotations
+    )
+    assert res_changed_cat["review_status"] == "stale"
+    assert res_changed_cat["meaning_score"] is None
+
+
+def test_repeated_placeholder_multiplicity_and_integrity():
+    """Proves placeholder integrity checks verify token multiplicity (counts) and newlines."""
+    # Source has two %d tokens and one %s token
+    src = "Score: %d / Max: %d (Player: %s)"
+
+    # 1. Matching counts
+    res_pass = evaluate_placeholder_integrity(src, "Score: %d / Max: %d (Player: %s)")
+    assert res_pass["status"] == "Pass"
+
+    # 2. Dropped second %d token
+    res_dropped = evaluate_placeholder_integrity(src, "Score: %d (Player: %s)")
+    assert res_dropped["status"] == "Fail"
+    assert "token '%d' expected 2, got 1" in res_dropped["details"]
+    assert "Missing tokens / dropped occurrence(s)" in res_dropped["details"]
+
+    # 3. Duplicated %d token
+    res_dup = evaluate_placeholder_integrity(src, "Score: %d / %d / %d (Player: %s)")
+    assert res_dup["status"] == "Fail"
+    assert "token '%d' expected 2, got 3" in res_dup["details"]
+    assert "Duplicated tokens" in res_dup["details"]
+
+    # 4. Repeated Ren'Py formatting tags
+    tag_src = "{b}Notice:{/b} {b}Bold again{/b}"
+    res_tag_pass = evaluate_placeholder_integrity(
+        tag_src, "{b}Avis:{/b} {b}Gras encore{/b}"
+    )
+    assert res_tag_pass["status"] == "Pass"
+
+    # Dropped closing tag
+    res_tag_fail = evaluate_placeholder_integrity(
+        tag_src, "{b}Avis:{/b} {b}Gras encore"
+    )
+    assert res_tag_fail["status"] == "Fail"
+    assert "token '{/b}' expected 2, got 1" in res_tag_fail["details"]
+
+    # 5. Newline counts
+    nl_src = "Line 1\nLine 2\nLine 3"
+    res_nl_ok = evaluate_placeholder_integrity(nl_src, "L1\nL2\nL3")
+    assert res_nl_ok["status"] == "Pass"
+
+    res_nl_fail = evaluate_placeholder_integrity(nl_src, "L1\nL2 L3")
+    assert res_nl_fail["status"] == "Fail"
+    assert "Newline mismatch: expected 2, got 1" in res_nl_fail["details"]
+
+
+def test_passthrough_metadata_and_strict_safeguard():
+    """Proves explicit metadata is respected and Japanese text is strictly guarded against passthrough."""
+    # Explicit passthrough True
+    item_explicit_true = {
+        "id": "t1",
+        "passthrough_expected": True,
+        "source_text": "SKIP",
+        "reference": "SKIP",
+    }
+    assert is_passthrough_expected(item_explicit_true) is True
+
+    # Explicit passthrough False
+    item_explicit_false = {
+        "id": "t2",
+        "passthrough_expected": False,
+        "source_text": "SAVE",
+        "reference": "SAVE",
+    }
+    assert is_passthrough_expected(item_explicit_false) is False
+
+    # Fallback without metadata: Japanese text must NEVER be passthrough even if ref == src
+    item_jp_same = {
+        "id": "t3",
+        "source_text": "セーブ",
+        "reference": "セーブ",
+    }
+    assert is_passthrough_expected(item_jp_same) is False
+
+    item_jp_mixed = {
+        "id": "t4",
+        "source_text": "Option 1: はじめから",
+        "reference": "Option 1: はじめから",
+    }
+    assert is_passthrough_expected(item_jp_mixed) is False
+
+    # Fallback without metadata: English/ASCII matching ref == src is passthrough
+    item_ascii_same = {
+        "id": "t5",
+        "source_text": "AUTO",
+        "reference": "AUTO",
+    }
+    assert is_passthrough_expected(item_ascii_same) is True
+
+    # Fallback without metadata: English/ASCII differing ref != src is NOT passthrough
+    item_ascii_diff = {
+        "id": "t6",
+        "source_text": "START",
+        "reference": "BEGIN",
+    }
+    assert is_passthrough_expected(item_ascii_diff) is False
+
+
+def test_stale_annotations_excluded_from_quality_aggregates():
+    """Proves stale/unreviewed items are excluded from quality score averages."""
+    item1 = {
+        "id": "b1",
+        "category": "dialogue",
+        "source_text": "A",
+        "reference": "A_ref",
+        "target_text": "A_trans",
+        "target_hash": hash_translation_target("A_trans"),
+        "context_hash": "c1",
+        "error": None,
+        "is_passthrough_expected": False,
+        "passthrough_status": "N/A",
+        "structural_status": "Valid",
+        "failure_type": None,
+        "placeholder_status": "N/A",
+        "placeholder_details": "No markup",
+        "review_status": "reviewed",
+        "meaning_score": 4,
+        "grammar_score": 4,
+        "terminology_status": "Pass",
+        "evaluator_notes": "Good",
+    }
+    item2 = {
+        "id": "b2",
+        "category": "dialogue",
+        "source_text": "B",
+        "reference": "B_ref",
+        "target_text": "B_new",
+        "target_hash": hash_translation_target("B_new"),
+        "context_hash": "c2",
+        "error": None,
+        "is_passthrough_expected": False,
+        "passthrough_status": "N/A",
+        "structural_status": "Valid",
+        "failure_type": None,
+        "placeholder_status": "N/A",
+        "placeholder_details": "No markup",
+        "review_status": "stale",
+        "meaning_score": None,
+        "grammar_score": None,
+        "terminology_status": "N/A",
+        "evaluator_notes": "Stale",
+    }
+
+    metrics = aggregate_benchmark_metrics([item1, item2])
+    qual = metrics["human_quality_evaluation"]
+
+    assert qual["reviewed_items_count"] == 1
+    assert qual["pending_review_count"] == 1
+    # Average should be 4.0 (4 / 1), NOT 2.0 (4 / 2)
+    assert qual["avg_meaning_score"] == 4.0
+    assert qual["avg_grammar_score"] == 4.0

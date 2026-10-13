@@ -6,7 +6,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: mob_1 [archive: archive.rpa]",
     "reference": "Huh? What do you want?",
-    "expected_behavior": "Translate natural spoken dialogue; rude/hostile tone."
+    "expected_behavior": "Translate natural spoken dialogue; rude/hostile tone.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_002",
@@ -15,7 +16,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: osamu [archive: archive.rpa]",
     "reference": "N-No, it's nothing...",
-    "expected_behavior": "Translate stuttered nervous response with ellipsis."
+    "expected_behavior": "Translate stuttered nervous response with ellipsis.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_003",
@@ -24,7 +26,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "It doesn't work. Not at all on men.",
-    "expected_behavior": "Translate terse internal monologue."
+    "expected_behavior": "Translate terse internal monologue.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_004",
@@ -33,7 +36,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "Why...?",
-    "expected_behavior": "Preserve question and ellipsis."
+    "expected_behavior": "Preserve question and ellipsis.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_005",
@@ -42,7 +46,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "If I had to think of anything...",
-    "expected_behavior": "Translate internal reflection."
+    "expected_behavior": "Translate internal reflection.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_006",
@@ -51,7 +56,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "...Ah! That strange fruit I ate when I got here!",
-    "expected_behavior": "Preserve exclamation, dash, and emotional realization."
+    "expected_behavior": "Preserve exclamation, dash, and emotional realization.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_007",
@@ -60,7 +66,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "After eating it, my body suddenly grew hot...",
-    "expected_behavior": "Translate sensory narration with ellipsis."
+    "expected_behavior": "Translate sensory narration with ellipsis.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_008",
@@ -69,7 +76,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "If it was because of that—a chill ran down my spine.",
-    "expected_behavior": "Preserve dash, sensory onomatopoeia expression."
+    "expected_behavior": "Preserve dash, sensory onomatopoeia expression.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_009",
@@ -78,7 +86,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "How many survivors are there, I wonder?",
-    "expected_behavior": "Translate reflective question."
+    "expected_behavior": "Translate reflective question.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_010",
@@ -87,7 +96,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "I have no idea where this island is, or if help will ever come.",
-    "expected_behavior": "Translate despairing narration."
+    "expected_behavior": "Translate despairing narration.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_011",
@@ -96,7 +106,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "The more I think about it, the more anxiety fills my head.",
-    "expected_behavior": "Translate psychological description."
+    "expected_behavior": "Translate psychological description.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_012",
@@ -105,7 +116,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "For now, all I can do is move.",
-    "expected_behavior": "Translate resolution / monologue."
+    "expected_behavior": "Translate resolution / monologue.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_013",
@@ -114,7 +126,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "Looking for food, I walk along the edge of the dense jungle.",
-    "expected_behavior": "Translate third/first-person scene setting."
+    "expected_behavior": "Translate third/first-person scene setting.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_014",
@@ -123,7 +136,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "A lone girl was crouching in the shade of the trees.",
-    "expected_behavior": "Translate visual descriptive narration."
+    "expected_behavior": "Translate visual descriptive narration.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_015",
@@ -132,7 +146,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: hina [archive: archive.rpa]",
     "reference": "Ugh... I'm so hungry...",
-    "expected_behavior": "Translate weak, hungry girl dialogue."
+    "expected_behavior": "Translate weak, hungry girl dialogue.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_016",
@@ -141,7 +156,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "Pink hoodie. An innocent face. A student, perhaps?",
-    "expected_behavior": "Translate character observation."
+    "expected_behavior": "Translate character observation.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_017",
@@ -150,7 +166,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: hina [archive: archive.rpa]",
     "reference": "Ah... hello.",
-    "expected_behavior": "Translate timid greeting."
+    "expected_behavior": "Translate timid greeting.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_018",
@@ -159,7 +176,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: osamu [archive: archive.rpa]",
     "reference": "...Hello.",
-    "expected_behavior": "Translate polite restrained reply."
+    "expected_behavior": "Translate polite restrained reply.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_019",
@@ -168,7 +186,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: hina [archive: archive.rpa]",
     "reference": "Um, do you... happen to have any food?",
-    "expected_behavior": "Translate polite tentative request with ellipsis."
+    "expected_behavior": "Translate polite tentative request with ellipsis.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_020",
@@ -177,7 +196,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "If I'm going to test it. On this girl, who looks defenseless—.",
-    "expected_behavior": "Translate opportunistic internal thought."
+    "expected_behavior": "Translate opportunistic internal thought.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_021",
@@ -186,7 +206,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "But to survive. If this power is real, it'll make a formidable weapon.",
-    "expected_behavior": "Translate rationalizing narration."
+    "expected_behavior": "Translate rationalizing narration.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_022",
@@ -195,7 +216,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "Hesitating, I gazed into her eyes.",
-    "expected_behavior": "Translate narrative climax action."
+    "expected_behavior": "Translate narrative climax action.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_023",
@@ -204,7 +226,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "All at once, hunger struck me. I have to eat something.",
-    "expected_behavior": "Translate urgent physiological narration."
+    "expected_behavior": "Translate urgent physiological narration.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_024",
@@ -213,7 +236,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "At the water's edge, a box resembling an in-flight meal had washed ashore. I dashed toward it.",
-    "expected_behavior": "Translate descriptive action narrative."
+    "expected_behavior": "Translate descriptive action narrative.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_025",
@@ -222,7 +246,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: osamu [archive: archive.rpa]",
     "reference": "Found it...!",
-    "expected_behavior": "Translate triumphant gasp."
+    "expected_behavior": "Translate triumphant gasp.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_026",
@@ -231,7 +256,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "Suddenly, a thick arm lunged from the side, snatching the box away.",
-    "expected_behavior": "Translate sudden narrative action."
+    "expected_behavior": "Translate sudden narrative action.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_027",
@@ -240,7 +266,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: mob_1 [archive: archive.rpa]",
     "reference": "Sorry, pal. I got here first.",
-    "expected_behavior": "Translate casual, assertive male dialogue."
+    "expected_behavior": "Translate casual, assertive male dialogue.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_028",
@@ -249,7 +276,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "He was a man built like a wall of muscle.",
-    "expected_behavior": "Translate vivid character description."
+    "expected_behavior": "Translate vivid character description.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_029",
@@ -258,7 +286,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "Clutching the box, he glanced warily behind him as he departed.",
-    "expected_behavior": "Translate character departure description."
+    "expected_behavior": "Translate character departure description.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_030",
@@ -267,7 +296,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: osamu [archive: archive.rpa]",
     "reference": "No way...!",
-    "expected_behavior": "Translate dismayed exclamation with ellipsis."
+    "expected_behavior": "Translate dismayed exclamation with ellipsis.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_031",
@@ -276,7 +306,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "It was stolen in an instant. There was no way I could fight back.",
-    "expected_behavior": "Translate powerlessness narrative."
+    "expected_behavior": "Translate powerlessness narrative.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_032",
@@ -285,7 +316,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "I could only stand there, completely stunned.",
-    "expected_behavior": "Translate emotional aftermath description."
+    "expected_behavior": "Translate emotional aftermath description.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_033",
@@ -294,7 +326,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: reika [archive: archive.rpa]",
     "reference": "—There you are. Hey, you.",
-    "expected_behavior": "Translate abrupt callout with leading dash."
+    "expected_behavior": "Translate abrupt callout with leading dash.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_034",
@@ -303,7 +336,8 @@
     "file_id": "game/script.rpy",
     "context": "Narration [archive: archive.rpa]",
     "reference": "That voice. Turning around, sure enough, that young lady stood there. ...So she survived.",
-    "expected_behavior": "Translate internal recognition narration."
+    "expected_behavior": "Translate internal recognition narration.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_035",
@@ -312,7 +346,8 @@
     "file_id": "game/script.rpy",
     "context": "Character: reika [archive: archive.rpa]",
     "reference": "I've been looking for you. You're my attendant, aren't you? Why are you searching for your own food first?",
-    "expected_behavior": "Translate haughty, demanding dialogue."
+    "expected_behavior": "Translate haughty, demanding dialogue.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_036",
@@ -321,7 +356,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
     "reference": "Settings",
-    "expected_behavior": "Translate concise menu label; do not expand into sentence."
+    "expected_behavior": "Translate concise menu label; do not expand into sentence.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_037",
@@ -330,7 +366,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
     "reference": "Save",
-    "expected_behavior": "Translate standard game command; must not truncate or drop kana."
+    "expected_behavior": "Translate standard game command; must not truncate or drop kana.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_038",
@@ -339,7 +376,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: navigation (textbutton) [archive: archive.rpa]",
     "reference": "Load",
-    "expected_behavior": "Translate standard game command."
+    "expected_behavior": "Translate standard game command.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_039",
@@ -348,7 +386,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
     "reference": "Skip",
-    "expected_behavior": "Translate dialogue skip button label."
+    "expected_behavior": "Translate dialogue skip button label.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_040",
@@ -357,7 +396,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
     "reference": "Auto",
-    "expected_behavior": "Translate auto-read toggle button label."
+    "expected_behavior": "Translate auto-read toggle button label.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_041",
@@ -366,7 +406,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: navigation (textbutton) [archive: archive.rpa]",
     "reference": "Start",
-    "expected_behavior": "Translate main menu start game command."
+    "expected_behavior": "Translate main menu start game command.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_042",
@@ -375,7 +416,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
     "reference": "History",
-    "expected_behavior": "Translate backlog/history log menu button."
+    "expected_behavior": "Translate backlog/history log menu button.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_043",
@@ -384,7 +426,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
     "reference": "Rollback",
-    "expected_behavior": "Translate visual novel rollback action button."
+    "expected_behavior": "Translate visual novel rollback action button.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_044",
@@ -393,7 +436,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
     "reference": "Q.Save",
-    "expected_behavior": "Translate quick-save button label."
+    "expected_behavior": "Translate quick-save button label.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_045",
@@ -402,7 +446,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
     "reference": "Q.Load",
-    "expected_behavior": "Translate quick-load button label."
+    "expected_behavior": "Translate quick-load button label.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_046",
@@ -411,7 +456,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: navigation (textbutton) [archive: archive.rpa]",
     "reference": "Return to Title",
-    "expected_behavior": "Translate menu return button."
+    "expected_behavior": "Translate menu return button.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_047",
@@ -420,7 +466,8 @@
     "file_id": "game/screens.rpy",
     "context": "Screen: navigation (textbutton) [archive: archive.rpa]",
     "reference": "End Replay",
-    "expected_behavior": "Translate scene replay exit button."
+    "expected_behavior": "Translate scene replay exit button.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_048",
@@ -429,7 +476,8 @@
     "file_id": "game/zz_island_ui.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Are you sure?",
-    "expected_behavior": "Translate confirmation prompt title."
+    "expected_behavior": "Translate confirmation prompt title.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_049",
@@ -438,7 +486,8 @@
     "file_id": "game/zz_island_ui.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Quit the game?",
-    "expected_behavior": "Translate quit confirmation prompt."
+    "expected_behavior": "Translate quit confirmation prompt.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_050",
@@ -447,7 +496,8 @@
     "file_id": "game/zz_island_ui.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Delete this save data?",
-    "expected_behavior": "Translate delete save confirmation prompt."
+    "expected_behavior": "Translate delete save confirmation prompt.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_051",
@@ -456,7 +506,8 @@
     "file_id": "game/zz_island_ui.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Overwrite this save data?",
-    "expected_behavior": "Translate overwrite save confirmation prompt."
+    "expected_behavior": "Translate overwrite save confirmation prompt.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_052",
@@ -465,7 +516,8 @@
     "file_id": "game/zz_island_ui.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "End this replay?",
-    "expected_behavior": "Translate replay exit confirmation prompt."
+    "expected_behavior": "Translate replay exit confirmation prompt.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_053",
@@ -474,7 +526,8 @@
     "file_id": "game/zz_island_ui.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Begin skipping text?",
-    "expected_behavior": "Translate skip start confirmation prompt."
+    "expected_behavior": "Translate skip start confirmation prompt.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_054",
@@ -483,7 +536,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Wild Dog",
-    "expected_behavior": "Translate enemy encounter name."
+    "expected_behavior": "Translate enemy encounter name.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_055",
@@ -492,7 +546,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Swarm of Island Rats",
-    "expected_behavior": "Translate mob enemy encounter name."
+    "expected_behavior": "Translate mob enemy encounter name.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_056",
@@ -501,7 +556,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Giant Boar",
-    "expected_behavior": "Translate beast enemy encounter name."
+    "expected_behavior": "Translate beast enemy encounter name.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_057",
@@ -510,7 +566,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Viper",
-    "expected_behavior": "Translate venomous beast enemy name."
+    "expected_behavior": "Translate venomous beast enemy name.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_058",
@@ -519,7 +576,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Ruffian",
-    "expected_behavior": "Translate human foe encounter name."
+    "expected_behavior": "Translate human foe encounter name.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_059",
@@ -528,7 +586,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Brute",
-    "expected_behavior": "Translate large human opponent name."
+    "expected_behavior": "Translate large human opponent name.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_060",
@@ -537,7 +596,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Cunning Man",
-    "expected_behavior": "Translate sneaky opponent encounter name."
+    "expected_behavior": "Translate sneaky opponent encounter name.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_061",
@@ -546,7 +606,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "We have the upper hand",
-    "expected_behavior": "Translate dynamic combat progress indicator."
+    "expected_behavior": "Translate dynamic combat progress indicator.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_062",
@@ -555,7 +616,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "We are being pushed back",
-    "expected_behavior": "Translate dynamic combat disadvantage indicator."
+    "expected_behavior": "Translate dynamic combat disadvantage indicator.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_063",
@@ -564,7 +626,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Evenly matched struggle",
-    "expected_behavior": "Translate neutral combat balance state."
+    "expected_behavior": "Translate neutral combat balance state.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_064",
@@ -573,7 +636,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Lower guard",
-    "expected_behavior": "Translate minigame action/suggestion command."
+    "expected_behavior": "Translate minigame action/suggestion command.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_065",
@@ -582,7 +646,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Trust me",
-    "expected_behavior": "Translate minigame suggestion command."
+    "expected_behavior": "Translate minigame suggestion command.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_066",
@@ -591,7 +656,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Fade embarrassment",
-    "expected_behavior": "Translate minigame suggestion command."
+    "expected_behavior": "Translate minigame suggestion command.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_067",
@@ -600,7 +666,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Allow skin contact",
-    "expected_behavior": "Translate minigame escalation command."
+    "expected_behavior": "Translate minigame escalation command.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_068",
@@ -609,7 +676,8 @@
     "file_id": "game/island_minigames.rpy",
     "context": "Screen: mg_fish_cutin (text) [archive: archive.rpa]",
     "reference": "NEW  Registered in Encyclopedia",
-    "expected_behavior": "Translate collection unlock notification."
+    "expected_behavior": "Translate collection unlock notification.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_069",
@@ -618,7 +686,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Screen: mg_battle_hud (text) [archive: archive.rpa]",
     "reference": "Protagonist HP [hero_hp]/[hero_maxhp] Traps [traps]",
-    "expected_behavior": "Preserve [hero_hp], [hero_maxhp], [traps] intact without mangling or sentinel leak."
+    "expected_behavior": "Preserve [hero_hp], [hero_maxhp], [traps] intact without mangling or sentinel leak.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_070",
@@ -627,7 +696,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Screen: stat_ic (text) [archive: archive.rpa]",
     "reference": "{color=#8a9aad}[label] {/color}{color=#e8eef4}[value]{/color}",
-    "expected_behavior": "Preserve both Ren'Py color tags and bracket placeholders intact."
+    "expected_behavior": "Preserve both Ren'Py color tags and bracket placeholders intact.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_071",
@@ -636,7 +706,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Screen: hub_meters (text) [archive: archive.rpa]",
     "reference": "{size=21}{color=#b0b8d0}Day %d{/color}{color=%s} %d days until rescue ship{/color}{/size}",
-    "expected_behavior": "Preserve %d, %s, %d formatting tokens and Ren'Py font styling tags."
+    "expected_behavior": "Preserve %d, %s, %d formatting tokens and Ren'Py font styling tags.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_072",
@@ -645,7 +716,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "%s counters! %d damage",
-    "expected_behavior": "Preserve %s and %d format specifiers intact."
+    "expected_behavior": "Preserve %s and %d format specifiers intact.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_073",
@@ -654,7 +726,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "%s stands in your way!",
-    "expected_behavior": "Preserve %s placeholder intact."
+    "expected_behavior": "Preserve %s placeholder intact.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_074",
@@ -663,7 +736,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "All-out strike! %d damage to %s",
-    "expected_behavior": "Preserve %s and %d specifiers intact; allow natural English word order."
+    "expected_behavior": "Preserve %s and %d specifiers intact; allow natural English word order.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_075",
@@ -672,7 +746,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Trap triggered! %d damage to %s",
-    "expected_behavior": "Preserve %s and %d format specifiers intact."
+    "expected_behavior": "Preserve %s and %d format specifiers intact.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_076",
@@ -681,7 +756,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Failed to escape! %d damage",
-    "expected_behavior": "Preserve %d specifier intact."
+    "expected_behavior": "Preserve %d specifier intact.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_077",
@@ -690,7 +766,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Repelled %s. (Food +2)",
-    "expected_behavior": "Preserve %s format specifier intact."
+    "expected_behavior": "Preserve %s format specifier intact.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_078",
@@ -699,7 +776,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Repelled %s and seized fruit. (Fruit +2, Threat -2)",
-    "expected_behavior": "Preserve %s format specifier intact."
+    "expected_behavior": "Preserve %s format specifier intact.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_079",
@@ -708,7 +786,8 @@
     "file_id": "game/gallery.rpy",
     "context": "Screen: cg_gallery (text) [archive: archive.rpa]",
     "reference": "[_gl_unlocked]/[_gl_total]",
-    "expected_behavior": "Preserve exact gallery counter variable expressions without translation."
+    "expected_behavior": "Preserve exact gallery counter variable expressions without translation.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_080",
@@ -717,7 +796,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Screen: mg_battle_menu (use) [archive: archive.rpa]",
     "reference": "Set a trap (%d)",
-    "expected_behavior": "Preserve %d specifier and parentheses."
+    "expected_behavior": "Preserve %d specifier and parentheses.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_081",
@@ -726,7 +806,8 @@
     "file_id": "game/island_battle.rpy",
     "context": "Screen: mg_battle_hud (text) [archive: archive.rpa]",
     "reference": "[cur_foe.name]",
-    "expected_behavior": "Preserve dotted object property variable placeholder without modification."
+    "expected_behavior": "Preserve dotted object property variable placeholder without modification.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_082",
@@ -735,7 +816,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Screen: hub_meters (text) [archive: archive.rpa]",
     "reference": "{size=17}HP{/size}",
-    "expected_behavior": "Preserve size tags and untranslated HP term."
+    "expected_behavior": "Preserve size tags and untranslated HP term.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_083",
@@ -744,7 +826,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Screen: hub_meters (text) [archive: archive.rpa]",
     "reference": "{size=15}%d/%d{/size}",
-    "expected_behavior": "Preserve size tags and fraction formatting %d/%d."
+    "expected_behavior": "Preserve size tags and fraction formatting %d/%d.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_084",
@@ -753,7 +836,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "From here on, you organize each day yourself.\nThe goal is 'Advance Story' at the bottom—satisfying card conditions (such as corruption) begins the next part of the story.\nTo that end, earn by day and corrupt by night.",
-    "expected_behavior": "Preserve embedded newlines (\\n), quotation punctuation, and instructional narrative flow."
+    "expected_behavior": "Preserve embedded newlines (\\n), quotation punctuation, and instructional narrative flow.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_085",
@@ -762,7 +846,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "[Daytime Earnings] The top 3 cards.\n'Explore' is the core source of fruit, materials, and encounters. 'Fish' gathers food safely without combat. Fruit fuels hypnosis; food is everyone's lifeline—depleted each morning by rations for yourself and subordinated women.\n'Hunt Men' is a one-shot trap gambit. Taking them down lowers threat, reducing night raids.\nIn the deep mist, you may encounter the girls, or face ambushes by men and beasts.",
-    "expected_behavior": "Preserve section headers, quotes, and multi-paragraph newlines."
+    "expected_behavior": "Preserve section headers, quotes, and multi-paragraph newlines.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_086",
@@ -771,7 +856,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "[Night Target] Use hypnosis via their cards to increase corruption.\nThe deeper they fall, the more deep suggestions, events, and story chapters unlock.\nTheir card portraits and statuses evolve as they fall deeper.",
-    "expected_behavior": "Preserve brackets, newlines, and gameplay progression terminology."
+    "expected_behavior": "Preserve brackets, newlines, and gameplay progression terminology.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_087",
@@ -780,7 +866,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Whether you 'Rest' or 'Sleep Beside Her', the day ends and HP fully restores by morning.\nThere is one difference—'Sleep Beside Her' can only be chosen on nights you used no hypnosis.\nSleep alone on days you used your power. Restraining yourself and sleeping beside her gradually closes the distance between your hearts.\nDaytime actions (Explore/Fish/Hunt) are limited to 3 per day. Hypnosis is limited to once per girl each night.\n* Hovering over the top-left meter displays explanations for each stat.",
-    "expected_behavior": "Preserve 4 line breaks, quotation marks, and instructional note marker (※)."
+    "expected_behavior": "Preserve 4 line breaks, quotation marks, and instructional note marker (※).",
+    "passthrough_expected": false
   },
   {
     "id": "bench_088",
@@ -789,7 +876,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "[Defense & Manpower] Night raids occur more frequently the higher threat and suspicion rise. Defense consists of 'Fortify Camp' and 'Assign Island Women'.\nSubordinating beach women through assignment (Fruit 2, Corruption +2) provides labor for gathering, defense, and watch duty.\n—However, suspicion seeps out each night for each subordinate, and weak defenses risk them being kidnapped during raids.\nMeanwhile, the rescue ship steadily approaches. Settle everything before remaining days run out.",
-    "expected_behavior": "Preserve section tags, parenthetical costs, dashes, and 3 embedded newlines."
+    "expected_behavior": "Preserve section tags, parenthetical costs, dashes, and 3 embedded newlines.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_089",
@@ -798,7 +886,8 @@
     "file_id": "game/island_minigames.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "The moment you meet her gaze—her 'inner voice' begins to be heard.\nThat is the dialogue at the bottom of the screen. Her mind wavers between [Opening], [Calm], and [Resistance],\nand the tone of her dialogue provides hints to read her current mental state.",
-    "expected_behavior": "Preserve dash, brackets, and newlines; translate game state terms accurately."
+    "expected_behavior": "Preserve dash, brackets, and newlines; translate game state terms accurately.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_090",
@@ -807,7 +896,8 @@
     "file_id": "game/island_minigames.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "That sharp voice is the sign of [Resistance]. Suggestions fired into resistance will not take.\nWhat's worse, [Awakening Risk]—the danger of her returning to her senses—surges.\nReaching 100 triggers awakening, abruptly ending the night and chipping away accumulated progress.\n—Do not suggest. In times like this, shake her heart by 'Staring' and create an opening.",
-    "expected_behavior": "Preserve warning explanation, dashes, brackets, and instructional flow."
+    "expected_behavior": "Preserve warning explanation, dashes, brackets, and instructional flow.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_091",
@@ -816,7 +906,8 @@
     "file_id": "game/island_minigames.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Her voice softened—this is an [Opening].\nSuggestions fired into an opening strike deeply (2x effect, no added awakening risk).\nBurn fruit and implant 'Lower Guard'.",
-    "expected_behavior": "Preserve dash, brackets, multipliers, and quotation marks."
+    "expected_behavior": "Preserve dash, brackets, multipliers, and quotation marks.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_092",
@@ -825,7 +916,8 @@
     "file_id": "game/island_minigames.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "It struck deep. [Corruption]—how far she has fallen—rose drastically at once.\n...That is all for the basics. Read dialogue → dodge resistance with 'Stare' → strike into openings.\nActions consume [Focus], while suggestions consume [Fruit]. Wrap up before you run out.\nDeep suggestions unlock as corruption rises higher.",
-    "expected_behavior": "Preserve arrows (→), ellipsis, brackets, and cyclical gameplay instructions."
+    "expected_behavior": "Preserve arrows (→), ellipsis, brackets, and cyclical gameplay instructions.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_093",
@@ -834,7 +926,8 @@
     "file_id": "game/island_minigames.rpy",
     "context": "Python Data / String [archive: archive.rpa]",
     "reference": "Her dialogue is her 'inner voice'. Her heart wavers between [Opening], [Calm], and [Resistance],\nreadable through dialogue tone. On rare occasions, ambiguous lines can only be discerned by voice tone.\nStriking [Opening] yields 2x effect and zero awakening. Striking [Resistance] yields zero effect and doubled risk.",
-    "expected_behavior": "Preserve brackets, multipliers, and strategic tips across 3 embedded newlines."
+    "expected_behavior": "Preserve brackets, multipliers, and strategic tips across 3 embedded newlines.",
+    "passthrough_expected": false
   },
   {
     "id": "bench_094",
@@ -843,7 +936,8 @@
     "file_id": "game/island_hub.rpy",
     "context": "Screen: hub_field (textbutton) [archive: archive.rpa]",
     "reference": "SAVE",
-    "expected_behavior": "Preserve standard ASCII UI identifier without translation."
+    "expected_behavior": "Preserve standard ASCII UI identifier without translation.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_095",
@@ -852,7 +946,8 @@
     "file_id": "game/island_minigames.rpy",
     "context": "Screen: mg_explore_screen (text) [archive: archive.rpa]",
     "reference": "fruit",
-    "expected_behavior": "Preserve internal resource tag identifier without modification."
+    "expected_behavior": "Preserve internal resource tag identifier without modification.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_096",
@@ -861,7 +956,8 @@
     "file_id": "game/island_minigames.rpy",
     "context": "Screen: mg_explore_screen (text) [archive: archive.rpa]",
     "reference": "food",
-    "expected_behavior": "Preserve internal resource code key without modification."
+    "expected_behavior": "Preserve internal resource code key without modification.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_097",
@@ -870,7 +966,8 @@
     "file_id": "game/island_minigames.rpy",
     "context": "Screen: mg_explore_screen (text) [archive: archive.rpa]",
     "reference": "mat",
-    "expected_behavior": "Preserve abbreviated material resource token without modification."
+    "expected_behavior": "Preserve abbreviated material resource token without modification.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_098",
@@ -879,7 +976,8 @@
     "file_id": "game/zz_island_ui.rpy",
     "context": "Screen: end_card (text) [archive: archive.rpa]",
     "reference": "END",
-    "expected_behavior": "Preserve terminal state keyword without modification."
+    "expected_behavior": "Preserve terminal state keyword without modification.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_099",
@@ -888,7 +986,8 @@
     "file_id": "game/zz_island_ui.rpy",
     "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
     "reference": "CONFIG",
-    "expected_behavior": "Preserve system configuration keyword without modification."
+    "expected_behavior": "Preserve system configuration keyword without modification.",
+    "passthrough_expected": true
   },
   {
     "id": "bench_100",
@@ -897,6 +996,7 @@
     "file_id": "game/zz_island_ui.rpy",
     "context": "Screen: file_slots (text) [archive: archive.rpa]",
     "reference": "----",
-    "expected_behavior": "Preserve separator divider string unchanged."
+    "expected_behavior": "Preserve separator divider string unchanged.",
+    "passthrough_expected": true
   }
 ]

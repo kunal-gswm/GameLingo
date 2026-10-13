@@ -137,18 +137,35 @@ The table below contrasts the frozen GL-040.1 baseline snapshot against the corr
 
 ---
 
-## 6. Verification & Automated Test Evidence
+## 6. Verification & Automated Test Evidence (GL-040.2 & GL-040.2.1)
 
-The corrected evaluation methodology is verified by 7 dedicated automated unit tests in [`tests/unit/test_quality_benchmark.py`](file:///e:/GameLingo/tests/unit/test_quality_benchmark.py):
-1. **Annotation Invalidation**: Proves modifying a translated output marks its review status as `stale`, sets `meaning_score` to `None`, and increments `pending_review_count`.
-2. **Passthrough Handling**: Proves `SAVE`, `mat`, `END`, `----` are recognized as `is_passthrough_expected=True`, assigned `passthrough_status="Pass"`, and excluded from untranslated failures.
-3. **Untranslated Japanese Detection**: Proves Japanese dialogue left untranslated is flagged as `Untranslated Japanese Fallback`.
-4. **Structural Validity vs Quality Separation**: Proves hallucinated outputs like `"Home"` are marked `structural_status="Valid"` but excluded from acceptable quality passes (`meaning_score=1`).
-5. **Frozen Baseline Verification**: Loads [`gl040_1_baseline_snapshot.json`](file:///e:/GameLingo/src/gamelingo/benchmark/results/gl040_1_baseline_snapshot.json) and verifies historical numbers ($2.58$ meaning, $2.83$ grammar, $1.57$ technical) remain unchanged.
-6. **Denominator Explicit Accuracy**: Verifies all 5 metric groups use correct denominators and produce identical deterministic results.
-7. **Direct Function Verification**: Tests `evaluate_placeholder_integrity` and `evaluate_structural_status` directly.
+The evaluation methodology and its hardened integrity checks are verified by 14 dedicated automated unit tests in [`tests/unit/test_quality_benchmark.py`](file:///e:/GameLingo/tests/unit/test_quality_benchmark.py):
+1. **Exact UTF-8 Whitespace Invalidation**: Proves leading (`" Settings"`), trailing (`"Settings "`), or newline (`"Settings\n"`) whitespace modifications invalidate annotations under exact UTF-8 hashing.
+2. **Context Hash Invalidation**: Proves modifying prompt context (source text, reference text, or category) invalidates the annotation as `stale`, even when the target text matches.
+3. **Repeated Placeholder Multiplicity**: Proves programmatic checks compare exact token occurrence counts (`Counter`), detecting dropped tokens (`%d/%d` vs `%d/`), duplicated tokens (`%d` -> `%d/%d/%d`), and unclosed tags (`{b}...{/b}`).
+4. **Newline Count Parity**: Proves exact newline preservation validation across multiline cards.
+5. **Explicit Passthrough Metadata & Strict Japanese Guard**: Proves explicit `"passthrough_expected"` metadata is respected and Japanese text is strictly guarded against passthrough misclassification.
+6. **Stale Annotation Exclusion**: Proves stale or unreviewed items are cleanly excluded from quality score averages.
+7. **Target Output Change Invalidation**: Proves modifying translated text sets review status to `stale` and zeroes quality score contribution.
+8. **Passthrough Handling**: Proves `SAVE`, `mat`, `END`, `----` are recognized as `is_passthrough_expected=True`, assigned `passthrough_status="Pass"`, and excluded from untranslated failures.
+9. **Untranslated Japanese Fallback Detection**: Proves Japanese dialogue left untranslated is flagged as `Untranslated Japanese Fallback`.
+10. **Structural Validity vs Quality Separation**: Proves hallucinated outputs like `"Home"` are marked `structural_status="Valid"` but excluded from acceptable quality passes (`meaning_score=1`).
+11. **Frozen Baseline Verification**: Loads [`gl040_1_baseline_snapshot.json`](file:///e:/GameLingo/src/gamelingo/benchmark/results/gl040_1_baseline_snapshot.json) and verifies historical numbers ($2.58$ meaning, $2.83$ grammar, $1.57$ technical) remain byte-for-byte identical (SHA-256: `024cb0d7536f22aefd10b6522f35f8c13941a36d2ae37c1885c3780496b1a361`).
+12. **Deterministic Aggregation & Explicit Denominators**: Verifies all metric groups use explicit denominators and produce identical results across repeated runs.
+13. **Direct Placeholder Integrity Verification**: Tests `evaluate_placeholder_integrity` directly for tokens and newlines.
+14. **Direct Structural Status Verification**: Tests `evaluate_structural_status` directly for empty and truncated fragments.
 
-**Test Suite Execution**:
-- Pytest: **270 passed in 21.04s**
-- Ruff Linter: **All checks passed**
-- Ruff Formatter: **91 files formatted**
+---
+
+## 7. Integrity Checklist (GL-040.2.1)
+
+| Requirement | Implementation | Verified Status |
+| :--- | :--- | :---: |
+| **Strict Exact Target Hashing** | UTF-8 SHA-256 without `.strip()` (`hash_translation_target`) | **Passed** |
+| **Context Binding Hash** | SHA-256 across `item_id \x00 category \x00 source \x00 ref \x00 target` | **Passed** |
+| **Placeholder Multiplicity** | `Counter(source_tokens) == Counter(target_tokens)` & exact newline count | **Passed** |
+| **Explicit Passthrough Metadata** | `"passthrough_expected": true/false` across all 100 items | **Passed** |
+| **Strict Japanese Passthrough Guard** | `JP_CHAR_REGEX.search(src)` blocks passthrough for Japanese text | **Passed** |
+| **Frozen Snapshot Immutability** | Byte-for-byte SHA-256 `024cb0d7536f...` verified | **Passed** |
+| **Decoupled Annotation Storage** | Separate `annotations_gl040.json` with hash validation | **Passed** |
+
