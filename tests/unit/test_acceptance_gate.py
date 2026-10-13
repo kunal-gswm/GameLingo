@@ -1,6 +1,7 @@
 """Unit tests for the fail-closed real-engine acceptance gate and evidence persistence (GL-039.8)."""
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -663,3 +664,48 @@ def test_suppression_of_success_result_when_evidence_persistence_fails():
     assert final["all_passed"] is False
     assert final["evidence_passed"] is False
     assert any("Permission denied" in f for f in final["failures"])
+
+
+def test_inspect_engine_log_permission_error_fails_closed(
+    tmp_path, monkeypatch, valid_scenario_results
+):
+    """Prove that an existing, non-empty log raising PermissionError fails closed and is rejected by the gate."""
+    log_file = tmp_path / "protected_log.txt"
+    log_file.write_text("Ren'Py engine log content", encoding="utf-8")
+
+    def mock_read_text(*args, **kwargs):
+        raise PermissionError("Access is denied: 'protected_log.txt'")
+
+    monkeypatch.setattr(Path, "read_text", mock_read_text)
+
+    log_res = inspect_engine_log(log_file)
+
+    assert log_res["log_captured"] is False
+    assert log_res["tracebacks_detected"] is None
+    assert "Failed to read engine log" in log_res["log_error"]
+    assert "Access is denied" in log_res["log_error"]
+
+    valid_scenario_results["scenario_1_fresh_launch"]["log_captured"] = log_res[
+        "log_captured"
+    ]
+    valid_scenario_results["scenario_1_fresh_launch"]["tracebacks_detected"] = log_res[
+        "tracebacks_detected"
+    ]
+    valid_scenario_results["scenario_1_fresh_launch"]["error"] = log_res["log_error"]
+
+    gate_result = evaluate_verification_results(valid_scenario_results)
+    assert gate_result["all_passed"] is False
+    assert any(
+        "Failed required assertion 'log_captured' in 'scenario_1_fresh_launch' (actual: False)"
+        in f
+        for f in gate_result["failures"]
+    )
+    assert any(
+        "Failed required assertion 'tracebacks_detected' in 'scenario_1_fresh_launch' (actual: None)"
+        in f
+        for f in gate_result["failures"]
+    )
+    assert any(
+        "Failed required assertion 'error' in 'scenario_1_fresh_launch'" in f
+        for f in gate_result["failures"]
+    )
