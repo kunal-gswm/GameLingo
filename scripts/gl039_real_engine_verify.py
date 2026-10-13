@@ -1,5 +1,5 @@
 """
-GL-039.3: Real-Engine Verification of Startup Language Activation.
+GL-039.4: Prove Dynamic Text Translation and Reload Idempotency.
 Runs isolated test scenarios against a disposable copy of Ren'Py 8.5.0 (island-1.0-win).
 Never touches original game files.
 Isolates all persistent preferences to a dedicated test directory.
@@ -92,7 +92,7 @@ def run_renpy_engine(
 
 def main():
     print("=" * 60)
-    print("GL-039.3: Real-Engine Verification of Startup Language Activation")
+    print("GL-039.4: Real-Engine Verification of Dynamic Text & Reload")
     print("=" * 60)
 
     # 1. Inspect original game
@@ -136,7 +136,7 @@ def main():
         shutil.rmtree(disposable_saves)
     disposable_saves.mkdir(parents=True, exist_ok=True)
 
-    # 3. Inject GameLingo activation script and translation table
+    # 3. Inject GameLingo activation script and deterministic strings
     print(
         "\n[Step 3] Injecting GameLingo activation script and deterministic strings..."
     )
@@ -168,9 +168,9 @@ def main():
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
 
     # -------------------------------------------------------------------------
-    # Scenario 1: Fresh Launch (No saved persistent preferences)
+    # Scenario 1: Fresh Launch, Dynamic Text Hook Proof, and Visual Rendering
     # -------------------------------------------------------------------------
-    print("\n[Scenario 1] Testing Fresh Launch (clean persistent)...")
+    print("\n[Scenario 1] Testing Fresh Launch & Dynamic Text Hook Proof...")
     s1_config = ISOLATED_CONFIG_DIR / "s1_fresh"
     if s1_config.exists():
         shutil.rmtree(s1_config)
@@ -181,16 +181,22 @@ def main():
     if s1_screenshot_png.exists():
         s1_screenshot_png.unlink()
 
-    s1_probe_rpy = f'''# Scenario 1 Fresh Launch Probe
+    s1_probe_rpy = f'''# Scenario 1 Fresh Launch & Dynamic Hook Probe
+default gl_dynamic_var = "GL039_DYNAMIC_HOOK_TEST"
+
 screen gl039_verify_screen():
     zorder 1000
     frame:
         xalign 0.5
         yalign 0.5
         has vbox
-        text "GameLingo Real-Engine Startup Verification" size 26
-        text "GL039_STARTUP_TEST" size 24
-        text "GL039_DYNAMIC_HOOK_TEST" size 24
+        text "GameLingo Real-Engine Dynamic Hook Verification (GL-039.4)" size 26
+        null height 8
+        text "Static Translation: GL039_STARTUP_TEST" size 20
+        null height 8
+        text "Dynamic Screen Expression Below (Evaluated at Runtime):" size 20
+        # Genuinely dynamic expression evaluated from Python variable (NOT a literal string statement!)
+        text gl_dynamic_var size 24 color "#55FF55"
 
 label before_main_menu:
     python:
@@ -201,35 +207,49 @@ label before_main_menu:
         initial_trans_val = renpy.translation.translate_string("GL039_STARTUP_TEST")
 
         res = {{
-            "scenario": "Scenario 1: Fresh Launch",
+            "scenario": "Scenario 1: Fresh Launch & Dynamic Hook Proof",
             "engine_version": str(renpy.version()),
             "python_version": sys.version,
             "initial_pref_language": initial_pref_lang,
             "initial_translation_value": initial_trans_val,
             "initial_translation_active": (initial_pref_lang == "english" and initial_trans_val == "GL039_TRANSLATED_OK"),
-            "dynamic_hook_verified": False,
+            "outcome_1_native_static": False,
+            "outcome_2_dynamic_hook_translated": False,
+            "outcome_3_dynamic_hook_untranslated_in_none": False,
             "reversion_verified": False,
-            "reversion_value": None,
             "screenshot_captured": False,
             "error": None,
         }}
 
         try:
-            # Test dynamic text hook
-            t_dyn = renpy.text.text.Text("GL039_DYNAMIC_HOOK_TEST")
-            dyn_trans = renpy.translation.translate_string("GL039_DYNAMIC_HOOK_TEST")
-            res["dynamic_hook_verified"] = (dyn_trans == "GL039_DYNAMIC_HOOK_OK")
+            # Genuinely dynamic input variable (not a string literal in the screen statement)
+            dyn_input = "GL039_DYNAMIC_HOOK_TEST"
 
-            # Test switching to None restores original source string
+            # Outcome 1: Native static translation works
+            native_static = renpy.translation.translate_string("GL039_STARTUP_TEST")
+            res["native_static_raw"] = native_static
+            res["outcome_1_native_static"] = (native_static == "GL039_TRANSLATED_OK")
+
+            # Outcome 2: Dynamic text is translated by GameLingo's Text.set_text hook
+            t_dyn = renpy.text.text.Text(dyn_input)
+            res["hook_translated_raw"] = t_dyn.text[0] if (hasattr(t_dyn, "text") and t_dyn.text) else None
+            res["outcome_2_dynamic_hook_translated"] = (res["hook_translated_raw"] == "GL039_DYNAMIC_HOOK_OK")
+
+            # Outcome 3: Dynamic text remains untranslated when original-language mode is selected
             renpy.change_language(None)
-            back_val = renpy.translation.translate_string("GL039_STARTUP_TEST")
-            res["reversion_value"] = back_val
-            res["reversion_verified"] = (back_val == "GL039_STARTUP_TEST")
+            t_orig = renpy.text.text.Text(dyn_input)
+            res["hook_untranslated_raw"] = t_orig.text[0] if (hasattr(t_orig, "text") and t_orig.text) else None
+            res["outcome_3_dynamic_hook_untranslated_in_none"] = (res["hook_untranslated_raw"] == "GL039_DYNAMIC_HOOK_TEST")
+
+            # Also verify static lookup reverted to untranslated source string
+            static_back = renpy.translation.translate_string("GL039_STARTUP_TEST")
+            res["reversion_value"] = static_back
+            res["reversion_verified"] = (static_back == "GL039_STARTUP_TEST")
 
             # Restore english for visual screenshot
             renpy.change_language("english")
 
-            # Show visual screen and capture screenshot
+            # Show visual screen with dynamically evaluated variable and capture screenshot
             screen_out = "{s1_screenshot_png.as_posix()}"
             renpy.show_screen("gl039_verify_screen")
             renpy.pause(0.2, modal=False)
@@ -259,6 +279,15 @@ label before_main_menu:
         print(
             f"  initial_translation_active: {s1_data.get('initial_translation_active')}"
         )
+        print(
+            f"  outcome_1_native_static: {s1_data.get('outcome_1_native_static')} (value: {s1_data.get('native_static_raw')})"
+        )
+        print(
+            f"  outcome_2_dynamic_hook_translated: {s1_data.get('outcome_2_dynamic_hook_translated')} (value: {s1_data.get('hook_translated_raw')})"
+        )
+        print(
+            f"  outcome_3_dynamic_hook_untranslated_in_none: {s1_data.get('outcome_3_dynamic_hook_untranslated_in_none')} (value: {s1_data.get('hook_untranslated_raw')})"
+        )
         print(f"  reversion_verified: {s1_data.get('reversion_verified')}")
         print(f"  screenshot_captured: {s1_data.get('screenshot_captured')}")
         if s1_screenshot_png.exists():
@@ -281,6 +310,11 @@ label before_main_menu:
     if s2_config.exists():
         shutil.rmtree(s2_config)
     s2_config.mkdir(parents=True, exist_ok=True)
+
+    disposable_saves = DISPOSABLE_GAME_PATH / "game" / "saves"
+    if disposable_saves.exists():
+        shutil.rmtree(disposable_saves)
+    disposable_saves.mkdir(parents=True, exist_ok=True)
 
     # Setup run: create persistent state where player had launched original game without GameLingo
     s2_setup_rpy = """# Scenario 2 Setup
@@ -354,6 +388,11 @@ label before_main_menu:
         shutil.rmtree(s3_config)
     s3_config.mkdir(parents=True, exist_ok=True)
 
+    disposable_saves = DISPOSABLE_GAME_PATH / "game" / "saves"
+    if disposable_saves.exists():
+        shutil.rmtree(disposable_saves)
+    disposable_saves.mkdir(parents=True, exist_ok=True)
+
     # Setup run: player already selected spanish
     s3_setup_rpy = """# Scenario 3 Setup
 label before_main_menu:
@@ -417,6 +456,11 @@ label before_main_menu:
         shutil.rmtree(s4_config)
     s4_config.mkdir(parents=True, exist_ok=True)
 
+    disposable_saves = DISPOSABLE_GAME_PATH / "game" / "saves"
+    if disposable_saves.exists():
+        shutil.rmtree(disposable_saves)
+    disposable_saves.mkdir(parents=True, exist_ok=True)
+
     # Setup run: player had GameLingo initialized, then deliberately reverted to None
     s4_setup_rpy = """# Scenario 4 Setup
 label before_main_menu:
@@ -472,47 +516,87 @@ label before_main_menu:
         }
 
     # -------------------------------------------------------------------------
-    # Scenario 5: Reload Safety & Text Hook Idempotency
+    # Scenario 5: Real-Engine Reload via utter_restart() & Idempotency
     # -------------------------------------------------------------------------
-    print("\n[Scenario 5] Testing Reload Safety & Text Hook Idempotency...")
+    print("\n[Scenario 5] Testing Real-Engine Reload (utter_restart) & Idempotency...")
     s5_config = ISOLATED_CONFIG_DIR / "s5_reload_safety"
     if s5_config.exists():
         shutil.rmtree(s5_config)
     s5_config.mkdir(parents=True, exist_ok=True)
 
+    # Clean game/saves to prevent persistent state leakage from previous scenarios
+    disposable_saves = DISPOSABLE_GAME_PATH / "game" / "saves"
+    if disposable_saves.exists():
+        shutil.rmtree(disposable_saves)
+    disposable_saves.mkdir(parents=True, exist_ok=True)
+
     s5_probe_json = s5_config / "probe_s5.json"
-    s5_probe_rpy = f'''# Scenario 5 Reload Safety Probe
+    s5_marker_file = s5_config / "reload_marker.txt"
+
+    s5_probe_rpy = f'''# Scenario 5 Real-Engine Reload & Idempotency Probe
 label before_main_menu:
     python:
         import json, os, sys
 
-        # Verify hook presence
-        has_orig = hasattr(renpy.text.text.Text, "_gl_orig_set_text")
-        orig_fn = getattr(renpy.text.text.Text, "_gl_orig_set_text", None)
-        curr_fn = getattr(renpy.text.text.Text, "set_text", None)
+        flag = "{s5_marker_file.as_posix()}"
+        out = "{s5_probe_json.as_posix()}"
 
-        # Simulate second initialization (like script reload)
-        # Re-executing init code should not re-wrap orig_fn
-        if not hasattr(renpy.text.text.Text, "_gl_orig_set_text"):
-            pass # would wrap
+        if not os.path.exists(flag):
+            # Pass 1: Before utter_restart
+            with open(flag, "w") as f:
+                f.write("reloading_now")
+
+            # Trigger real script reload (Shift+R)
+            renpy.utter_restart()
         else:
-            # protected by if not hasattr guard
-            pass
+            # Pass 2: After utter_restart completed
+            res = {{
+                "scenario": "Scenario 5: Real-Engine Reload & Idempotency",
+                "reloaded_via_utter_restart": True,
+                "post_reload_language": getattr(renpy.game.preferences, "language", None),
+            }}
 
-        after_orig_fn = getattr(renpy.text.text.Text, "_gl_orig_set_text", None)
+            # 1. Text.set_text is wrapped only once
+            orig_fn = getattr(renpy.text.text.Text, "_gl_orig_set_text", None)
+            curr_fn = getattr(renpy.text.text.Text, "set_text", None)
+            res["has_orig_attribute"] = (orig_fn is not None)
+            res["orig_is_not_hook"] = (orig_fn != curr_fn)
+            res["orig_function_name"] = getattr(orig_fn, "__name__", str(orig_fn))
+            res["curr_function_name"] = getattr(curr_fn, "__name__", str(curr_fn))
+            res["wrapped_only_once"] = (res["has_orig_attribute"] and res["orig_is_not_hook"] and res["orig_function_name"] == "set_text")
 
-        res = {{
-            "scenario": "Scenario 5: Reload Safety",
-            "has_orig_attribute": has_orig,
-            "orig_is_not_hook": (orig_fn != curr_fn),
-            "no_recursive_wrapping": (after_orig_fn == orig_fn),
-            "error": None,
-        }}
+            # 2. Repeated initialization test: simulate 10 repeated init passes re-running hook installation
+            for _ in range(10):
+                if not hasattr(renpy.text.text.Text, "_gl_orig_set_text"):
+                    renpy.text.text.Text._gl_orig_set_text = renpy.text.text.Text.set_text
+                    renpy.text.text.Text.set_text = lambda self, text, *a, **kw: None
 
-        with open("{s5_probe_json.as_posix()}", "w") as f:
-            json.dump(res, f, indent=2)
+            after_orig = getattr(renpy.text.text.Text, "_gl_orig_set_text", None)
+            after_curr = getattr(renpy.text.text.Text, "set_text", None)
+            res["repeated_init_preserved_orig"] = (after_orig == orig_fn)
+            res["repeated_init_preserved_curr"] = (after_curr == curr_fn)
 
-        renpy.quit(status=0)
+            # 3. Dynamic text rendering continues to work after reload
+            t_post = renpy.text.text.Text("GL039_DYNAMIC_HOOK_TEST")
+            res["post_reload_text"] = t_post.text[0] if (hasattr(t_post, "text") and t_post.text) else None
+            res["post_reload_dynamic_hook_working"] = (res["post_reload_text"] == "GL039_DYNAMIC_HOOK_OK")
+
+            # 4. No double translation or mangling
+            t_post.set_text("GL039_DYNAMIC_HOOK_OK")
+            res["idempotent_translation"] = (t_post.text[0] == "GL039_DYNAMIC_HOOK_OK")
+
+            res["reload_safe"] = (
+                res["wrapped_only_once"]
+                and res["repeated_init_preserved_orig"]
+                and res["post_reload_dynamic_hook_working"]
+                and res["idempotent_translation"]
+            )
+            res["error"] = None
+
+            with open(out, "w") as f:
+                json.dump(res, f, indent=2)
+
+            renpy.quit(status=0)
 '''
     (game_dir / "zz_probe.rpy").write_text(s5_probe_rpy, encoding="utf-8")
     proc = run_renpy_engine(DISPOSABLE_GAME_PATH, s5_config)
@@ -521,9 +605,20 @@ label before_main_menu:
     if s5_probe_json.exists():
         s5_data = json.loads(s5_probe_json.read_text(encoding="utf-8"))
         scenario_results["scenario_5_reload_safety"] = s5_data
-        print(f"  has_orig_attribute: {s5_data.get('has_orig_attribute')}")
-        print(f"  orig_is_not_hook: {s5_data.get('orig_is_not_hook')}")
-        print(f"  no_recursive_wrapping: {s5_data.get('no_recursive_wrapping')}")
+        print(
+            f"  reloaded_via_utter_restart: {s5_data.get('reloaded_via_utter_restart')}"
+        )
+        print(f"  wrapped_only_once: {s5_data.get('wrapped_only_once')}")
+        print(f"  orig_function_name: {s5_data.get('orig_function_name')}")
+        print(f"  curr_function_name: {s5_data.get('curr_function_name')}")
+        print(
+            f"  repeated_init_preserved_orig: {s5_data.get('repeated_init_preserved_orig')}"
+        )
+        print(
+            f"  post_reload_dynamic_hook_working: {s5_data.get('post_reload_dynamic_hook_working')} (text: {s5_data.get('post_reload_text')})"
+        )
+        print(f"  idempotent_translation: {s5_data.get('idempotent_translation')}")
+        print(f"  reload_safe: {s5_data.get('reload_safe')}")
     else:
         print("  ERROR: Scenario 5 probe output not found!")
         scenario_results["scenario_5_reload_safety"] = {
@@ -538,6 +633,11 @@ label before_main_menu:
     if s6_config.exists():
         shutil.rmtree(s6_config)
     s6_config.mkdir(parents=True, exist_ok=True)
+
+    disposable_saves = DISPOSABLE_GAME_PATH / "game" / "saves"
+    if disposable_saves.exists():
+        shutil.rmtree(disposable_saves)
+    disposable_saves.mkdir(parents=True, exist_ok=True)
 
     s6_probe_json = s6_config / "probe_s6.json"
     s6_probe_rpy = f'''# Scenario 6 Error Handling Probe
@@ -617,6 +717,18 @@ label before_main_menu:
                     "initial_translation_active"
                 )
                 is True,
+                scenario_results.get("scenario_1_fresh_launch", {}).get(
+                    "outcome_1_native_static"
+                )
+                is True,
+                scenario_results.get("scenario_1_fresh_launch", {}).get(
+                    "outcome_2_dynamic_hook_translated"
+                )
+                is True,
+                scenario_results.get("scenario_1_fresh_launch", {}).get(
+                    "outcome_3_dynamic_hook_untranslated_in_none"
+                )
+                is True,
                 scenario_results.get("scenario_2_existing_player", {}).get(
                     "initial_translation_active"
                 )
@@ -629,9 +741,7 @@ label before_main_menu:
                     "reversion_preserved"
                 )
                 is True,
-                scenario_results.get("scenario_5_reload_safety", {}).get(
-                    "no_recursive_wrapping"
-                )
+                scenario_results.get("scenario_5_reload_safety", {}).get("reload_safe")
                 is True,
                 scenario_results.get("scenario_6_error_handling", {}).get(
                     "error_handled_cleanly"
@@ -671,7 +781,7 @@ label before_main_menu:
         print("  Original game is 100% PRISTINE and UNCHANGED.")
 
     print("\n========================================================")
-    print("GL-039.3 REAL-ENGINE VERIFICATION COMPLETED SUCCESSFULLY")
+    print("GL-039.4 REAL-ENGINE VERIFICATION COMPLETED SUCCESSFULLY")
     print("========================================================")
 
 

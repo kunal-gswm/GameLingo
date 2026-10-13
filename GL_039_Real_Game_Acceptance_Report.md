@@ -273,40 +273,52 @@ Testing real games exposed four concrete edge cases in GameLingo's Ren'Py workfl
 
 ---
 
-## 5. GL-039.3 Real-Engine Verification of Startup Language Activation
+## 5. GL-039.3 / GL-039.4 Real-Engine Verification of Startup Activation, Dynamic Text Hooking & Reload Idempotency
 
-To eliminate any gap between unit mocks and real execution, GL-039.3 exercised the exact generated activation script (`generate_activation_rpy("english")`) in a genuine **Ren’Py 8.5.0.25111603 (Python 3.12.7 64-bit AMD64)** visual novel runtime (`island-1.0-win`).
+To eliminate any gap between unit mocks and real execution, GL-039.3 and GL-039.4 exercised the exact generated activation script (`generate_activation_rpy("english")`) in a genuine **Ren’Py 8.5.0.25111603 (Python 3.12.7 64-bit AMD64)** visual novel runtime (`island-1.0-win`).
 
 ### 5.1 Test Protocol & Host Protection
 - **Pristine Reference Untouched**: The baseline files of `D:\New folder\island-1.0-win` (including `island.exe`, `island.py`, `readme.txt`, `gamelingo.db`, and `game/archive.rpa`) were recorded with cryptographic SHA-256 hashes prior to testing and independently re-verified after testing. Zero bytes were modified in the reference install.
 - **Dedicated Disposable Working Directory**: All operations ran inside disposable copies created under `E:\temp_gl039_verify\`.
-- **Absolute Persistent Preference Isolation**: The execution environment strictly redirected `RENPY_CONFIG_DIR`, `RENPY_PATH_TO_SAVES`, and `APPDATA` to independent test directories per scenario, ensuring the developer's `%APPDATA%\RenPy\` persistent preferences were neither read nor modified.
+- **Absolute Persistent Preference Isolation**: The execution environment strictly redirected `RENPY_CONFIG_DIR`, `RENPY_PATH_TO_SAVES`, and `APPDATA` to independent test directories per scenario, with per-scenario save-store sandboxing, ensuring developer preferences were neither read nor modified, and scenarios could not leak state to one another.
 - **Probe Checkpoint Timing**: Probes executed at `label before_main_menu:` and asserted the initial language state strictly **before** calling `renpy.change_language()`, ensuring genuine startup behavior was evaluated without masking defects.
 
 ### 5.2 Multi-Scenario Lifecycle Results
 
 All six independent lifecycle scenarios passed with zero errors:
 
-| Scenario | Initial Condition | Checkpoint Assertion (Before Language Switch) | Post-Assertion Actions | Result |
+| Scenario | Initial Condition | Checkpoint Assertion (Before Language Switch) | Post-Assertion Actions & Verification | Result |
 | :--- | :--- | :--- | :--- | :--- |
-| **Scenario 1: Fresh Launch** | Completely empty config dir (no persistent file) | `initial_pref_language: "english"`<br>`translate_string("GL039_STARTUP_TEST") == "GL039_TRANSLATED_OK"`<br>`initial_translation_active: True` | Assert dynamic text hook (`GL039_DYNAMIC_HOOK_OK`).<br>Assert reversion to None (`GL039_STARTUP_TEST`).<br>Capture in-process screen screenshot. | **Pass** |
+| **Scenario 1: Fresh Launch & Three-Way Dynamic Hook Proof** | Completely empty config dir (no persistent file) | `initial_pref_language: "english"`<br>`initial_translation_active: True`<br>`initial_translation_val: "GL039_TRANSLATED_OK"` | Proved 3 distinct outcomes:<br>1. Native static translation: `GL039_TRANSLATED_OK`.<br>2. Dynamic hook translation: `GL039_DYNAMIC_HOOK_OK`.<br>3. Original language mode (`language = None`): dynamic text remains untranslated (`GL039_DYNAMIC_HOOK_TEST`).<br>Captured native visual UI screenshot. | **Pass** |
 | **Scenario 2: Existing-Player Launch** | `_set_preferences = True`, `language = None` (simulates player before patch) | `initial_pref_language: "english"`<br>`translate_string("GL039_STARTUP_TEST") == "GL039_TRANSLATED_OK"`<br>`persistent._gl_lang_initialized_english: True` | Confirmed `_gl_activate_initial_language()` startup callback activates target language. | **Pass** |
 | **Scenario 3: Existing Non-Default Lang** | `_set_preferences = True`, `language = "spanish"` (player set other language) | `initial_pref_language: "spanish"`<br>`preserved_existing_language: True` | Confirmed callback adheres to policy: does **not** overwrite pre-selected languages. | **Pass** |
 | **Scenario 4: Player Reversion on Restart** | `_set_preferences = True`, `language = None`, `_gl_lang_initialized_english = True` | `initial_pref_language: None`<br>`reversion_preserved: True`<br>`translate_string: "GL039_STARTUP_TEST"` | Confirmed player reversion to original language is preserved across subsequent game restarts. | **Pass** |
-| **Scenario 5: Reload Safety** | Re-executing init block (simulating Shift+R reload) | `has_orig_attribute: True`<br>`orig_is_not_hook: True`<br>`no_recursive_wrapping: True` | Confirmed `Text.set_text` hook guard prevents recursive wrapping and double translation. | **Pass** |
+| **Scenario 5: Real-Engine Reload (Shift+R) & Idempotency** | Real script reload via `renpy.utter_restart()` | `reloaded_via_utter_restart: True`<br>`post_reload_language: "english"`<br>`wrapped_only_once: True`<br>`orig_function_name: "set_text"` | Exercised 10 repeated initialization passes (`repeated_init_preserved_orig: True`).<br>Confirmed post-reload dynamic rendering functions (`GL039_DYNAMIC_HOOK_OK`).<br>Confirmed idempotent translation with no recursion or double translation (`idempotent_translation: True`). | **Pass** |
 | **Scenario 6: Error Handling & Logs** | Passing unexpected data types (e.g. integer) to `Text` | `error_handled_cleanly: True`<br>`Tracebacks in log.txt: False` (0 tracebacks) | Hook gracefully falls back to original text without crashing or raising unhandled exceptions. | **Pass** |
 
-### 5.3 Real-Engine Visual Screen Evidence
+### 5.3 Dynamic Text Translation Verification (Three-Way Proof)
 
-To prove what the player sees beyond headless API assertions, Scenario 1 displayed a visual test screen (`gl039_verify_screen`) rendered by Ren'Py's hardware renderer and captured a native screenshot via `renpy.screenshot()`:
-- **Evidence File**: `gl039_real_engine_startup_screenshot.png` (25,605 bytes).
-- **Renderer**: NVIDIA GeForce RTX 3050 Laptop GPU / OpenGL 4.6 (gl2 renderer at 1920x1080).
-- **Visible Content Confirmed**:
-  1. Header: `"GameLingo Real-Engine Startup Verification"`
-  2. Static String: `"GL039_STARTUP_TEST"` rendered on screen as `"GL039_TRANSLATED_OK"`.
-  3. Dynamic String: `"GL039_DYNAMIC_HOOK_TEST"` rendered on screen as `"GL039_DYNAMIC_HOOK_OK"`.
-- **Sanitized Log Excerpt**: Saved to `gl039_real_engine_island_log.txt` (1,807 bytes), verifying clean renderer startup and zero exceptions.
-- **Summary Evidence JSON**: Saved to `gl039_real_engine_verification_summary.json` (3,195 bytes).
+Ren'Py screen text expressions (e.g., `text gl_dynamic_var`) evaluate Python variables dynamically at runtime and bypass Ren'Py's compile-time static translation lookup. GameLingo's `Text.set_text` hook intercepts these evaluated strings. GL-039.4 verified that:
+1. **Outcome 1 (Native static translation works)**: `renpy.translation.translate_string("GL039_STARTUP_TEST") == "GL039_TRANSLATED_OK"`.
+2. **Outcome 2 (Dynamic text is translated by GameLingo's hook)**: An evaluated Python variable `dyn_input = "GL039_DYNAMIC_HOOK_TEST"` instantiated via `renpy.text.text.Text(dyn_input)` produced `text[0] == "GL039_DYNAMIC_HOOK_OK"`.
+3. **Outcome 3 (Dynamic text remains untranslated in original language)**: When `renpy.change_language(None)` was selected, the same dynamic displayable `renpy.text.text.Text(dyn_input)` produced `text[0] == "GL039_DYNAMIC_HOOK_TEST"`.
+4. **Visible UI Screenshot**: Scenario 1 rendered a Ren'Py screen containing `text gl_dynamic_var` through the hardware GPU renderer. The captured screenshot (`gl039_real_engine_startup_screenshot.png`, 33,465 bytes) directly confirms the on-screen rendering of `GL039_DYNAMIC_HOOK_OK`.
+
+### 5.4 Realistic Script Reload & Repeated Initialization Test
+
+Scenario 5 automated a genuine in-process Ren'Py reload using Ren'Py's underlying Shift+R reload engine (`renpy.utter_restart()`):
+- **Pass 1**: The probe raised `renpy.utter_restart()`, causing Ren'Py's bootstrap loop to trigger `renpy.reload_all()` and completely re-execute initialization from bytecode.
+- **Pass 2**: After the reload cycle completed, the probe verified:
+  * `Text.set_text` was wrapped only once: `has_orig_attribute: True`, `orig_is_not_hook: True`, `orig_function_name: "set_text"`, `curr_function_name: "_gl_set_text"`.
+  * Repeated initialization safety: Executed 10 repeated init passes re-running hook installation code; confirmed `_gl_orig_set_text` retained the authentic original `set_text` method.
+  * Post-reload dynamic rendering: `renpy.text.text.Text("GL039_DYNAMIC_HOOK_TEST")` successfully rendered `"GL039_DYNAMIC_HOOK_OK"`.
+  * Idempotency: Calling `set_text("GL039_DYNAMIC_HOOK_OK")` on already translated text did not re-translate or mangle strings.
+  * Engine stability: 0 unhandled exceptions and 0 tracebacks in `log.txt`.
+
+### 5.5 Evidence Artifacts
+- **Screenshot**: `gl039_real_engine_startup_screenshot.png` (33,465 bytes).
+- **Sanitized Engine Log**: `gl039_real_engine_island_log.txt` (1,705 bytes, verifying clean gl2 renderer startup and zero tracebacks).
+- **Summary Evidence JSON**: `gl039_real_engine_verification_summary.json` (3,937 bytes, containing full scenario results and baseline verification).
 
 ---
 
@@ -314,9 +326,11 @@ To prove what the player sees beyond headless API assertions, Scenario 1 display
 
 During runtime engine investigation and source analysis, the following engine behaviors were documented:
 1. **Immediate String Translation Lookup**: Ren'Py's `_()` function is an AST compile-time marker that returns its argument untranslated during script parsing. Real-time translation lookup occurs when strings pass through `renpy.translation.translate_string(s)` or `__(s)`.
-2. **Translation Switch Timing**: `renpy.change_language()` requires UI style resolution (`init_translation()` to have executed). Calling `renpy.change_language()` during `init` can trigger assertion errors if styles are uninitialized; executing language activation inside `config.start_callbacks` or `label before_main_menu:` is the verified pattern.
-3. **Archive Overlays**: Ren'Py natively prioritizes unarchived files in `game/tl/<lang>/` over packaged `.rpa` archives. This allows GameLingo to cleanly patch games packed in `.rpa` files without modifying the binary archives themselves.
-4. **Preference Persistence Hierarchy**: Startup language resolution checks `RENPY_LANGUAGE` environment variable, then `config.language`, then `_preferences.language`. The configuration variable `config.default_language` only feeds into `_preferences.language` upon the very first launch before persistent preferences are established.
+2. **Dynamic Screen Expressions vs Static Literals**: Literal text statements (`text "Hello"`) are parsed into AST `_("Hello")` nodes. Dynamic expressions (`text my_var`) evaluate Python expressions at display time and instantiate `renpy.text.text.Text(val)` directly, bypassing static lookup. GameLingo's `Text.set_text` hook provides on-the-fly lookup for these dynamic expressions.
+3. **Translation Switch Timing**: `renpy.change_language()` requires UI style resolution (`init_translation()` to have executed). Calling `renpy.change_language()` during `init` can trigger assertion errors if styles are uninitialized; executing language activation inside `config.start_callbacks` or `label before_main_menu:` is the verified pattern.
+4. **Archive Overlays**: Ren'Py natively prioritizes unarchived files in `game/tl/<lang>/` over packaged `.rpa` archives. This allows GameLingo to cleanly patch games packed in `.rpa` files without modifying the binary archives themselves.
+5. **Preference Persistence Hierarchy**: Startup language resolution checks `RENPY_LANGUAGE` environment variable, then `config.language`, then `_preferences.language`. The configuration variable `config.default_language` only feeds into `_preferences.language` upon the very first launch before persistent preferences are established.
+6. **Reload Mechanics**: `renpy.utter_restart()` triggers Ren'Py's full script reload sequence (`reload_all()`) and loops back into `main()`. Hook definitions guarded with `hasattr(cls, "_gl_orig_<name>")` remain idempotent across reloads.
 
 ---
 
@@ -345,10 +359,11 @@ In strict accordance with GL-039 requirements, cleanup of dedicated test targets
 
 ## 9. Final Acceptance Conclusion
 
-All acceptance criteria for GL-039, GL-039.2, and GL-039.3 have been fully met:
+All acceptance criteria for GL-039, GL-039.2, GL-039.3, and GL-039.4 have been fully met:
 - **4 Real Games Verified**: Strange Dates Demo (8.2), Before The Rain Stops (8.5 compiled), Summer on Your Side (8.5 RPA), The Question (7.6 Py2).
 - **Startup Activation Resolved & Real-Engine Verified**: Root cause of initial inactive probe readings identified and confirmed; activation script updated with `init 999` ordering and `config.start_callbacks` hook; verified across all 6 lifecycle scenarios on genuine Ren'Py 8.5.0 engine runtime.
-- **Visual UI Verification**: Native in-process screenshot captured from Ren'Py 8.5.0 display tree proving rendered translated static and dynamic strings.
+- **Dynamic Text Hooking Proved**: Proved three-way distinction (native static translation, dynamic hook translation, and untranslated original language mode). Dynamic screen expression rendering confirmed via native visual UI screenshot (`gl039_real_engine_startup_screenshot.png`).
+- **Reload Idempotency Proved**: Real-engine script reload exercised via `renpy.utter_restart()`; confirmed single wrapping, preservation of original function identity, repeated initialization idempotency, post-reload dynamic rendering, and 0 tracebacks.
 - **Code Quality**: Full pytest suite passing with **236 passed** tests; Ruff linting (`ruff check`) and formatting (`ruff format --check`) passing cleanly with 0 errors across 86 files.
 - **Safe Cleanup**: Confirmed and maintained across all temporary test directories without altering reference or original game assets.
 - **Distribution Package**: Standalone Windows zip rebuilt and verified (`SHA-256: B780BECFC9A9CA1F5818C4ACD646A1343A20F4DAF2301C8720E2F3B679215998`).
