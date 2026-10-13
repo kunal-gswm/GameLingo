@@ -335,10 +335,18 @@ In GL-039.6, `scripts/gl039_real_engine_verify.py` was hardened with a strict, f
 - **Safety Guarantees via `finally`**: Cleanup of the disposable test tree (`TEMP_BASE_DIR`) and SHA-256 integrity verification of the reference game files (5 files) execute in a guaranteed `finally` block, ensuring no temporary files remain and original game integrity is verified even if an assertion or process fails.
 - **Unit Test Coverage**: Added `tests/unit/test_acceptance_gate.py` with 8 comprehensive unit tests validating aggregate pass/fail decisions, missing scenario detection, missing field handling, failed assertion reporting, traceback detection, non-dict payloads, empty inputs, and requirement coverage.
 
-### 5.6 Evidence Artifacts
-- **Screenshot**: `gl039_real_engine_startup_screenshot.png` (32,093 bytes, visual proof of dynamic expression rendering).
+### 5.6 Fail-Closed Safety and Evidence Finalization (GL-039.7)
+
+In GL-039.7, `scripts/gl039_real_engine_verify.py` and `tests/unit/test_acceptance_gate.py` were hardened against edge cases where safety checks or uninspected logs could lead to false-positive acceptance:
+- **Fatal Cleanup Failure**: If the disposable test directory (`TEMP_BASE_DIR`) cannot be removed, `evaluate_final_acceptance()` sets `all_passed: False` and the runner exits with `sys.exit(1)`. The runner strictly suppresses the success banner whenever cleanup fails, while preserving original-file integrity verification.
+- **Fail Closed on Missing/Unreadable Engine Logs**: Introduced `inspect_engine_log()`, establishing a three-state log validation model (`log_captured: True/False`). If an engine log is absent, empty, or unreadable, `log_captured` is set to `False` and `tracebacks_detected` is recorded as `None`. The gate validates `"log_captured": lambda v: v is True` across all required scenarios, preventing missing logs from being silently reported as `tracebacks_detected: false`.
+- **Post-Safety Evidence Finalization**: `evaluate_final_acceptance()` and `build_evidence_payload()` finalize the aggregate evidence summary (`gl039_real_engine_verification_summary.json`) *after* the `finally` cleanup and original-file baseline integrity checks execute. The JSON explicitly embeds `cleanup_status`, `integrity_status`, `scenario_status`, `failures`, and aggregate `all_passed`. A failure in either cleanup or baseline integrity overrides passing scenario results.
+- **Comprehensive Unit Regression Tests**: Expanded `tests/unit/test_acceptance_gate.py` from 8 to **16 unit tests**, verifying fatal exit on cleanup failure, fatal exit on baseline integrity mismatch, safety override of passing scenarios, fail-closed handling of missing or unreadable logs, rejection of missing `log_captured` fields, and full evidence payload structure embedding.
+
+### 5.7 Evidence Artifacts
+- **Screenshot**: `gl039_real_engine_startup_screenshot.png` (32,916 bytes, visual proof of dynamic expression rendering).
 - **Sanitized Engine Log**: `gl039_real_engine_island_log.txt` (isolated log from Scenario 5 reload run, verifying clean gl2 renderer startup and zero tracebacks).
-- **Summary Evidence JSON**: `gl039_real_engine_verification_summary.json` (4,337 bytes, containing full scenario results, validator status, and baseline verification).
+- **Summary Evidence JSON**: `gl039_real_engine_verification_summary.json` (4,717 bytes, containing full scenario results, log capture status, cleanup status, integrity status, and aggregate validation).
 
 ---
 
@@ -381,13 +389,13 @@ In strict accordance with GL-039 requirements, cleanup of dedicated test targets
 
 ## 9. Final Acceptance Conclusion
 
-All acceptance criteria for GL-039, GL-039.2, GL-039.3, GL-039.4, GL-039.5, and GL-039.6 have been fully met:
+All acceptance criteria for GL-039, GL-039.2, GL-039.3, GL-039.4, GL-039.5, GL-039.6, and GL-039.7 have been fully met:
 - **4 Real Games Verified**: Strange Dates Demo (8.2), Before The Rain Stops (8.5 compiled), Summer on Your Side (8.5 RPA), The Question (7.6 Py2).
 - **Startup Activation Resolved & Real-Engine Verified**: Root cause of initial inactive probe readings identified and confirmed; activation script updated with `init 999` ordering and `config.start_callbacks` hook; verified across all 6 lifecycle scenarios on genuine Ren'Py 8.5.0 engine runtime.
 - **Dynamic Text Hooking Proved**: Proved three-way distinction (native static translation, dynamic hook translation, and untranslated original language mode). Dynamic screen expression rendering confirmed via native visual UI screenshot (`gl039_real_engine_startup_screenshot.png`).
 - **Actual Script Reload (`renpy.reload_script`) Proved**: Exercised documented development reload path with developer mode enabled; confirmed single wrapping, preservation of original function identity, reinitialization idempotency, post-reload dynamic rendering, and 0 tracebacks.
-- **Fail-Closed Acceptance Gate Enforced (GL-039.6)**: Enforced aggregate validation with exit code 1 on any failure, input validation, per-run engine log isolation, guaranteed cleanup and baseline check in `finally`, and 8 unit tests in `tests/unit/test_acceptance_gate.py`.
-- **Code Quality**: Full pytest suite passing with **244 passed** tests; Ruff linting (`ruff check`) and formatting (`ruff format --check`) passing cleanly with 0 errors across 87 files.
+- **Fail-Closed Acceptance Gate & Safety Finalization (GL-039.6 & GL-039.7)**: Enforced aggregate validation with exit code 1 on any failure, three-state engine log capture validation, fatal cleanup failure exit, guaranteed baseline integrity verification, and post-safety evidence finalization backed by 16 unit tests in `tests/unit/test_acceptance_gate.py`.
+- **Code Quality**: Full pytest suite passing with **252 passed** tests; Ruff linting (`ruff check`) and formatting (`ruff format --check`) passing cleanly with 0 errors across 87 files.
 - **Safe Cleanup**: Confirmed and maintained across all temporary test directories without altering reference or original game assets.
 - **Distribution Package**: Standalone Windows zip rebuilt and verified (`SHA-256: B780BECFC9A9CA1F5818C4ACD646A1343A20F4DAF2301C8720E2F3B679215998`).
 - **Final Status**: **Pass** across all acceptance criteria.
