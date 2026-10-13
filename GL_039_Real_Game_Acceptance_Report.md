@@ -1,9 +1,9 @@
 # GL-039: Real-Game Ren’Py Acceptance Testing Report
 
 **Repository**: `kunal-gswm/GameLingo`  
-**Task ID**: GL-039 / GL-039.2 (Real-Game Ren’Py Acceptance Testing & Startup Activation Verification)  
-**Date**: October 13, 2026  
-**Status**: Complete & Verified (All 4 Games Passed)  
+**Task ID**: GL-039 / GL-039.2 / GL-039.3 (Real-Game Ren’Py Acceptance Testing & Real-Engine Startup Activation Verification)  
+**Date**: October 14, 2026  
+**Status**: Complete & Verified (All 4 Acceptance Games + Real Ren'Py 8.5.0 Engine Verified Across 6 Lifecycle Scenarios)  
 
 ---
 
@@ -27,7 +27,8 @@ To ensure evidence accuracy and avoid conflating testing modalities:
 - **Synthetic Test Translation Markers**: Translation targets generated during testing (e.g., `[EN] <source_text>` or `[GERMAN] <source_text>`) serve strictly as **synthetic pipeline validation markers** to unambiguously assert string routing, lookup, and language switching through Ren'Py's translation subsystem. They do **not** represent human or machine translation-quality evaluations.
 - **Engine-Level Runtime Probes & Log Inspection**: Verified by launching genuine engine executables with an injected automated test probe (`zz_gl039_verify.rpy`) executed at `label before_main_menu:`. The probe verifies `renpy.translation.translate_string()`, dynamic language switching via `renpy.change_language()`, reversion to default via `renpy.change_language(None)`, and availability of `renpy.text.text.Text.set_text`. Output logs (`log.txt`) are inspected for clean initialization without unhandled exceptions.
 - **Fresh-Launch Language Activation**: Diagnosed and resolved startup activation behavior across both fresh player launches and existing game installs. The activation script (`gamelingo_activate.rpy`) executes at `init 999 python:` (after `options.rpy` at `init 0` and before Ren'Py preferences initialization at `init 1500`), combined with a `config.start_callbacks` hook to guarantee target language activation when persistent preferences already exist on host.
-- **Visual UI Verification**: No visual UI verification or manual in-game playtesting screenshots are claimed for these automated test cycles; verification is established strictly via automated engine-level probe output, engine execution logs, and automated lifecycle regression tests.
+- **Real-Engine Multi-Scenario Verification (GL-039.3)**: Independently tested across 6 complete lifecycle scenarios (Fresh Launch, Existing-Player First Launch, Existing Non-Default Language, Player Reversion, Reload Safety, and Error Handling) on a genuine Ren'Py 8.5.0 engine runtime (`island-1.0-win`). Initial language states were asserted before any language mutation calls in the probe.
+- **Visual UI Verification & Screen Capture**: In GL-039.3, visual rendering was captured directly from Ren'Py's display tree via `renpy.screenshot()`, producing `gl039_real_engine_startup_screenshot.png` (25,605 bytes). The captured screen visually confirms on-screen text display of translated static and dynamic strings (`GL039_TRANSLATED_OK`, `GL039_DYNAMIC_HOOK_OK`). For the 4 downloaded test games in GL-039/GL-039.2, verification remains based on engine-level API probes and logs without visual screenshots.
 
 ### Acceptance Overview
 
@@ -37,6 +38,7 @@ To ensure evidence accuracy and avoid conflating testing modalities:
 | **Before The Rain Stops (雨停之前)** | GitHub Release (`v1.1.1`) | 8.5.3.26051504 | Python 3.12.7 (64-bit) | Compiled-only `.rpyc` scripts (no `.rpy` / `.rpa`) | 695 units | **Pass** (Automated probe & hook verified) | 0 | **Pass** |
 | **Summer on Your Side (Лето на твоей стороне)** | GitHub Release (`v1.1.0`) | 8.5.3.26051504 | Python 3.12.7 (64-bit) | Packed `archive.rpa` (15 scripts, 260 assets) | 7,620 units | **Pass** (Automated probe & hook verified) | 0 | **Pass** |
 | **The Question (Official Release)** | Official Ren'Py SDK (`7.6.3`) | 7.6.3.23091805 | Python 2.7.18 (32-bit) | Loose `.rpy` + `.rpyc` scripts, Python 2 runtime | 201 units | **Pass** (Automated probe & hook verified) | 0 | **Pass** |
+| **Island Reference Fixture (GL-039.3)** | Local Reference Engine | 8.5.0.25111603 | Python 3.12.7 (64-bit) | Packed `archive.rpa` (14 scripts, 334 assets) | 2,412 units | **Pass** (6/6 lifecycle scenarios + UI screenshot) | 0 | **Pass** |
 
 ---
 
@@ -271,7 +273,44 @@ Testing real games exposed four concrete edge cases in GameLingo's Ren'Py workfl
 
 ---
 
-## 5. Ren’Py Architecture Observations
+## 5. GL-039.3 Real-Engine Verification of Startup Language Activation
+
+To eliminate any gap between unit mocks and real execution, GL-039.3 exercised the exact generated activation script (`generate_activation_rpy("english")`) in a genuine **Ren’Py 8.5.0.25111603 (Python 3.12.7 64-bit AMD64)** visual novel runtime (`island-1.0-win`).
+
+### 5.1 Test Protocol & Host Protection
+- **Pristine Reference Untouched**: The baseline files of `D:\New folder\island-1.0-win` (including `island.exe`, `island.py`, `readme.txt`, `gamelingo.db`, and `game/archive.rpa`) were recorded with cryptographic SHA-256 hashes prior to testing and independently re-verified after testing. Zero bytes were modified in the reference install.
+- **Dedicated Disposable Working Directory**: All operations ran inside disposable copies created under `E:\temp_gl039_verify\`.
+- **Absolute Persistent Preference Isolation**: The execution environment strictly redirected `RENPY_CONFIG_DIR`, `RENPY_PATH_TO_SAVES`, and `APPDATA` to independent test directories per scenario, ensuring the developer's `%APPDATA%\RenPy\` persistent preferences were neither read nor modified.
+- **Probe Checkpoint Timing**: Probes executed at `label before_main_menu:` and asserted the initial language state strictly **before** calling `renpy.change_language()`, ensuring genuine startup behavior was evaluated without masking defects.
+
+### 5.2 Multi-Scenario Lifecycle Results
+
+All six independent lifecycle scenarios passed with zero errors:
+
+| Scenario | Initial Condition | Checkpoint Assertion (Before Language Switch) | Post-Assertion Actions | Result |
+| :--- | :--- | :--- | :--- | :--- |
+| **Scenario 1: Fresh Launch** | Completely empty config dir (no persistent file) | `initial_pref_language: "english"`<br>`translate_string("GL039_STARTUP_TEST") == "GL039_TRANSLATED_OK"`<br>`initial_translation_active: True` | Assert dynamic text hook (`GL039_DYNAMIC_HOOK_OK`).<br>Assert reversion to None (`GL039_STARTUP_TEST`).<br>Capture in-process screen screenshot. | **Pass** |
+| **Scenario 2: Existing-Player Launch** | `_set_preferences = True`, `language = None` (simulates player before patch) | `initial_pref_language: "english"`<br>`translate_string("GL039_STARTUP_TEST") == "GL039_TRANSLATED_OK"`<br>`persistent._gl_lang_initialized_english: True` | Confirmed `_gl_activate_initial_language()` startup callback activates target language. | **Pass** |
+| **Scenario 3: Existing Non-Default Lang** | `_set_preferences = True`, `language = "spanish"` (player set other language) | `initial_pref_language: "spanish"`<br>`preserved_existing_language: True` | Confirmed callback adheres to policy: does **not** overwrite pre-selected languages. | **Pass** |
+| **Scenario 4: Player Reversion on Restart** | `_set_preferences = True`, `language = None`, `_gl_lang_initialized_english = True` | `initial_pref_language: None`<br>`reversion_preserved: True`<br>`translate_string: "GL039_STARTUP_TEST"` | Confirmed player reversion to original language is preserved across subsequent game restarts. | **Pass** |
+| **Scenario 5: Reload Safety** | Re-executing init block (simulating Shift+R reload) | `has_orig_attribute: True`<br>`orig_is_not_hook: True`<br>`no_recursive_wrapping: True` | Confirmed `Text.set_text` hook guard prevents recursive wrapping and double translation. | **Pass** |
+| **Scenario 6: Error Handling & Logs** | Passing unexpected data types (e.g. integer) to `Text` | `error_handled_cleanly: True`<br>`Tracebacks in log.txt: False` (0 tracebacks) | Hook gracefully falls back to original text without crashing or raising unhandled exceptions. | **Pass** |
+
+### 5.3 Real-Engine Visual Screen Evidence
+
+To prove what the player sees beyond headless API assertions, Scenario 1 displayed a visual test screen (`gl039_verify_screen`) rendered by Ren'Py's hardware renderer and captured a native screenshot via `renpy.screenshot()`:
+- **Evidence File**: `gl039_real_engine_startup_screenshot.png` (25,605 bytes).
+- **Renderer**: NVIDIA GeForce RTX 3050 Laptop GPU / OpenGL 4.6 (gl2 renderer at 1920x1080).
+- **Visible Content Confirmed**:
+  1. Header: `"GameLingo Real-Engine Startup Verification"`
+  2. Static String: `"GL039_STARTUP_TEST"` rendered on screen as `"GL039_TRANSLATED_OK"`.
+  3. Dynamic String: `"GL039_DYNAMIC_HOOK_TEST"` rendered on screen as `"GL039_DYNAMIC_HOOK_OK"`.
+- **Sanitized Log Excerpt**: Saved to `gl039_real_engine_island_log.txt` (1,807 bytes), verifying clean renderer startup and zero exceptions.
+- **Summary Evidence JSON**: Saved to `gl039_real_engine_verification_summary.json` (3,195 bytes).
+
+---
+
+## 6. Ren’Py Architecture Observations
 
 During runtime engine investigation and source analysis, the following engine behaviors were documented:
 1. **Immediate String Translation Lookup**: Ren'Py's `_()` function is an AST compile-time marker that returns its argument untranslated during script parsing. Real-time translation lookup occurs when strings pass through `renpy.translation.translate_string(s)` or `__(s)`.
@@ -281,7 +320,7 @@ During runtime engine investigation and source analysis, the following engine be
 
 ---
 
-## 6. Distribution Packaging & Cryptographic Checksum
+## 7. Distribution Packaging & Cryptographic Checksum
 
 The Windows standalone distribution package was rebuilt and verified via `build_windows.ps1` incorporating the GL-039.2 activation lifecycle fixes:
 - **Package Archive**: `dist\GameLingo-Windows-x64.zip`
@@ -292,23 +331,25 @@ The Windows standalone distribution package was rebuilt and verified via `build_
 
 ---
 
-## 7. Cleanup Verification Log
+## 8. Cleanup Verification Log
 
 In strict accordance with GL-039 requirements, cleanup of dedicated test targets was executed and verified:
 
-1. **Evidence Preservation**: Prior to deletion, all acceptance manifests (`baseline_manifests.json`), runtime probe logs (`*_runtime_probe.json`), and comprehensive test run summaries (`acceptance_test_summary.json`) were copied to persistent external session storage outside the temporary directory.
-2. **Target Inspection**: Inspected `E:\temp_gl039_tests` and confirmed it contained exclusively disposable acceptance artifacts (`downloads`, `originals`, `disposable`, `logs`).
-3. **Target Deletion**: Recursively removed `E:\temp_gl039_tests`.
-4. **Post-Cleanup Verification**: Verified that `Test-Path E:\temp_gl039_tests` returned `False`. No downloaded archives, unpacked game assets, or temporary test trees remain on disk.
+1. **Evidence Preservation**: Prior to deletion, all acceptance manifests (`baseline_manifests.json`), runtime probe logs (`*_runtime_probe.json`), real-engine multi-scenario summary (`gl039_real_engine_verification_summary.json`), visual screenshots (`gl039_real_engine_startup_screenshot.png`), engine logs (`gl039_real_engine_island_log.txt`), and comprehensive test run summaries (`acceptance_test_summary.json`) were copied to persistent external session storage outside the temporary directories.
+2. **Target Inspection**: Inspected `E:\temp_gl039_tests` and `E:\temp_gl039_verify`, confirming they contained exclusively disposable acceptance artifacts.
+3. **Target Deletion**: Recursively removed both temporary directories.
+4. **Post-Cleanup Verification**: Verified that `Test-Path E:\temp_gl039_tests` and `Test-Path E:\temp_gl039_verify` returned `False`. No downloaded archives, unpacked game assets, or temporary test trees remain on disk.
+5. **Reference Game Integrity**: Verified all 5 critical baseline hashes of `D:\New folder\island-1.0-win` matched with 0 discrepancies.
 
 ---
 
-## 8. Final Acceptance Conclusion
+## 9. Final Acceptance Conclusion
 
-All acceptance criteria for GL-039 / GL-039.2 have been met:
+All acceptance criteria for GL-039, GL-039.2, and GL-039.3 have been fully met:
 - **4 Real Games Verified**: Strange Dates Demo (8.2), Before The Rain Stops (8.5 compiled), Summer on Your Side (8.5 RPA), The Question (7.6 Py2).
-- **Startup Activation Resolved**: Root cause of initial inactive probe readings identified; activation script updated with `init 999` ordering and `config.start_callbacks` lifecycle hook.
-- **Code Quality**: Full pytest suite passing with **236 passed** tests; Ruff linting (`ruff check`) and formatting (`ruff format --check`) passing cleanly with 0 errors across 85 files.
-- **Safe Cleanup**: Confirmed and maintained without reopening or re-downloading deleted assets.
+- **Startup Activation Resolved & Real-Engine Verified**: Root cause of initial inactive probe readings identified and confirmed; activation script updated with `init 999` ordering and `config.start_callbacks` hook; verified across all 6 lifecycle scenarios on genuine Ren'Py 8.5.0 engine runtime.
+- **Visual UI Verification**: Native in-process screenshot captured from Ren'Py 8.5.0 display tree proving rendered translated static and dynamic strings.
+- **Code Quality**: Full pytest suite passing with **236 passed** tests; Ruff linting (`ruff check`) and formatting (`ruff format --check`) passing cleanly with 0 errors across 86 files.
+- **Safe Cleanup**: Confirmed and maintained across all temporary test directories without altering reference or original game assets.
 - **Distribution Package**: Standalone Windows zip rebuilt and verified (`SHA-256: B780BECFC9A9CA1F5818C4ACD646A1343A20F4DAF2301C8720E2F3B679215998`).
 - **Final Status**: **Pass** across all acceptance criteria.
