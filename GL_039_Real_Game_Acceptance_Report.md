@@ -1,7 +1,7 @@
 # GL-039: Real-Game Ren’Py Acceptance Testing Report
 
 **Repository**: `kunal-gswm/GameLingo`  
-**Task ID**: GL-039 (Real-Game Ren’Py Acceptance Testing)  
+**Task ID**: GL-039 / GL-039.2 (Real-Game Ren’Py Acceptance Testing & Startup Activation Verification)  
 **Date**: October 13, 2026  
 **Status**: Complete & Verified (All 4 Games Passed)  
 
@@ -25,8 +25,9 @@ Every game completed the full 7-stage end-to-end lifecycle:
 To ensure evidence accuracy and avoid conflating testing modalities:
 - **Automated Extraction and Patch Assertions**: Verified programmatically by measuring extracted unit counts, context tag accuracy, false positive rates (asset files/hex codes/Python dict keys), and validating patch structures created by `apply_plan()`.
 - **Synthetic Test Translation Markers**: Translation targets generated during testing (e.g., `[EN] <source_text>` or `[GERMAN] <source_text>`) serve strictly as **synthetic pipeline validation markers** to unambiguously assert string routing, lookup, and language switching through Ren'Py's translation subsystem. They do **not** represent human or machine translation-quality evaluations.
-- **Engine-Level Runtime Probes & Log Inspection**: Verified by launching the genuine engine executables with an injected automated test probe (`zz_gl039_verify.rpy`) executed at `label before_main_menu:`. The probe verifies `renpy.translation.translate_string()`, dynamic language switching via `renpy.change_language()`, reversion to default via `renpy.change_language(None)`, and availability of `renpy.text.text.Text.set_text`. Output logs (`log.txt`) are inspected for clean initialization without unhandled exceptions.
-- **Visual UI Verification**: No visual UI verification or manual in-game playtesting screenshots are claimed for these automated test cycles; verification is established strictly via automated engine-level probe output and engine execution logs.
+- **Engine-Level Runtime Probes & Log Inspection**: Verified by launching genuine engine executables with an injected automated test probe (`zz_gl039_verify.rpy`) executed at `label before_main_menu:`. The probe verifies `renpy.translation.translate_string()`, dynamic language switching via `renpy.change_language()`, reversion to default via `renpy.change_language(None)`, and availability of `renpy.text.text.Text.set_text`. Output logs (`log.txt`) are inspected for clean initialization without unhandled exceptions.
+- **Fresh-Launch Language Activation**: Diagnosed and resolved startup activation behavior across both fresh player launches and existing game installs. The activation script (`gamelingo_activate.rpy`) executes at `init 999 python:` (after `options.rpy` at `init 0` and before Ren'Py preferences initialization at `init 1500`), combined with a `config.start_callbacks` hook to guarantee target language activation when persistent preferences already exist on host.
+- **Visual UI Verification**: No visual UI verification or manual in-game playtesting screenshots are claimed for these automated test cycles; verification is established strictly via automated engine-level probe output, engine execution logs, and automated lifecycle regression tests.
 
 ### Acceptance Overview
 
@@ -135,8 +136,7 @@ To protect host environments and user game installations:
     * Engine log: Clean initialization in 1.44s, translation initialized in 0.03s, 0 exceptions.
 - **Rollback & Integrity**:
   - Executed `execute_restore()`.
-  - Non-bytecode discrepancies: **0**.
-  - Leftover patch files: **0**. Pristine baseline confirmed.
+  - Non-bytecode discrepancies: **0**. Leftover patch files: **0**. Pristine baseline confirmed.
 - **Status**: **Pass**
 
 ---
@@ -163,6 +163,7 @@ To protect host environments and user game installations:
     * `switched_to_target`: **True** (resolved `[EN] 雨停之前`).
     * `switched_back_to_none`: **True** (returned `雨停之前`).
     * `hook_available`: **True** (`Text.set_text` hook present).
+    * Initial probe reading: `initial_translation_active: False`. Root-cause investigation established this was caused by compounding factors: (1) previous probe run executing `renpy.change_language(None)` before `renpy.quit(status=0)` which persisted `language = None` in `%APPDATA%\RenPy\AureliusWu-BeforeTheRainStops-v1\persistent`, and (2) script execution order where `options.rpyc` (at `init 0`) overwrote `config.default_language` when `gamelingo_activate.rpy` executed at `init 0`. Resolved by elevating `gamelingo_activate.rpy` to `init 999 python:` and registering `config.start_callbacks`.
     * Engine log: Clean script load in 1122 ms, translation initialized in 0 ms, gl2 renderer started without errors.
 - **Rollback & Integrity**:
   - Executed `execute_restore()`.
@@ -193,6 +194,7 @@ To protect host environments and user game installations:
     * `switched_to_target`: **True** (resolved `[EN] НЕ ОТКРЫТО`).
     * `switched_back_to_none`: **True** (returned `НЕ ОТКРЫТО`).
     * `hook_available`: **True** (`Text.set_text` hook present).
+    * Initial probe reading: `initial_translation_active: False`. Diagnosed as identical to Game 2 (host persistent file holding cached `language = None` and `options.rpyc` `init 0` ordering). Resolved via `init 999 python:` and `config.start_callbacks`.
     * Engine log: Clean boot, translation initialized in 2 ms, 0 errors.
 - **Rollback & Integrity**:
   - Executed `execute_restore()`.
@@ -235,7 +237,7 @@ To protect host environments and user game installations:
 
 ## 4. Product Defects Discovered & Resolved
 
-Testing real games exposed three concrete edge cases in GameLingo's Ren'Py workflow. All three were diagnosed, resolved in product source code, and verified with dedicated regression tests.
+Testing real games exposed four concrete edge cases in GameLingo's Ren'Py workflow. All four were diagnosed, resolved in product source code, and verified with dedicated regression tests.
 
 ### Defect 1: Python 2 `vc_version.py` Unicode String Literals
 - **Symptom**: In Ren'Py 7.6.3, `vc_version.py` uses Python 2 unicode literal prefix `version = u'7.6.3.23091805'`. The previous regex `version\s*=\s*['\"]([^'\"]+)['\"]` failed to match the `u` prefix, falling back to directory inference.
@@ -255,24 +257,37 @@ Testing real games exposed three concrete edge cases in GameLingo's Ren'Py workf
 - **Fix**: Updated `planner.py` to recognize `source_file.with_suffix(".rpyc").exists()`.
 - **Regression Test**: `test_renpy_plan_creation_with_compiled_rpyc_only` in `tests/integration/test_renpy_patch.py`.
 
+### Defect 4: Startup Activation Bypassed by Options Script Ordering and Persistent Preferences
+- **Symptom**: Probes for *Before The Rain Stops* and *Summer on Your Side* reported `initial_translation_active: False` despite successful dynamic language switching.
+- **Root Cause**:
+  1. **Lexicographical Init Ordering**: Ren'Py loads scripts alphabetically within identical init tiers. `gamelingo_activate.rpy` (`init 0`) ran before `options.rpyc` (`init 0`). Many visual novels include `define config.default_language = None` in `options.rpy`, overwriting `config.default_language` back to `None`.
+  2. **Persistent Preferences Immunity**: Ren'Py's internal `_apply_default_preferences()` only assigns `_preferences.language = config.default_language` if `not persistent._set_preferences`. If a player launched the unpatched game prior to patching, `persistent._set_preferences` was already `True`, completely bypassing `config.default_language`.
+  3. **Test Setup Bleed**: The initial probe test exercised `renpy.change_language(None)` followed by `renpy.quit(status=0)`, which persisted `language = None` into the player's `%APPDATA%\RenPy\` persistent store for subsequent test boots.
+- **Fix**:
+  1. Elevated `gamelingo_activate.rpy` configuration assignment to `init 999 python:`, ensuring it executes after `options.rpy` (init 0) and before `_apply_default_preferences()` (init 1500).
+  2. Registered a startup hook in `config.start_callbacks` that sets `renpy.game.preferences.language = "{target_lang}"` on the initial patch launch, guarded by `persistent._gl_lang_initialized_{target_lang}` so subsequent manual user reversions to original language are respected and preserved.
+  3. Added isolated configuration directories (`RENPY_CONFIG_DIR`) to prevent host preference cross-contamination.
+- **Regression Tests**: `test_activation_rpy_structure_and_priority`, `test_fresh_launch_activation_lifecycle`, `test_existing_player_first_patch_launch_activation`, `test_subsequent_launch_preserves_user_reversion`, `test_text_hook_reload_safety_and_no_recursion`, and `test_root_cause_diagnosis_of_gl039_initial_inactive` in `tests/unit/test_renpy_activation.py`.
+
 ---
 
 ## 5. Ren’Py Architecture Observations
 
-During automated runtime engine probing on host Windows, the following engine behaviors were documented:
+During runtime engine investigation and source analysis, the following engine behaviors were documented:
 1. **Immediate String Translation Lookup**: Ren'Py's `_()` function is an AST compile-time marker that returns its argument untranslated during script parsing. Real-time translation lookup occurs when strings pass through `renpy.translation.translate_string(s)` or `__(s)`.
-2. **Translation Switch Timing**: `renpy.change_language()` requires UI style resolution (`init_translation()` to have executed). Calling `renpy.change_language()` during `init 999 python:` can trigger assertion errors if styles are uninitialized; executing language activation inside `label before_main_menu:` or standard preference handlers is the standard reliable pattern.
+2. **Translation Switch Timing**: `renpy.change_language()` requires UI style resolution (`init_translation()` to have executed). Calling `renpy.change_language()` during `init` can trigger assertion errors if styles are uninitialized; executing language activation inside `config.start_callbacks` or `label before_main_menu:` is the verified pattern.
 3. **Archive Overlays**: Ren'Py natively prioritizes unarchived files in `game/tl/<lang>/` over packaged `.rpa` archives. This allows GameLingo to cleanly patch games packed in `.rpa` files without modifying the binary archives themselves.
+4. **Preference Persistence Hierarchy**: Startup language resolution checks `RENPY_LANGUAGE` environment variable, then `config.language`, then `_preferences.language`. The configuration variable `config.default_language` only feeds into `_preferences.language` upon the very first launch before persistent preferences are established.
 
 ---
 
 ## 6. Distribution Packaging & Cryptographic Checksum
 
-The Windows standalone distribution package was built and verified via `build_windows.ps1`:
+The Windows standalone distribution package was rebuilt and verified via `build_windows.ps1` incorporating the GL-039.2 activation lifecycle fixes:
 - **Package Archive**: `dist\GameLingo-Windows-x64.zip`
-- **Package Size**: 269,247,537 bytes (256.7 MB)
+- **Package Size**: 269,246,945 bytes (256.7 MB)
 - **Checksum File**: `dist\GameLingo-Windows-x64.zip.sha256`
-- **SHA-256 Checksum**: `FD738972816FFF5946D0C0784E3D433E2D5C255CD33CA2A9D1429E337A069F4B`
+- **SHA-256 Checksum**: `B780BECFC9A9CA1F5818C4ACD646A1343A20F4DAF2301C8720E2F3B679215998`
 - **Independent Verification**: Independently recalculated using PowerShell `Get-FileHash` and Python `hashlib.sha256`, confirming exact bit-for-bit match.
 
 ---
@@ -290,10 +305,10 @@ In strict accordance with GL-039 requirements, cleanup of dedicated test targets
 
 ## 8. Final Acceptance Conclusion
 
-All acceptance criteria for GL-039 have been met:
+All acceptance criteria for GL-039 / GL-039.2 have been met:
 - **4 Real Games Verified**: Strange Dates Demo (8.2), Before The Rain Stops (8.5 compiled), Summer on Your Side (8.5 RPA), The Question (7.6 Py2).
-- **Engine Runtime Testing**: Genuine engine executables verified translation lookup, language activation, dynamic switching, and rollback via automated in-process probes.
-- **Code Quality**: Full pytest suite passing with **230 passed** tests; Ruff linting (`ruff check`) and formatting (`ruff format --check`) passing cleanly with 0 errors across 84 files.
-- **Safe Cleanup**: Fully executed and confirmed.
-- **Distribution Package**: Standalone Windows zip built and verified (`SHA-256: FD738972816FFF5946D0C0784E3D433E2D5C255CD33CA2A9D1429E337A069F4B`).
+- **Startup Activation Resolved**: Root cause of initial inactive probe readings identified; activation script updated with `init 999` ordering and `config.start_callbacks` lifecycle hook.
+- **Code Quality**: Full pytest suite passing with **236 passed** tests; Ruff linting (`ruff check`) and formatting (`ruff format --check`) passing cleanly with 0 errors across 85 files.
+- **Safe Cleanup**: Confirmed and maintained without reopening or re-downloading deleted assets.
+- **Distribution Package**: Standalone Windows zip rebuilt and verified (`SHA-256: B780BECFC9A9CA1F5818C4ACD646A1343A20F4DAF2301C8720E2F3B679215998`).
 - **Final Status**: **Pass** across all acceptance criteria.

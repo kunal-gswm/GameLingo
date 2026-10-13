@@ -357,6 +357,7 @@ label before_main_menu:
             print(f"  Launching {exe_path.name} in disposable copy...")
             run_env = dict(os.environ)
             run_env["RENPY_SKIP_SPLASHSCREEN"] = "1"
+            run_env["RENPY_CONFIG_DIR"] = str(game_path / ".renpy_test_config")
             proc = subprocess.run(
                 exe_args,
                 cwd=str(game_path if exe_path.parent == game_path else exe_path.parent),
@@ -445,6 +446,10 @@ label before_main_menu:
     ]:
         if leftover.exists():
             leftover.unlink()
+
+    test_cfg = game_path / ".renpy_test_config"
+    if test_cfg.exists():
+        shutil.rmtree(test_cfg, ignore_errors=True)
 
     # Clean up empty tl/<target_lang> or tl directories if created by patch
     tl_target_dir = game_dir / "tl" / target_lang
