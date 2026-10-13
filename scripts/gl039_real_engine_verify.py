@@ -92,7 +92,7 @@ def run_renpy_engine(
 
 def main():
     print("=" * 60)
-    print("GL-039.4: Real-Engine Verification of Dynamic Text & Reload")
+    print("GL-039.5: Real-Engine Verification of Dynamic Text & Script Reload")
     print("=" * 60)
 
     # 1. Inspect original game
@@ -516,9 +516,11 @@ label before_main_menu:
         }
 
     # -------------------------------------------------------------------------
-    # Scenario 5: Real-Engine Reload via utter_restart() & Idempotency
+    # Scenario 5: Real Script Reload via renpy.reload_script() & Idempotency
     # -------------------------------------------------------------------------
-    print("\n[Scenario 5] Testing Real-Engine Reload (utter_restart) & Idempotency...")
+    print(
+        "\n[Scenario 5] Testing Real Script Reload (renpy.reload_script) & Idempotency..."
+    )
     s5_config = ISOLATED_CONFIG_DIR / "s5_reload_safety"
     if s5_config.exists():
         shutil.rmtree(s5_config)
@@ -532,66 +534,96 @@ label before_main_menu:
 
     s5_probe_json = s5_config / "probe_s5.json"
     s5_marker_file = s5_config / "reload_marker.txt"
+    s5_pre_state_file = s5_config / "pre_reload_state.json"
 
-    s5_probe_rpy = f'''# Scenario 5 Real-Engine Reload & Idempotency Probe
+    s5_probe_rpy = f'''# Scenario 5 Real Script Reload Probe
+init -100 python:
+    config.developer = True
+
 label before_main_menu:
     python:
         import json, os, sys
 
-        flag = "{s5_marker_file.as_posix()}"
+        marker = "{s5_marker_file.as_posix()}"
+        pre_state_path = "{s5_pre_state_file.as_posix()}"
         out = "{s5_probe_json.as_posix()}"
 
-        if not os.path.exists(flag):
-            # Pass 1: Before utter_restart
-            with open(flag, "w") as f:
-                f.write("reloading_now")
+        if not os.path.exists(marker):
+            # Phase 1: Pre-Reload Phase
+            with open(marker, "w") as f:
+                f.write("pre_reload_completed")
 
-            # Trigger real script reload (Shift+R)
-            renpy.utter_restart()
-        else:
-            # Pass 2: After utter_restart completed
-            res = {{
-                "scenario": "Scenario 5: Real-Engine Reload & Idempotency",
-                "reloaded_via_utter_restart": True,
-                "post_reload_language": getattr(renpy.game.preferences, "language", None),
+            pre_orig_fn = getattr(renpy.text.text.Text, "_gl_orig_set_text", None)
+            pre_curr_fn = getattr(renpy.text.text.Text, "set_text", None)
+
+            pre_dyn = renpy.text.text.Text("GL039_DYNAMIC_HOOK_TEST")
+            pre_dyn_text = pre_dyn.text[0] if (hasattr(pre_dyn, "text") and pre_dyn.text) else None
+
+            pre_state = {{
+                "pre_has_orig": (pre_orig_fn is not None),
+                "pre_orig_name": getattr(pre_orig_fn, "__name__", str(pre_orig_fn)),
+                "pre_curr_name": getattr(pre_curr_fn, "__name__", str(pre_curr_fn)),
+                "pre_dyn_text": pre_dyn_text,
             }}
+            with open(pre_state_path, "w") as f:
+                json.dump(pre_state, f, indent=2)
 
-            # 1. Text.set_text is wrapped only once
-            orig_fn = getattr(renpy.text.text.Text, "_gl_orig_set_text", None)
-            curr_fn = getattr(renpy.text.text.Text, "set_text", None)
-            res["has_orig_attribute"] = (orig_fn is not None)
-            res["orig_is_not_hook"] = (orig_fn != curr_fn)
-            res["orig_function_name"] = getattr(orig_fn, "__name__", str(orig_fn))
-            res["curr_function_name"] = getattr(curr_fn, "__name__", str(curr_fn))
-            res["wrapped_only_once"] = (res["has_orig_attribute"] and res["orig_is_not_hook"] and res["orig_function_name"] == "set_text")
+            # Trigger actual documented Ren'Py script reload API
+            renpy.reload_script()
+        else:
+            # Phase 2: Post-Reload Phase (After renpy.reload_script)
+            with open(pre_state_path, "r") as f:
+                pre_state = json.load(f)
 
-            # 2. Repeated initialization test: simulate 10 repeated init passes re-running hook installation
-            for _ in range(10):
-                if not hasattr(renpy.text.text.Text, "_gl_orig_set_text"):
-                    renpy.text.text.Text._gl_orig_set_text = renpy.text.text.Text.set_text
-                    renpy.text.text.Text.set_text = lambda self, text, *a, **kw: None
+            post_orig_fn = getattr(renpy.text.text.Text, "_gl_orig_set_text", None)
+            post_curr_fn = getattr(renpy.text.text.Text, "set_text", None)
 
-            after_orig = getattr(renpy.text.text.Text, "_gl_orig_set_text", None)
-            after_curr = getattr(renpy.text.text.Text, "set_text", None)
-            res["repeated_init_preserved_orig"] = (after_orig == orig_fn)
-            res["repeated_init_preserved_curr"] = (after_curr == curr_fn)
+            post_orig_name = getattr(post_orig_fn, "__name__", str(post_orig_fn))
+            post_curr_name = getattr(post_curr_fn, "__name__", str(post_curr_fn))
 
-            # 3. Dynamic text rendering continues to work after reload
-            t_post = renpy.text.text.Text("GL039_DYNAMIC_HOOK_TEST")
-            res["post_reload_text"] = t_post.text[0] if (hasattr(t_post, "text") and t_post.text) else None
-            res["post_reload_dynamic_hook_working"] = (res["post_reload_text"] == "GL039_DYNAMIC_HOOK_OK")
+            # 1. Reinitialization did not replace saved original function with wrapped hook
+            orig_fn_not_replaced_by_wrapper = (post_orig_fn != post_curr_fn and post_orig_name == "set_text")
 
-            # 4. No double translation or mangling
-            t_post.set_text("GL039_DYNAMIC_HOOK_OK")
-            res["idempotent_translation"] = (t_post.text[0] == "GL039_DYNAMIC_HOOK_OK")
-
-            res["reload_safe"] = (
-                res["wrapped_only_once"]
-                and res["repeated_init_preserved_orig"]
-                and res["post_reload_dynamic_hook_working"]
-                and res["idempotent_translation"]
+            # 2. Exactly one GameLingo wrapper remains installed
+            wrapped_only_once = (
+                post_orig_fn is not None
+                and post_orig_name == "set_text"
+                and post_curr_name == "_gl_set_text"
+                and post_orig_fn != post_curr_fn
             )
-            res["error"] = None
+
+            # 3. Dynamic text still translates once after reload
+            t_post = renpy.text.text.Text("GL039_DYNAMIC_HOOK_TEST")
+            post_dyn_text = t_post.text[0] if (hasattr(t_post, "text") and t_post.text) else None
+            post_reload_dynamic_hook_working = (post_dyn_text == "GL039_DYNAMIC_HOOK_OK")
+
+            # 4. Already-translated string is not mangled by repeated processing
+            t_post.set_text("GL039_DYNAMIC_HOOK_OK")
+            idempotent_no_mangling = (t_post.text[0] == "GL039_DYNAMIC_HOOK_OK")
+
+            res = {{
+                "scenario": "Scenario 5: Real Script Reload (renpy.reload_script)",
+                "reload_mechanism": "renpy.reload_script",
+                "developer_mode": getattr(config, "developer", False),
+                "reloaded_via_reload_script": True,
+                "pre_reload_state": pre_state,
+                "post_reload_language": getattr(renpy.game.preferences, "language", None),
+                "post_has_orig_attribute": (post_orig_fn is not None),
+                "orig_function_name": post_orig_name,
+                "curr_function_name": post_curr_name,
+                "orig_fn_not_replaced_by_wrapper": orig_fn_not_replaced_by_wrapper,
+                "wrapped_only_once": wrapped_only_once,
+                "post_reload_text": post_dyn_text,
+                "post_reload_dynamic_hook_working": post_reload_dynamic_hook_working,
+                "idempotent_no_mangling": idempotent_no_mangling,
+                "reload_safe": (
+                    wrapped_only_once
+                    and orig_fn_not_replaced_by_wrapper
+                    and post_reload_dynamic_hook_working
+                    and idempotent_no_mangling
+                ),
+                "error": None,
+            }}
 
             with open(out, "w") as f:
                 json.dump(res, f, indent=2)
@@ -606,18 +638,19 @@ label before_main_menu:
         s5_data = json.loads(s5_probe_json.read_text(encoding="utf-8"))
         scenario_results["scenario_5_reload_safety"] = s5_data
         print(
-            f"  reloaded_via_utter_restart: {s5_data.get('reloaded_via_utter_restart')}"
+            f"  reloaded_via_reload_script: {s5_data.get('reloaded_via_reload_script')}"
         )
-        print(f"  wrapped_only_once: {s5_data.get('wrapped_only_once')}")
+        print(f"  developer_mode: {s5_data.get('developer_mode')}")
         print(f"  orig_function_name: {s5_data.get('orig_function_name')}")
         print(f"  curr_function_name: {s5_data.get('curr_function_name')}")
         print(
-            f"  repeated_init_preserved_orig: {s5_data.get('repeated_init_preserved_orig')}"
+            f"  orig_fn_not_replaced_by_wrapper: {s5_data.get('orig_fn_not_replaced_by_wrapper')}"
         )
+        print(f"  wrapped_only_once: {s5_data.get('wrapped_only_once')}")
         print(
             f"  post_reload_dynamic_hook_working: {s5_data.get('post_reload_dynamic_hook_working')} (text: {s5_data.get('post_reload_text')})"
         )
-        print(f"  idempotent_translation: {s5_data.get('idempotent_translation')}")
+        print(f"  idempotent_no_mangling: {s5_data.get('idempotent_no_mangling')}")
         print(f"  reload_safe: {s5_data.get('reload_safe')}")
     else:
         print("  ERROR: Scenario 5 probe output not found!")
@@ -743,6 +776,10 @@ label before_main_menu:
                 is True,
                 scenario_results.get("scenario_5_reload_safety", {}).get("reload_safe")
                 is True,
+                scenario_results.get("scenario_5_reload_safety", {}).get(
+                    "reloaded_via_reload_script"
+                )
+                is True,
                 scenario_results.get("scenario_6_error_handling", {}).get(
                     "error_handled_cleanly"
                 )
@@ -781,7 +818,7 @@ label before_main_menu:
         print("  Original game is 100% PRISTINE and UNCHANGED.")
 
     print("\n========================================================")
-    print("GL-039.4 REAL-ENGINE VERIFICATION COMPLETED SUCCESSFULLY")
+    print("GL-039.5 REAL-ENGINE VERIFICATION COMPLETED SUCCESSFULLY")
     print("========================================================")
 
 
