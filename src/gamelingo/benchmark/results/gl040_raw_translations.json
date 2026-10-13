@@ -1,0 +1,1624 @@
+[
+  {
+    "item": {
+      "id": "bench_001",
+      "category": "dialogue",
+      "source_text": "あぁ？　なんだよ、お前",
+      "file_id": "game/script.rpy",
+      "context": "Character: mob_1 [archive: archive.rpa]",
+      "reference": "Huh? What do you want?",
+      "expected_behavior": "Translate natural spoken dialogue; rude/hostile tone."
+    },
+    "target_text": "あぁ？　なんだよ、お前",
+    "error": null,
+    "duration_seconds": 5.1604,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      },
+      {
+        "code": "IDENTICAL_TO_SOURCE",
+        "severity": "warning",
+        "message": "Translation is identical to source text."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_002",
+      "category": "dialogue",
+      "source_text": "い、いえ、なんでも……っ",
+      "file_id": "game/script.rpy",
+      "context": "Character: osamu [archive: archive.rpa]",
+      "reference": "N-No, it's nothing...",
+      "expected_behavior": "Translate stuttered nervous response with ellipsis."
+    },
+    "target_text": "......",
+    "error": null,
+    "duration_seconds": 0.0482,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_003",
+      "category": "dialogue",
+      "source_text": "効かない。男にはまるで。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "It doesn't work. Not at all on men.",
+      "expected_behavior": "Translate terse internal monologue."
+    },
+    "target_text": "Not effective. Like a man.",
+    "error": null,
+    "duration_seconds": 0.045,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_004",
+      "category": "dialogue",
+      "source_text": "どうして……？",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "Why...?",
+      "expected_behavior": "Preserve question and ellipsis."
+    },
+    "target_text": "Why?",
+    "error": null,
+    "duration_seconds": 0.0242,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_005",
+      "category": "dialogue",
+      "source_text": "思い当たることといったら……。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "If I had to think of anything...",
+      "expected_behavior": "Translate internal reflection."
+    },
+    "target_text": "思い当たることといったら……。",
+    "error": null,
+    "duration_seconds": 0.0333,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      },
+      {
+        "code": "IDENTICAL_TO_SOURCE",
+        "severity": "warning",
+        "message": "Translation is identical to source text."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_006",
+      "category": "dialogue",
+      "source_text": "……あ！ここにきて食べた——あの変な実か！",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "...Ah! That strange fruit I ate when I got here!",
+      "expected_behavior": "Preserve exclamation, dash, and emotional realization."
+    },
+    "target_text": "That’s it!",
+    "error": null,
+    "duration_seconds": 0.0863,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_007",
+      "category": "dialogue",
+      "source_text": "食べたら、急に体が熱くなって……。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "After eating it, my body suddenly grew hot...",
+      "expected_behavior": "Translate sensory narration with ellipsis."
+    },
+    "target_text": "The body suddenly gets hot...",
+    "error": null,
+    "duration_seconds": 0.0691,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_008",
+      "category": "dialogue",
+      "source_text": "あれのせいだとしたら——ぞくり、と背筋が震えた。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "If it was because of that—a chill ran down my spine.",
+      "expected_behavior": "Preserve dash, sensory onomatopoeia expression."
+    },
+    "target_text": "If that is the reason, the back muscles震ed.",
+    "error": null,
+    "duration_seconds": 0.0805,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_009",
+      "category": "dialogue",
+      "source_text": "生き残りは、いったい何人いるんだろう。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "How many survivors are there, I wonder?",
+      "expected_behavior": "Translate reflective question."
+    },
+    "target_text": "There are many people who live.",
+    "error": null,
+    "duration_seconds": 0.054,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_010",
+      "category": "dialogue",
+      "source_text": "この島がどこかも、助けが来るのかも、まるでわからない。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "I have no idea where this island is, or if help will ever come.",
+      "expected_behavior": "Translate despairing narration."
+    },
+    "target_text": "I don’t know where to help.",
+    "error": null,
+    "duration_seconds": 0.0961,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_011",
+      "category": "dialogue",
+      "source_text": "考えるほど、不安で頭がいっぱいになる。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "The more I think about it, the more anxiety fills my head.",
+      "expected_behavior": "Translate psychological description."
+    },
+    "target_text": "The more you think, the more you feel, the more your head is full.",
+    "error": null,
+    "duration_seconds": 0.0972,
+    "validation_issues": [
+      {
+        "code": "LENGTH_MISMATCH",
+        "severity": "warning",
+        "message": "Translation is unusually long compared to source."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_012",
+      "category": "dialogue",
+      "source_text": "まずは、動くしかない。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "For now, all I can do is move.",
+      "expected_behavior": "Translate resolution / monologue."
+    },
+    "target_text": "First of all, you have to move.",
+    "error": null,
+    "duration_seconds": 0.0502,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_013",
+      "category": "dialogue",
+      "source_text": "食べ物を探しに、密林の際を歩く。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "Looking for food, I walk along the edge of the dense jungle.",
+      "expected_behavior": "Translate third/first-person scene setting."
+    },
+    "target_text": "Walking in the d  forest with food.",
+    "error": null,
+    "duration_seconds": 0.076,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_014",
+      "category": "dialogue",
+      "source_text": "木陰に女の子がひとり、しゃがみ込んでいた。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "A lone girl was crouching in the shade of the trees.",
+      "expected_behavior": "Translate visual descriptive narration."
+    },
+    "target_text": "A woman's child sneezed in the shade.",
+    "error": null,
+    "duration_seconds": 0.0821,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_015",
+      "category": "dialogue",
+      "source_text": "うぅ……おなか、すいた……",
+      "file_id": "game/script.rpy",
+      "context": "Character: hina [archive: archive.rpa]",
+      "reference": "Ugh... I'm so hungry...",
+      "expected_behavior": "Translate weak, hungry girl dialogue."
+    },
+    "target_text": "Home",
+    "error": null,
+    "duration_seconds": 0.029,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_016",
+      "category": "dialogue",
+      "source_text": "ピンクのパーカー。あどけない顔。学生だろうか。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "Pink hoodie. An innocent face. A student, perhaps?",
+      "expected_behavior": "Translate character observation."
+    },
+    "target_text": "Pink sandals. I can't face. Are you a student?",
+    "error": null,
+    "duration_seconds": 0.0776,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_017",
+      "category": "dialogue",
+      "source_text": "あ……こんにちは",
+      "file_id": "game/script.rpy",
+      "context": "Character: hina [archive: archive.rpa]",
+      "reference": "Ah... hello.",
+      "expected_behavior": "Translate timid greeting."
+    },
+    "target_text": "Hello",
+    "error": null,
+    "duration_seconds": 0.0202,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_018",
+      "category": "dialogue",
+      "source_text": "……こんにちは",
+      "file_id": "game/script.rpy",
+      "context": "Character: osamu [archive: archive.rpa]",
+      "reference": "...Hello.",
+      "expected_behavior": "Translate polite restrained reply."
+    },
+    "target_text": "Hello",
+    "error": null,
+    "duration_seconds": 0.0227,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_019",
+      "category": "dialogue",
+      "source_text": "その、食べ物……持ってたり、しませんか？",
+      "file_id": "game/script.rpy",
+      "context": "Character: hina [archive: archive.rpa]",
+      "reference": "Um, do you... happen to have any food?",
+      "expected_behavior": "Translate polite tentative request with ellipsis."
+    },
+    "target_text": "Do you have food?",
+    "error": null,
+    "duration_seconds": 0.0485,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_020",
+      "category": "dialogue",
+      "source_text": "試すなら。抵抗のなさそうな、この子で——。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "If I'm going to test it. On this girl, who looks defenseless—.",
+      "expected_behavior": "Translate opportunistic internal thought."
+    },
+    "target_text": "Contact Us In this child, it seems to be resistant.",
+    "error": null,
+    "duration_seconds": 0.0682,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_021",
+      "category": "dialogue",
+      "source_text": "でも、生き延びるには。この力が本当なら、立派な武器になる。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "But to survive. If this power is real, it'll make a formidable weapon.",
+      "expected_behavior": "Translate rationalizing narration."
+    },
+    "target_text": "But to survive. If this power is true, it becomes a good weapon.",
+    "error": null,
+    "duration_seconds": 0.079,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_022",
+      "category": "dialogue",
+      "source_text": "ためらいながら、俺はその瞳を見つめた。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "Hesitating, I gazed into her eyes.",
+      "expected_behavior": "Translate narrative climax action."
+    },
+    "target_text": "I see the eyes.",
+    "error": null,
+    "duration_seconds": 0.0402,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_023",
+      "category": "dialogue",
+      "source_text": "とたんに腹が減った。何か食べないと。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "All at once, hunger struck me. I have to eat something.",
+      "expected_behavior": "Translate urgent physiological narration."
+    },
+    "target_text": "I got my stomach down. Don’t eat anything.",
+    "error": null,
+    "duration_seconds": 0.0602,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_024",
+      "category": "dialogue",
+      "source_text": "波打ち際に、機内食らしき箱が流れ着いていた。俺はそれに駆け寄る。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "At the water's edge, a box resembling an in-flight meal had washed ashore. I dashed toward it.",
+      "expected_behavior": "Translate descriptive action narrative."
+    },
+    "target_text": "When waking, the sashiki box of the fish was flowing. I ran to it.",
+    "error": null,
+    "duration_seconds": 0.1353,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_025",
+      "category": "dialogue",
+      "source_text": "あった……っ",
+      "file_id": "game/script.rpy",
+      "context": "Character: osamu [archive: archive.rpa]",
+      "reference": "Found it...!",
+      "expected_behavior": "Translate triumphant gasp."
+    },
+    "target_text": "......",
+    "error": null,
+    "duration_seconds": 0.0341,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_026",
+      "category": "dialogue",
+      "source_text": "ぬっ、と横から太い腕が伸びた。箱がかすめ取られる。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "Suddenly, a thick arm lunged from the side, snatching the box away.",
+      "expected_behavior": "Translate sudden narrative action."
+    },
+    "target_text": "The arm stretched from the side. The box is  .",
+    "error": null,
+    "duration_seconds": 0.0677,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_027",
+      "category": "dialogue",
+      "source_text": "わりぃな。俺の方が先だ",
+      "file_id": "game/script.rpy",
+      "context": "Character: mob_1 [archive: archive.rpa]",
+      "reference": "Sorry, pal. I got here first.",
+      "expected_behavior": "Translate casual, assertive male dialogue."
+    },
+    "target_text": "Home",
+    "error": null,
+    "duration_seconds": 0.0217,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_028",
+      "category": "dialogue",
+      "source_text": "筋肉の塊みたいな男だった。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "He was a man built like a wall of muscle.",
+      "expected_behavior": "Translate vivid character description."
+    },
+    "target_text": "A man like a mass of muscle.",
+    "error": null,
+    "duration_seconds": 0.0521,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_029",
+      "category": "dialogue",
+      "source_text": "箱を抱えると、ちらりと後ろを気にしながら去っていく。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "Clutching the box, he glanced warily behind him as he departed.",
+      "expected_behavior": "Translate character departure description."
+    },
+    "target_text": "When you pull the box, you will leave it while you care about it.",
+    "error": null,
+    "duration_seconds": 0.1065,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_030",
+      "category": "dialogue",
+      "source_text": "そんな……っ",
+      "file_id": "game/script.rpy",
+      "context": "Character: osamu [archive: archive.rpa]",
+      "reference": "No way...!",
+      "expected_behavior": "Translate dismayed exclamation with ellipsis."
+    },
+    "target_text": "That's it.",
+    "error": null,
+    "duration_seconds": 0.0421,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_031",
+      "category": "dialogue",
+      "source_text": "あっという間に奪われた。抵抗も、できるはずもない。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "It was stolen in an instant. There was no way I could fight back.",
+      "expected_behavior": "Translate powerlessness narrative."
+    },
+    "target_text": "I took away. No resistance or can be done.",
+    "error": null,
+    "duration_seconds": 0.0723,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_032",
+      "category": "dialogue",
+      "source_text": "ただ、呆然と立ち尽くすだけだった。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "I could only stand there, completely stunned.",
+      "expected_behavior": "Translate emotional aftermath description."
+    },
+    "target_text": "However, it was just to stand out.",
+    "error": null,
+    "duration_seconds": 0.0754,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_033",
+      "category": "dialogue",
+      "source_text": "——いた。ちょっと、あんた",
+      "file_id": "game/script.rpy",
+      "context": "Character: reika [archive: archive.rpa]",
+      "reference": "—There you are. Hey, you.",
+      "expected_behavior": "Translate abrupt callout with leading dash."
+    },
+    "target_text": "Dutch Comment",
+    "error": null,
+    "duration_seconds": 0.0281,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_034",
+      "category": "dialogue",
+      "source_text": "この声。振り向くと、案の定あのお嬢様が立っていた。……無事だったのか。",
+      "file_id": "game/script.rpy",
+      "context": "Narration [archive: archive.rpa]",
+      "reference": "That voice. Turning around, sure enough, that young lady stood there. ...So she survived.",
+      "expected_behavior": "Translate internal recognition narration."
+    },
+    "target_text": "This voice. When I ran, the lady of the plan was standing. ...Is it safe?",
+    "error": null,
+    "duration_seconds": 0.1291,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_035",
+      "category": "dialogue",
+      "source_text": "捜したじゃない。お世話係でしょ。なんで自分の食料を先に探してるわけ？",
+      "file_id": "game/script.rpy",
+      "context": "Character: reika [archive: archive.rpa]",
+      "reference": "I've been looking for you. You're my attendant, aren't you? Why are you searching for your own food first?",
+      "expected_behavior": "Translate haughty, demanding dialogue."
+    },
+    "target_text": "Not searched. It’s a staff. Why are you looking for your food?",
+    "error": null,
+    "duration_seconds": 0.0987,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_036",
+      "category": "ui",
+      "source_text": "設定",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
+      "reference": "Settings",
+      "expected_behavior": "Translate concise menu label; do not expand into sentence."
+    },
+    "target_text": "Settings",
+    "error": null,
+    "duration_seconds": 0.02,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_037",
+      "category": "ui",
+      "source_text": "セーブ",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
+      "reference": "Save",
+      "expected_behavior": "Translate standard game command; must not truncate or drop kana."
+    },
+    "target_text": "ブ",
+    "error": null,
+    "duration_seconds": 0.0241,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_038",
+      "category": "ui",
+      "source_text": "ロード",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: navigation (textbutton) [archive: archive.rpa]",
+      "reference": "Load",
+      "expected_behavior": "Translate standard game command."
+    },
+    "target_text": "Load",
+    "error": null,
+    "duration_seconds": 0.016,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_039",
+      "category": "ui",
+      "source_text": "スキップ",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
+      "reference": "Skip",
+      "expected_behavior": "Translate dialogue skip button label."
+    },
+    "target_text": "スキップ",
+    "error": null,
+    "duration_seconds": 0.0212,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      },
+      {
+        "code": "IDENTICAL_TO_SOURCE",
+        "severity": "warning",
+        "message": "Translation is identical to source text."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_040",
+      "category": "ui",
+      "source_text": "オート",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
+      "reference": "Auto",
+      "expected_behavior": "Translate auto-read toggle button label."
+    },
+    "target_text": "オート",
+    "error": null,
+    "duration_seconds": 0.0184,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      },
+      {
+        "code": "IDENTICAL_TO_SOURCE",
+        "severity": "warning",
+        "message": "Translation is identical to source text."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_041",
+      "category": "ui",
+      "source_text": "スタート",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: navigation (textbutton) [archive: archive.rpa]",
+      "reference": "Start",
+      "expected_behavior": "Translate main menu start game command."
+    },
+    "target_text": "Start",
+    "error": null,
+    "duration_seconds": 0.0168,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_042",
+      "category": "ui",
+      "source_text": "ヒストリー",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
+      "reference": "History",
+      "expected_behavior": "Translate backlog/history log menu button."
+    },
+    "target_text": "History",
+    "error": null,
+    "duration_seconds": 0.0211,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_043",
+      "category": "ui",
+      "source_text": "巻き戻し",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
+      "reference": "Rollback",
+      "expected_behavior": "Translate visual novel rollback action button."
+    },
+    "target_text": "Rewind",
+    "error": null,
+    "duration_seconds": 0.0224,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_044",
+      "category": "ui",
+      "source_text": "Q.セーブ",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
+      "reference": "Q.Save",
+      "expected_behavior": "Translate quick-save button label."
+    },
+    "target_text": "Q.Save",
+    "error": null,
+    "duration_seconds": 0.0312,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_045",
+      "category": "ui",
+      "source_text": "Q.ロード",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
+      "reference": "Q.Load",
+      "expected_behavior": "Translate quick-load button label."
+    },
+    "target_text": "Q. Loading",
+    "error": null,
+    "duration_seconds": 0.022,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_046",
+      "category": "ui",
+      "source_text": "タイトルに戻る",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: navigation (textbutton) [archive: archive.rpa]",
+      "reference": "Return to Title",
+      "expected_behavior": "Translate menu return button."
+    },
+    "target_text": "Back to Title",
+    "error": null,
+    "duration_seconds": 0.027,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_047",
+      "category": "ui",
+      "source_text": "リプレイ終了",
+      "file_id": "game/screens.rpy",
+      "context": "Screen: navigation (textbutton) [archive: archive.rpa]",
+      "reference": "End Replay",
+      "expected_behavior": "Translate scene replay exit button."
+    },
+    "target_text": "Replay End",
+    "error": null,
+    "duration_seconds": 0.0274,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_048",
+      "category": "ui",
+      "source_text": "よろしいですか？",
+      "file_id": "game/zz_island_ui.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Are you sure?",
+      "expected_behavior": "Translate confirmation prompt title."
+    },
+    "target_text": "Is it good?",
+    "error": null,
+    "duration_seconds": 0.0288,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_049",
+      "category": "ui",
+      "source_text": "ゲームを終了しますか？",
+      "file_id": "game/zz_island_ui.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Quit the game?",
+      "expected_behavior": "Translate quit confirmation prompt."
+    },
+    "target_text": "End the game?",
+    "error": null,
+    "duration_seconds": 0.0428,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_050",
+      "category": "ui",
+      "source_text": "このセーブを削除しますか？",
+      "file_id": "game/zz_island_ui.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Delete this save data?",
+      "expected_behavior": "Translate delete save confirmation prompt."
+    },
+    "target_text": "Remove this save?",
+    "error": null,
+    "duration_seconds": 0.0366,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_051",
+      "category": "ui",
+      "source_text": "セーブを上書きしますか？",
+      "file_id": "game/zz_island_ui.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Overwrite this save data?",
+      "expected_behavior": "Translate overwrite save confirmation prompt."
+    },
+    "target_text": "Overwrite save?",
+    "error": null,
+    "duration_seconds": 0.0408,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_052",
+      "category": "ui",
+      "source_text": "リプレイを終了しますか？",
+      "file_id": "game/zz_island_ui.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "End this replay?",
+      "expected_behavior": "Translate replay exit confirmation prompt."
+    },
+    "target_text": "End Replay?",
+    "error": null,
+    "duration_seconds": 0.0406,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_053",
+      "category": "ui",
+      "source_text": "スキップを開始しますか？",
+      "file_id": "game/zz_island_ui.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Begin skipping text?",
+      "expected_behavior": "Translate skip start confirmation prompt."
+    },
+    "target_text": "Start skipping?",
+    "error": null,
+    "duration_seconds": 0.0407,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_054",
+      "category": "dynamic_status",
+      "source_text": "野犬",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Wild Dog",
+      "expected_behavior": "Translate enemy encounter name."
+    },
+    "target_text": "Dogs",
+    "error": null,
+    "duration_seconds": 0.0194,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_055",
+      "category": "dynamic_status",
+      "source_text": "島ネズミの群れ",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Swarm of Island Rats",
+      "expected_behavior": "Translate mob enemy encounter name."
+    },
+    "target_text": "Islands",
+    "error": null,
+    "duration_seconds": 0.0252,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_056",
+      "category": "dynamic_status",
+      "source_text": "大猪",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Giant Boar",
+      "expected_behavior": "Translate beast enemy encounter name."
+    },
+    "target_text": "大",
+    "error": null,
+    "duration_seconds": 0.0215,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_057",
+      "category": "dynamic_status",
+      "source_text": "毒蛇",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Viper",
+      "expected_behavior": "Translate venomous beast enemy name."
+    },
+    "target_text": "Poison Snake",
+    "error": null,
+    "duration_seconds": 0.0325,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_058",
+      "category": "dynamic_status",
+      "source_text": "ならず者",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Ruffian",
+      "expected_behavior": "Translate human foe encounter name."
+    },
+    "target_text": "Others",
+    "error": null,
+    "duration_seconds": 0.0194,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_059",
+      "category": "dynamic_status",
+      "source_text": "大男",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Brute",
+      "expected_behavior": "Translate large human opponent name."
+    },
+    "target_text": "大",
+    "error": null,
+    "duration_seconds": 0.019,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_060",
+      "category": "dynamic_status",
+      "source_text": "ずる賢い男",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Cunning Man",
+      "expected_behavior": "Translate sneaky opponent encounter name."
+    },
+    "target_text": "smart man",
+    "error": null,
+    "duration_seconds": 0.0303,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_061",
+      "category": "dynamic_status",
+      "source_text": "こちらが押している",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "We have the upper hand",
+      "expected_behavior": "Translate dynamic combat progress indicator."
+    },
+    "target_text": "This is pressed",
+    "error": null,
+    "duration_seconds": 0.0323,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_062",
+      "category": "dynamic_status",
+      "source_text": "こちらが押されている",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "We are being pushed back",
+      "expected_behavior": "Translate dynamic combat disadvantage indicator."
+    },
+    "target_text": "This is pressed",
+    "error": null,
+    "duration_seconds": 0.0332,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_063",
+      "category": "dynamic_status",
+      "source_text": "互角の押し合い",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Evenly matched struggle",
+      "expected_behavior": "Translate neutral combat balance state."
+    },
+    "target_text": "Reciprocating Angle",
+    "error": null,
+    "duration_seconds": 0.036,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_064",
+      "category": "dynamic_status",
+      "source_text": "警戒を解く",
+      "file_id": "game/island_hub.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Lower guard",
+      "expected_behavior": "Translate minigame action/suggestion command."
+    },
+    "target_text": "Resolve alertness",
+    "error": null,
+    "duration_seconds": 0.0321,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_065",
+      "category": "dynamic_status",
+      "source_text": "俺を信頼する",
+      "file_id": "game/island_hub.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Trust me",
+      "expected_behavior": "Translate minigame suggestion command."
+    },
+    "target_text": "Trust Our Partners",
+    "error": null,
+    "duration_seconds": 0.0281,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_066",
+      "category": "dynamic_status",
+      "source_text": "恥じらいを薄れさせる",
+      "file_id": "game/island_hub.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Fade embarrassment",
+      "expected_behavior": "Translate minigame suggestion command."
+    },
+    "target_text": "Shy",
+    "error": null,
+    "duration_seconds": 0.0245,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_067",
+      "category": "dynamic_status",
+      "source_text": "肌に触れさせる",
+      "file_id": "game/island_hub.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Allow skin contact",
+      "expected_behavior": "Translate minigame escalation command."
+    },
+    "target_text": "skin",
+    "error": null,
+    "duration_seconds": 0.0272,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_068",
+      "category": "dynamic_status",
+      "source_text": "NEW  図鑑に登録",
+      "file_id": "game/island_minigames.rpy",
+      "context": "Screen: mg_fish_cutin (text) [archive: archive.rpa]",
+      "reference": "NEW  Registered in Encyclopedia",
+      "expected_behavior": "Translate collection unlock notification."
+    },
+    "target_text": "NEW Sign up for the book",
+    "error": null,
+    "duration_seconds": 0.0408,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_069",
+      "category": "variables_tags",
+      "source_text": "主人公　HP [hero_hp]/[hero_maxhp]　罠 [traps]",
+      "file_id": "game/island_battle.rpy",
+      "context": "Screen: mg_battle_hud (text) [archive: archive.rpa]",
+      "reference": "Protagonist HP [hero_hp]/[hero_maxhp] Traps [traps]",
+      "expected_behavior": "Preserve [hero_hp], [hero_maxhp], [traps] intact without mangling or sentinel leak."
+    },
+    "target_text": "HP [hero_hp]/[hero_maxhp]   [traps]",
+    "error": null,
+    "duration_seconds": 0.1105,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_070",
+      "category": "variables_tags",
+      "source_text": "{color=#8a9aad}[label] {/color}{color=#e8eef4}[value]{/color}",
+      "file_id": "game/island_hub.rpy",
+      "context": "Screen: stat_ic (text) [archive: archive.rpa]",
+      "reference": "{color=#8a9aad}[label] {/color}{color=#e8eef4}[value]{/color}",
+      "expected_behavior": "Preserve both Ren'Py color tags and bracket placeholders intact."
+    },
+    "target_text": "",
+    "error": "Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
+    "duration_seconds": 2.1548,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_071",
+      "category": "variables_tags",
+      "source_text": "{size=21}{color=#b0b8d0}%d日目{/color}{color=%s}　迎えの船まで %d日{/color}{/size}",
+      "file_id": "game/island_hub.rpy",
+      "context": "Screen: hub_meters (text) [archive: archive.rpa]",
+      "reference": "{size=21}{color=#b0b8d0}Day %d{/color}{color=%s} %d days until rescue ship{/color}{/size}",
+      "expected_behavior": "Preserve %d, %s, %d formatting tokens and Ren'Py font styling tags."
+    },
+    "target_text": "",
+    "error": "Placeholder error: Sentinel 'XXXTOKEN2XXX' is missing from the translation output.",
+    "duration_seconds": 0.2307,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_072",
+      "category": "variables_tags",
+      "source_text": "%s の反撃！ %d ダメージ",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "%s counters! %d damage",
+      "expected_behavior": "Preserve %s and %d format specifiers intact."
+    },
+    "target_text": "",
+    "error": "Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
+    "duration_seconds": 0.0887,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_073",
+      "category": "variables_tags",
+      "source_text": "%s が立ちはだかる！",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "%s stands in your way!",
+      "expected_behavior": "Preserve %s placeholder intact."
+    },
+    "target_text": "%s",
+    "error": null,
+    "duration_seconds": 0.046,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_074",
+      "category": "variables_tags",
+      "source_text": "渾身の一撃！ %s に %d ダメージ",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "All-out strike! %d damage to %s",
+      "expected_behavior": "Preserve %s and %d specifiers intact; allow natural English word order."
+    },
+    "target_text": "",
+    "error": "Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
+    "duration_seconds": 0.0733,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_075",
+      "category": "variables_tags",
+      "source_text": "罠が炸裂！ %s に %d ダメージ",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Trap triggered! %d damage to %s",
+      "expected_behavior": "Preserve %s and %d format specifiers intact."
+    },
+    "target_text": "",
+    "error": "Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
+    "duration_seconds": 0.0456,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_076",
+      "category": "variables_tags",
+      "source_text": "逃げ損ねた！ %d ダメージ",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Failed to escape! %d damage",
+      "expected_behavior": "Preserve %d specifier intact."
+    },
+    "target_text": "%d",
+    "error": null,
+    "duration_seconds": 0.0525,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_077",
+      "category": "variables_tags",
+      "source_text": "%s を退けた。（食料+2）",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Repelled %s. (Food +2)",
+      "expected_behavior": "Preserve %s format specifier intact."
+    },
+    "target_text": "%s (Food+2)",
+    "error": null,
+    "duration_seconds": 0.0509,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_078",
+      "category": "variables_tags",
+      "source_text": "%s を退け、果実を奪った。（果実+2・脅威度-2）",
+      "file_id": "game/island_battle.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Repelled %s and seized fruit. (Fruit +2, Threat -2)",
+      "expected_behavior": "Preserve %s format specifier intact."
+    },
+    "target_text": "%s (Berry+2・Threat-2)",
+    "error": null,
+    "duration_seconds": 0.0895,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_079",
+      "category": "variables_tags",
+      "source_text": "[_gl_unlocked]/[_gl_total]",
+      "file_id": "game/gallery.rpy",
+      "context": "Screen: cg_gallery (text) [archive: archive.rpa]",
+      "reference": "[_gl_unlocked]/[_gl_total]",
+      "expected_behavior": "Preserve exact gallery counter variable expressions without translation."
+    },
+    "target_text": "",
+    "error": "Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
+    "duration_seconds": 0.0549,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_080",
+      "category": "variables_tags",
+      "source_text": "罠を仕掛ける（%d）",
+      "file_id": "game/island_battle.rpy",
+      "context": "Screen: mg_battle_menu (use) [archive: archive.rpa]",
+      "reference": "Set a trap (%d)",
+      "expected_behavior": "Preserve %d specifier and parentheses."
+    },
+    "target_text": "the   (%d)",
+    "error": null,
+    "duration_seconds": 0.0646,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_081",
+      "category": "variables_tags",
+      "source_text": "[cur_foe.name]",
+      "file_id": "game/island_battle.rpy",
+      "context": "Screen: mg_battle_hud (text) [archive: archive.rpa]",
+      "reference": "[cur_foe.name]",
+      "expected_behavior": "Preserve dotted object property variable placeholder without modification."
+    },
+    "target_text": "[cur_foe.name]",
+    "error": null,
+    "duration_seconds": 0.0358,
+    "validation_issues": [
+      {
+        "code": "IDENTICAL_TO_SOURCE",
+        "severity": "warning",
+        "message": "Translation is identical to source text."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_082",
+      "category": "variables_tags",
+      "source_text": "{size=17}HP{/size}",
+      "file_id": "game/island_hub.rpy",
+      "context": "Screen: hub_meters (text) [archive: archive.rpa]",
+      "reference": "{size=17}HP{/size}",
+      "expected_behavior": "Preserve size tags and untranslated HP term."
+    },
+    "target_text": "",
+    "error": "Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
+    "duration_seconds": 0.0606,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_083",
+      "category": "variables_tags",
+      "source_text": "{size=15}%d/%d{/size}",
+      "file_id": "game/island_hub.rpy",
+      "context": "Screen: hub_meters (text) [archive: archive.rpa]",
+      "reference": "{size=15}%d/%d{/size}",
+      "expected_behavior": "Preserve size tags and fraction formatting %d/%d."
+    },
+    "target_text": "",
+    "error": "Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
+    "duration_seconds": 0.1012,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_084",
+      "category": "multiline",
+      "source_text": "ここからは、日々を自分で組み立てる。\nゴールは下段の『物語を進める』——カードに出ている条件（陥落度など）を満たせば、物語の続きが始まる。\nそのために、昼に稼ぎ、夜に堕とす。",
+      "file_id": "game/island_hub.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "From here on, you organize each day yourself.\nThe goal is 'Advance Story' at the bottom—satisfying card conditions (such as corruption) begins the next part of the story.\nTo that end, earn by day and corrupt by night.",
+      "expected_behavior": "Preserve embedded newlines (\\n), quotation punctuation, and instructional narrative flow."
+    },
+    "target_text": "From here, assemble your own day.\nThe goal is to meet the conditions on the card (e.g., degradation).\nFor that reason, earn at lunch and fall at night.",
+    "error": null,
+    "duration_seconds": 0.294,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_085",
+      "category": "multiline",
+      "source_text": "【昼の稼ぎ】上段の3枚だ。\n『探索』は果実・素材・遭遇の主軸。『釣り』は安全に食料を稼ぐ（戦闘なし）。果実は催眠の燃料、食料は皆の命綱——毎朝、自分と従えた女たちの食事で減っていく。\n『男を狩る』は罠の一発勝負。仕留めれば脅威度が下がり、夜襲されにくくなる。\n霧の奥では、彼女たちとの遭遇も、男や獣の乱入もある。",
+      "file_id": "game/island_hub.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "[Daytime Earnings] The top 3 cards.\n'Explore' is the core source of fruit, materials, and encounters. 'Fish' gathers food safely without combat. Fruit fuels hypnosis; food is everyone's lifeline—depleted each morning by rations for yourself and subordinated women.\n'Hunt Men' is a one-shot trap gambit. Taking them down lowers threat, reducing night raids.\nIn the deep mist, you may encounter the girls, or face ambushes by men and beasts.",
+      "expected_behavior": "Preserve section headers, quotes, and multi-paragraph newlines."
+    },
+    "target_text": "【Lunch】It is a top 3 piece.\nThe main axis of fruit, material and encounter. “Fiを” safely earns food (no combat). The fruit is hypnotic fuel, food is the lifeline of everyone — every morning, it is reduced by the diet of the woman who has followed him.\n\"Hunting a man\" is a 罠. Threat is lowered and it is difficult to attack at night.\nIn the back of the fog, there are encounters with them, and the turbulence of the man and the beast.",
+    "error": null,
+    "duration_seconds": 0.8571,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_086",
+      "category": "multiline",
+      "source_text": "【夜の本命】彼女たちのカードから催眠をかけ、陥落度を上げる。\n堕とすほど深い暗示・Hイベント・物語が解禁されていく。\nカードの顔と状態は、堕ちるほど変わっていく。",
+      "file_id": "game/island_hub.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "[Night Target] Use hypnosis via their cards to increase corruption.\nThe deeper they fall, the more deep suggestions, events, and story chapters unlock.\nTheir card portraits and statuses evolve as they fall deeper.",
+      "expected_behavior": "Preserve brackets, newlines, and gameplay progression terminology."
+    },
+    "target_text": "[Current life] Hypnosis is applied from the cards of hers, increasing the degree of fall.\nA deeper memorandum, H events, and stories are denied.\nThe face and state of the card will change.",
+    "error": null,
+    "duration_seconds": 0.3554,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_087",
+      "category": "multiline",
+      "source_text": "『休む』でも『隣で眠る』でも1日が終わり、朝には体力が全回復する。\n違いはひとつ——『隣で眠る』は、その日いちども催眠を使わなかった夜にだけ選べる。\n力を使った日はひとりで眠れ。我慢した夜の添い寝は、重ねるほど彼女の心との距離を変えていく。\n昼の行動（探索/釣り/狩り）は1日3回まで。催眠は1人につき一晩1回。\n※左上のメーターにカーソルを乗せると、各数値の説明が出る。",
+      "file_id": "game/island_hub.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Whether you 'Rest' or 'Sleep Beside Her', the day ends and HP fully restores by morning.\nThere is one difference—'Sleep Beside Her' can only be chosen on nights you used no hypnosis.\nSleep alone on days you used your power. Restraining yourself and sleeping beside her gradually closes the distance between your hearts.\nDaytime actions (Explore/Fish/Hunt) are limited to 3 per day. Hypnosis is limited to once per girl each night.\n* Hovering over the top-left meter displays explanations for each stat.",
+      "expected_behavior": "Preserve 4 line breaks, quotation marks, and instructional note marker (※)."
+    },
+    "target_text": "Even if you rest or sleep next to you, the day ends, and the physical strength will be restored in the morning.\nThe difference is one—the “sleeping next door” you can choose only at night when you don’t use hypnotic sleep.\nI can sleep alone. The reason why I was forced to sleep is to change the distance with her heart.\nDaytime action (exploration/fishing/fishing) up to 3 times a day. 1 night per person.\n* When you put the cursor on the upper-left meter, the description of each number will appear.",
+    "error": null,
+    "duration_seconds": 0.8322,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_088",
+      "category": "multiline",
+      "source_text": "【守りと人手】夜襲は、脅威度とバレ度が高いほど来る。守りは『拠点を強化』と『島の女たちの配置』だ。\n『島の女たちの配置』で浜の女を従えれば（果実2・侵食+2）、採取・防衛・見張りの人手になる。\n——ただし従えた数だけ夜ごとにバレ度が滲み、守りが薄い夜襲では連れ去られる。\nそして、迎えの船は確実に近づいている。左上の残り日数が尽きる前に、ぜんぶ決めろ。",
+      "file_id": "game/island_hub.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "[Defense & Manpower] Night raids occur more frequently the higher threat and suspicion rise. Defense consists of 'Fortify Camp' and 'Assign Island Women'.\nSubordinating beach women through assignment (Fruit 2, Corruption +2) provides labor for gathering, defense, and watch duty.\n—However, suspicion seeps out each night for each subordinate, and weak defenses risk them being kidnapped during raids.\nMeanwhile, the rescue ship steadily approaches. Settle everything before remaining days run out.",
+      "expected_behavior": "Preserve section tags, parenthetical costs, dashes, and 3 embedded newlines."
+    },
+    "target_text": "[Monstering and Human Hands] Night attack comes as high as the level of threat and ballet. “Reinforcement of Locations” and “Placement of Island Women”\nIf you follow the beach woman with the arrangement of the island women (fr。 2, erosion + 2), it becomes a person of collection, defense, and view.\n——However, only the number of守り will be blewed at every night, and it will be taken away by a thin night attack.\nThe ship is sure to pick up. Before the number of days left is exhausted.",
+    "error": null,
+    "duration_seconds": 0.8716,
+    "validation_issues": [
+      {
+        "code": "JAPANESE_REMNANTS",
+        "severity": "warning",
+        "message": "Translation contains Japanese characters."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_089",
+      "category": "multiline",
+      "source_text": "目を見つめた瞬間——彼女の『心の声』が聞こえはじめた。\n画面下のセリフがそれだ。心は【隙】【平静】【抵抗】の間で揺れ動き、\nセリフの調子が、いまの心を読むヒントになる。",
+      "file_id": "game/island_minigames.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "The moment you meet her gaze—her 'inner voice' begins to be heard.\nThat is the dialogue at the bottom of the screen. Her mind wavers between [Opening], [Calm], and [Resistance],\nand the tone of her dialogue provides hints to read her current mental state.",
+      "expected_behavior": "Preserve dash, brackets, and newlines; translate game state terms accurately."
+    },
+    "target_text": "The moment to look at the eyes—the voice of the heart began to hear.\nIt is the serif under the screen. The mind is the swaying movement between [Sky] [Sky] [Resis ],\nThe serif tone is a hint of reading your mind.",
+    "error": null,
+    "duration_seconds": 0.4134,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_090",
+      "category": "multiline",
+      "source_text": "いまの尖った声は【抵抗】の印だ。抵抗に撃った暗示は通らない。\nそれどころか【覚醒リスク】——正気に戻られる危険——が跳ね上がる。\n100に達すれば覚醒され、その夜は強制終了。積み上げた成果も削られる。\n——撃つな。こういう時は『見つめる』で心を揺さぶり、隙を作れ。",
+      "file_id": "game/island_minigames.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "That sharp voice is the sign of [Resistance]. Suggestions fired into resistance will not take.\nWhat's worse, [Awakening Risk]—the danger of her returning to her senses—surges.\nReaching 100 triggers awakening, abruptly ending the night and chipping away accumulated progress.\n—Do not suggest. In times like this, shake her heart by 'Staring' and create an opening.",
+      "expected_behavior": "Preserve warning explanation, dashes, brackets, and instructional flow."
+    },
+    "target_text": "This is the mark of resistance. There is no implications shot on the resistance.\n[A。ning Risks]—H。ds that can be returned positively——there is a bounce.\nA。ned when reaching 100, the night is forced to 。. You can sharpen the results of stacking.\nDutch In such a case, shake your mind and make a gap with \"seeing\".",
+    "error": null,
+    "duration_seconds": 0.4708,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_091",
+      "category": "multiline",
+      "source_text": "声が、ゆるんだ——これが【隙】だ。\n隙に撃った暗示は深く刺さる（効果2倍・覚醒リスクも増えない）。\n果実を燃やして、『警戒を解く』を植えろ。",
+      "file_id": "game/island_minigames.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Her voice softened—this is an [Opening].\nSuggestions fired into an opening strike deeply (2x effect, no added awakening risk).\nBurn fruit and implant 'Lower Guard'.",
+      "expected_behavior": "Preserve dash, brackets, multipliers, and quotation marks."
+    },
+    "target_text": "The voice is loose—this is the gap.\nDeeply stinged in a gap (both effect and no stimulant risk).\nBurn the berries and plant them.",
+    "error": null,
+    "duration_seconds": 0.2489,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_092",
+      "category": "multiline",
+      "source_text": "深く刺さった。【陥落度】——彼女がどれだけ堕ちたか——が一気に上がった。\n……基本はこれだけだ。セリフを読む → 抵抗なら『見つめる』でかわす → 隙に撃つ。\n行動は【集中】を、暗示は【果実】を消費する。尽きる前に切り上げろ。\n深い暗示は、陥落度が上がるほど解禁されていく。",
+      "file_id": "game/island_minigames.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "It struck deep. [Corruption]—how far she has fallen—rose drastically at once.\n...That is all for the basics. Read dialogue → dodge resistance with 'Stare' → strike into openings.\nActions consume [Focus], while suggestions consume [Fruit]. Wrap up before you run out.\nDeep suggestions unlock as corruption rises higher.",
+      "expected_behavior": "Preserve arrows (→), ellipsis, brackets, and cyclical gameplay instructions."
+    },
+    "target_text": "Deep stinging. [degradation]—How much she falls———are up at once.\n......The basic is only this. Read the serif → If it’s resistance, click “Sight” → Shoot it.\nBehavior consumes [concentration], impliciting [fr ]. Cut it out before you make it.\nThe deep implications are deprecated so that the degree of fall rises.",
+    "error": null,
+    "duration_seconds": 0.7069,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_093",
+      "category": "multiline",
+      "source_text": "彼女のセリフは『心の声』だ。心は【隙】【平静】【抵抗】の間で揺れ動き、\nセリフの調子で読み取れる。まれに、声色でしか読めない曖昧なセリフもある。\n【隙】に撃てば効果2倍・覚醒なし。【抵抗】に撃てば効果ゼロ・覚醒リスク倍増。",
+      "file_id": "game/island_minigames.rpy",
+      "context": "Python Data / String [archive: archive.rpa]",
+      "reference": "Her dialogue is her 'inner voice'. Her heart wavers between [Opening], [Calm], and [Resistance],\nreadable through dialogue tone. On rare occasions, ambiguous lines can only be discerned by voice tone.\nStriking [Opening] yields 2x effect and zero awakening. Striking [Resistance] yields zero effect and doubled risk.",
+      "expected_behavior": "Preserve brackets, multipliers, and strategic tips across 3 embedded newlines."
+    },
+    "target_text": "Her serif is “the voice of heart”. The mind is the swaying movement between [Sky] [Sky] [Resis ],\nCan be read by serif tone. In rare cases, there are vague serifs that can only be read in voice color.\n2x effect and no a。ning when shooting. Zero effect and stimulant risk magnification",
+    "error": null,
+    "duration_seconds": 0.5732,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_094",
+      "category": "technical",
+      "source_text": "SAVE",
+      "file_id": "game/island_hub.rpy",
+      "context": "Screen: hub_field (textbutton) [archive: archive.rpa]",
+      "reference": "SAVE",
+      "expected_behavior": "Preserve standard ASCII UI identifier without translation."
+    },
+    "target_text": "SAVE",
+    "error": null,
+    "duration_seconds": 0.0214,
+    "validation_issues": [
+      {
+        "code": "IDENTICAL_TO_SOURCE",
+        "severity": "warning",
+        "message": "Translation is identical to source text."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_095",
+      "category": "technical",
+      "source_text": "fruit",
+      "file_id": "game/island_minigames.rpy",
+      "context": "Screen: mg_explore_screen (text) [archive: archive.rpa]",
+      "reference": "fruit",
+      "expected_behavior": "Preserve internal resource tag identifier without modification."
+    },
+    "target_text": "Fruit",
+    "error": null,
+    "duration_seconds": 0.0199,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_096",
+      "category": "technical",
+      "source_text": "food",
+      "file_id": "game/island_minigames.rpy",
+      "context": "Screen: mg_explore_screen (text) [archive: archive.rpa]",
+      "reference": "food",
+      "expected_behavior": "Preserve internal resource code key without modification."
+    },
+    "target_text": "Food",
+    "error": null,
+    "duration_seconds": 0.018,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_097",
+      "category": "technical",
+      "source_text": "mat",
+      "file_id": "game/island_minigames.rpy",
+      "context": "Screen: mg_explore_screen (text) [archive: archive.rpa]",
+      "reference": "mat",
+      "expected_behavior": "Preserve abbreviated material resource token without modification."
+    },
+    "target_text": "mat",
+    "error": null,
+    "duration_seconds": 0.0178,
+    "validation_issues": [
+      {
+        "code": "IDENTICAL_TO_SOURCE",
+        "severity": "warning",
+        "message": "Translation is identical to source text."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_098",
+      "category": "technical",
+      "source_text": "END",
+      "file_id": "game/zz_island_ui.rpy",
+      "context": "Screen: end_card (text) [archive: archive.rpa]",
+      "reference": "END",
+      "expected_behavior": "Preserve terminal state keyword without modification."
+    },
+    "target_text": "END",
+    "error": null,
+    "duration_seconds": 0.018,
+    "validation_issues": [
+      {
+        "code": "IDENTICAL_TO_SOURCE",
+        "severity": "warning",
+        "message": "Translation is identical to source text."
+      }
+    ]
+  },
+  {
+    "item": {
+      "id": "bench_099",
+      "category": "technical",
+      "source_text": "CONFIG",
+      "file_id": "game/zz_island_ui.rpy",
+      "context": "Screen: quick_menu (textbutton) [archive: archive.rpa]",
+      "reference": "CONFIG",
+      "expected_behavior": "Preserve system configuration keyword without modification."
+    },
+    "target_text": "HOME",
+    "error": null,
+    "duration_seconds": 0.0182,
+    "validation_issues": []
+  },
+  {
+    "item": {
+      "id": "bench_100",
+      "category": "technical",
+      "source_text": "----",
+      "file_id": "game/zz_island_ui.rpy",
+      "context": "Screen: file_slots (text) [archive: archive.rpa]",
+      "reference": "----",
+      "expected_behavior": "Preserve separator divider string unchanged."
+    },
+    "target_text": "----",
+    "error": null,
+    "duration_seconds": 0.02,
+    "validation_issues": [
+      {
+        "code": "IDENTICAL_TO_SOURCE",
+        "severity": "warning",
+        "message": "Translation is identical to source text."
+      }
+    ]
+  }
+]
