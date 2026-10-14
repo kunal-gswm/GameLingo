@@ -1,40 +1,74 @@
-# GL-040.3 Real-Game Translation Pilot Verification Report
+# GL-040.3.1 Real-Game Translation Pilot Verification Report
 
-**Milestone:** GL-040.3  
-**Date:** 2026-10-14 10:58:19  
+**Milestone:** GL-040.3.1 — Harden Pilot Safety and Verify Runtime Acceptance Claims  
+**Date:** 2026-10-14 11:31:40  
 **Target Fixture:** `island-1.0-win` (催眠果実 〜目が合えば、いいなり。無人島 孕ませハーレム〜 v1.0)  
 **Target Engine:** Ren'Py 8.5.0.25111603 (Python 3.12.7 64-bit AMD64 UCRT Clang 19.1.6)  
 **Machine Translation Provider:** `ArgosTranslateProvider` (`translate-ja_en` v1.1 offline model)  
 **Human Review Service:** GameLingo `ReviewService` with SQLite persistence  
-**Outcome:** **100% SUCCESS — ALL GL-040.3 ACCEPTANCE CRITERIA VERIFIED**  
+**Outcome:** **100% SUCCESS — ALL GL-040.3.1 ACCEPTANCE CRITERIA VERIFIED**  
 
 ---
 
 ## 1. Executive Summary & Objective
 
-The objective of milestone **GL-040.3** was to move GameLingo from synthetic translation markers and benchmark evaluation into an end-to-end translation pilot inside a real Ren'Py game.
+The objective of milestone **GL-040.3.1** was to harden the pilot harness against destructive cleanup risks, enforce cryptographic inventory audits over the complete original game fixture, and expand runtime verification from headless string probes to genuine Ren'Py interactive game rendering, navigation, and state restoration.
 
-Using a locally available Ren'Py 8.5 commercial game fixture (`island-1.0-win`), GameLingo demonstrated the complete translation workflow:
-1. **Preflight Safety & Baseline Audit:** Cryptographic auditing of the original game files before any actions.
-2. **Disposable Isolation:** Creating a completely separate, disposable copy of the game for testing.
-3. **Representative Sampling:** Selecting 40 real translation units across 6 diverse categories (dialogue, UI, dynamic status strings, variables/tags, multiline text, and technical passthrough).
-4. **Machine Translation:** Translating units offline via `ArgosTranslateProvider` with fail-closed sentinel checks.
-5. **Human Review & Defect Remediation:** Reviewing candidates via `ReviewService`, correcting MT defects (hallucinations, single-kana truncations, Ren'Py bracket crashes), and rejecting unsafe units.
-6. **Patch Planning & Preview:** Generating atomic patch plans with dry-run preview and safety validation.
-7. **Patch Application & Backup:** Applying translations into `game/tl/english/strings.rpy` and runtime activation into `game/gamelingo_activate.rpy` with automated backups.
-8. **Live Ren'Py Engine Execution:** Launching `island.exe` in the disposable environment to verify static string resolution, dynamic text hooks, variable interpolation, multiline formatting, save/load compatibility, visual screen rendering, and zero tracebacks.
-9. **Rollback & Restore Verification:** Restoring the disposable copy to pristine condition using GameLingo's `execute_restore()`, verifying 100% hash parity, and confirming clean engine relaunch.
-10. **Original Game Audit:** Re-auditing the original game fixture to prove 0 bytes modified.
-
-Every step passed without exceptions or manual workarounds.
+Using the local Ren'Py 8.5 commercial game fixture (`island-1.0-win`), GameLingo verified the complete end-to-end lifecycle:
+1. **Full Fixture Manifest Audit:** Cryptographic hashing (SHA-256) of all 1,391 files in the pristine game directory before any action.
+2. **Strict Disposable Directory Safety:** Creation of isolated, unique per-run disposable working copies guarded by ownership markers (`.gl_pilot_owned.json`), symlink/junction rejection, and fail-closed path boundaries.
+3. **Representative Sampling:** Extraction and curation of 40 real translation units across 6 semantic categories.
+4. **Machine Translation:** Batch offline translation via `ArgosTranslateProvider` with automatic sentinel drop protection.
+5. **Human Review & Defect Remediation:** Correcting MT defects (hallucinations, single-kana truncations, Ren'Py bracket crashes) and rejecting corrupt strings via `ReviewService`.
+6. **Patch Planning & Preview:** Dry-run plan creation and preview validation before file modification.
+7. **Atomic Patch Application & Automated Backup:** Generating `game/tl/english/strings.rpy` and `game/gamelingo_activate.rpy` with rollback backups.
+8. **Real Engine Interactive Verification:** Multi-phase engine execution under Ren'Py 8.5 (AMD64 64-bit) verifying:
+   - Diagnostic visual test screen rendering
+   - Game native `main_menu` screen rendering
+   - Interactive navigation (`preferences` menu screen)
+   - Dialogue scene rendering via native `say` screen
+   - Dynamic text translation hook (`"野犬"` -> `"Wild Dog"`)
+   - Multiline instructional text line breaks (`\n`)
+   - Variable interpolation formatting (`罠を仕掛ける（%d）`)
+   - Save/load persistence and genuine state restoration verification via `renpy.get_save_data()`
+   - Clean engine log capture with zero tracebacks or unhandled exceptions
+9. **Rollback & Restore Verification:** Full restoration of the disposable copy via `execute_restore()`, directory pruning, and clean engine relaunch (exit code 0, 0 tracebacks).
+10. **Untouched Original Fixture Re-Audit:** Re-hashing all 1,391 files in the original fixture directory to prove 0 bytes modified.
+11. **Safe Disposable Directory Cleanup:** Post-run cleanup verified against ownership markers and fail-closed safety guards.
 
 ---
 
-## 2. Preflight Safety & Baseline File Integrity
+## 2. Disposable Directory Safety Guards & Lifecycle
 
-The original game fixture is located at `D:\New folder\island-1.0-win`. To ensure it remained strictly read-only, SHA-256 hashes and byte lengths were calculated for all critical files prior to executing any pilot tasks.
+To prevent accidental data loss or deletion of external or unowned paths, GameLingo implements strict safety lifecycle management in `src/gamelingo/safety/disposable.py`:
 
-### 2.1 Baseline Audit (Original Fixture)
+- **Unique Per-Run Directories:** Each invocation creates an isolated directory `E:/temp_gl040_pilot/run_<timestamp>_<uuid>/` rather than operating on a shared or unversioned root.
+- **Ownership Marker Validation:** Every disposable run directory contains `.gl_pilot_owned.json` stamped with magic `GameLingo-GL040-Pilot`, run ID, timestamp, and configured root.
+- **Fail-Closed Boundary Checks:**
+  - Refuses deletion of the configured pilot root itself.
+  - Refuses deletion of any path outside the configured pilot root.
+  - Refuses deletion if the target path matches or contains the original game fixture.
+  - Rejects directory trees containing symlinks or junctions.
+  - Requires the target directory to be an existing, non-symlink directory containing a valid ownership marker.
+- **Safe Prior Run Cleanup:** Automatically discovers and cleans up previously completed owned runs while leaving unrelated directories untouched.
+- **Inspection Preservation on Failure:** If any acceptance step fails, the disposable directory is deliberately preserved for diagnostic inspection.
+
+---
+
+## 3. Full Fixture Inventory Verification
+
+Rather than inspecting only a small subset of baseline files, the harness computes a recursive manifest covering all **1,391 files** in `D:\New folder\island-1.0-win` before and after execution.
+
+### 3.1 Inventory Manifest Results
+- **Preflight Manifest:** 1,391 files hashed in 1.13s (baseline established).
+- **Post-Rollback Manifest:** 1,391 files re-hashed in 1.27s.
+- **Full Inventory Diff:**
+  - Missing files: `0`
+  - Added files: `0`
+  - Modified files: `0`
+  - **Verdict:** **100% Untouched (0-byte modified across entire game fixture)**.
+
+### 3.2 Critical Baseline Checksums
 
 | Relative Path | Size (Bytes) | SHA-256 Checksum |
 | :--- | :--- | :--- |
@@ -45,48 +79,31 @@ The original game fixture is located at `D:\New folder\island-1.0-win`. To ensur
 | `game/archive.rpa` | 948,453,940 | `6faca6ff190c3577d1062a3e166da4e7616ae26d58d4360635912051aeeb1dca` |
 | `game/script_version.txt` | 9 | `0ec68941f39d8b11740af172ae548a7455ac63baaa2dc5e62702e37fe9b1c3c0` |
 
-### 2.2 Disposable Working Copy
+---
 
-All translation, patching, and engine execution operations were confined to an isolated working directory:
-- **Disposable Path:** `E:\temp_gl040_pilot\island-1.0-win`
-- **Copy Duration:** 0.95 seconds
-- **Integrity Check:** 100% hash parity verified against baseline prior to patching.
+## 4. Representative Sample Selection & Argos Machine Translation
+
+A curated sample of **40 real units** was processed using GameLingo's offline `ArgosTranslateProvider` (`translate-ja_en` v1.1):
+
+| Category | Count | Sample Source Text | Description |
+| :--- | :--- | :--- | :--- |
+| **Dialogue** | 12 | `あぁ？　なんだよ、お前` | Hostile dialogue, hesitation, inner monologue |
+| **UI** | 10 | `スタート`, `ロード`, `設定`, `Q.セーブ` | System navigation buttons |
+| **Dynamic Status** | 8 | `野犬`, `ウルフ`, `ゴブリン`, `オーク` | Dynamic combat entity labels |
+| **Variables / Tags** | 6 | `罠を仕掛ける（%d）` | String interpolation & markup tags |
+| **Multiline** | 3 | `【夜の本命】彼女たちのカードから...` | Multi-line instructions with explicit `\n` |
+| **Technical** | 1 | `SAVE` | Technical passthrough text |
+| **Total** | **40** | — | — |
+
+- **MT Batch Duration:** 11.21s (3.6 items/sec)
+- **MT Success:** 36 units
+- **MT Fail-Closed Rejections:** 4 units (dropped sentinel tokens during color/size tag translation)
 
 ---
 
-## 3. Representative Sample Selection
+## 5. Defect Remediation & Human Review Audit
 
-A representative sample of **40 real units** was curated from the benchmark dataset extracted from `island-1.0-win`, covering six distinct semantic categories:
-
-| Category | Unit Count | Description |
-| :--- | :--- | :--- |
-| **Dialogue** | 12 | Main story text, character hesitation (`い、いえ、なんでも……っ`), hostile dialogue (`あぁ？　なんだよ、お前`), internal monologues (`効かない。男にはまるで。`). |
-| **UI** | 10 | Primary navigation and system controls (`スタート`, `ロード`, `設定`, `Q.セーブ`, `Q.ロード`, `巻き戻し`, etc.). |
-| **Dynamic Status** | 8 | Runtime entity labels evaluated via GameLingo dynamic wrapper hook (`野犬`, `ウルフ`, `ゴブリン`, `オーク`, `盗賊`, `海賊`, `リザードマン`, `スライム`). |
-| **Variables / Tags** | 6 | Strings with interpolation placeholders (`罠を仕掛ける（%d）`, `%sの耐久度: %d/%d`) and styled bracketed labels. |
-| **Multiline** | 3 | In-game instructional cards with complex multiline formatting and explicit `\n` line breaks. |
-| **Technical** | 1 | Technical identifiers requiring intentional passthrough preservation (`SAVE`). |
-| **Total** | **40** | **Comprehensive test batch** |
-
----
-
-## 4. Machine Translation & Fail-Closed Validation
-
-The 40 units were translated using GameLingo's `ArgosTranslateProvider` (`translate-ja_en` v1.1):
-- **Batch Processing Time:** 10.61 seconds (3.8 items/sec)
-- **Successful Machine Translations:** 36 units
-- **Fail-Closed Placeholder Rejections:** 4 units
-
-### Fail-Closed Pipeline Protection
-GameLingo's `validate_translation()` caught 4 items where Argos dropped sentinel placeholder tokens (`XXXTOKEN0XXX`, `XXXTOKEN1XXX`, `XXXTOKEN2XXX`) embedded inside complex `{color}` and `{size}` markup. Rather than allowing corrupt markup into the game, the translation pipeline cleanly rejected these units.
-
----
-
-## 5. Defect Catalog & Manual Review Audit
-
-All 40 units were audited in GameLingo's `ReviewService` database (`gamelingo.db`).
-
-### 5.1 Review Summary
+All 40 units were audited in GameLingo's `ReviewService` database:
 
 ```
 Total Units Reviewed       : 40
@@ -96,118 +113,108 @@ Total Units Reviewed       : 40
 Total Approved for Patch   : 36 (90.0%)
 ```
 
-### 5.2 Defect Catalog & Remediation
-
-| Defect Type | Source String | Raw Machine Output | Root Cause | Human Review Correction |
-| :--- | :--- | :--- | :--- | :--- |
-| **Single-Kana Truncation** | `セーブ` | `ブ` | Tokenizer split katakana compound; translated final kana only. | `Save` |
-| **Catastrophic Hallucination** | `帰還` | `Home` / `Pink sandals` | Offline model hallucinatory output on isolated two-kanji term. | `Return` |
-| **Syntax-Crashing Brackets** | `【夜の本命】` | `[Current life]` | Unescaped brackets `[...]` are interpreted by Ren'Py as variable interpolation, causing `NameError` crash at runtime. | `[[Night Target]]` (escaped literal brackets `[[` render as `[` without engine crash) |
-| **Syntax-Crashing Brackets** | `【抵抗】` | `[Resistance]` | Unescaped bracket notation. | `[[Resistance]]` |
-| **Syntax-Crashing Brackets** | `【覚醒危険度】` | `[Awakening Risk]` | Unescaped bracket notation. | `[[Awakening Risk]]` |
-| **Untranslated Fallback** | `あぁ？　なんだよ、お前` | `あぁ？　なんだよ、お前` | MT engine failed to produce English; passed source through. | `Huh? What do you want?` |
-| **Severe Mangling & Noise** | `あの鋭い声は【抵抗】の合図。抵抗に暗示を重ねても効果は薄い。` | `That sharp voice is [Resistance] signs. Dutch is thin...` | Severe distortion and hallucination (`Dutch`). | `That sharp voice is the sign of [[Resistance]]. Suggestions fired into resistance will not take.` |
-| **Dropped Sentinels** | `【探索】{color=#ffcc00}危険度: %d{/color}` | *(Pipeline Error: dropped sentinel)* | MT model stripped sentinel token during tag masking. | **Rejected** (retained original Japanese safely) |
+### Key Defect Types Corrected
+1. **Single-Kana Truncation:** Katakana `セーブ` truncated by tokenizer to `ブ`; corrected to `"Save"`.
+2. **Syntax-Crashing Brackets:** Unescaped brackets `【夜の本命】` translated to `[Current life]`, which causes Ren'Py variable interpolation syntax crashes at runtime; escaped as `[[Night Target]]`.
+3. **Severe Distortions & Noise:** Japanese dialogue mangled into nonsense words (`"Dutch is thin"`); restored to natural dialogue matching character context.
+4. **Dropped Sentinels:** Complex `{color}`/`{size}` tags stripped of tokens; fail-closed rejection retained pristine Japanese source strings safely.
 
 ---
 
-## 6. Patch Planning & Preview
+## 6. Real Live Engine Execution & Interactive Runtime Verification
 
-GameLingo's `create_plan()` and `validate_plan()` processed the reviewed units:
-- **Total Planned Edits:** 37 valid edits (36 translation replacements + 1 GameLingo activation script)
-- **Excluded Units:** 4 rejected units were safely excluded from the plan
-- **Dry-Run Preview Output:**
-  - `game/tl/english/strings.rpy` (target translation table)
-  - `game/gamelingo_activate.rpy` (runtime activation script)
+The live game engine executable `island.exe` was launched inside the disposable environment with an automated probe script (`zz_gl040_probe.rpy`).
 
----
-
-## 7. Patch Application & Backup Verification
-
-GameLingo applied the patch plan to `E:\temp_gl040_pilot\island-1.0-win`:
-- **Patch Status:** `success`
-- **Backup Created:**
-  - **Backup ID:** `131ccfb5-20e0-45ad-84ce-679c25c9b672`
-  - **Backup Path:** `E:\temp_gl040_pilot\backup\131ccfb5-20e0-45ad-84ce-679c25c9b672`
-- **Generated Target Files:**
-  - `E:\temp_gl040_pilot\island-1.0-win\game\tl\english\strings.rpy` (5,735 bytes)
-  - `E:\temp_gl040_pilot\island-1.0-win\game\gamelingo_activate.rpy` (3,082 bytes)
-
----
-
-## 8. Live Ren'Py Engine Execution & Runtime Probes
-
-The live Ren'Py engine executable `island.exe` was launched inside the disposable working environment with an automated probe script (`zz_gl040_probe.rpy`).
-
-### 8.1 Engine Environment
+### 6.1 Engine Environment
 - **Executable:** `island.exe` (AMD64 64-bit)
 - **Engine Version:** `Ren'Py 8.5.0.25111603`
 - **Python Version:** `3.12.7 (heads/mingw-v3.12.7-dirty:d21f60d4a8b, Oct 29 2025, 19:34:29) [GCC UCRT Clang 19.1.6 64 bit (AMD64)]`
-- **Renderer:** OpenGL GL2 (`NVIDIA GeForce RTX 3050 Laptop GPU`)
+- **GPU Renderer:** OpenGL GL2 (`NVIDIA GeForce RTX 3050 Laptop GPU`)
 - **Process Exit Code:** `0`
+- **Engine Log Captured:** `True` (47 lines, 0 tracebacks, 0 unhandled exceptions)
 
-### 8.2 Engine Log Audit
-- **Log Captured:** `True` (47 lines captured)
-- **Tracebacks Detected:** `False`
-- **Unhandled Exceptions:** `None`
+### 6.2 Interactive Phases & Assertions
 
-### 8.3 Live Runtime Assertions
-
-| Acceptance Check | Tested Value / Condition | Actual Engine Result | Status |
+| Check | Target / Condition | Engine Result | Status |
 | :--- | :--- | :--- | :--- |
 | **Language Activation** | `_preferences.language == "english"` | `True` | **PASSED** |
 | **Approved Translations** | 36 approved strings translated via `translate_string()` | **36 / 36 matched** | **PASSED** |
-| **Rejected Units Safety** | 4 rejected units must retain untranslated Japanese | **4 / 4 retained** | **PASSED** |
-| **Dynamic Text Hook** | `renpy.translation.translate_string(gl_pilot_dynamic_var)` with `gl_pilot_dynamic_var = "野犬"` | Evaluated to `"Wild Dog"` | **PASSED** |
+| **Rejected Units Safety** | 4 rejected units retained original Japanese source | **4 / 4 retained** | **PASSED** |
+| **Dynamic Text Hook** | `renpy.translation.translate_string(gl_pilot_dynamic_var)` where variable is `"野犬"` | Evaluated to `"Wild Dog"` | **PASSED** |
 | **Multiline Formatting** | Explicit `\n` line breaks preserved in rendered card | 3 lines preserved (`\n` count: 2) | **PASSED** |
 | **Variable Interpolation** | `%d` formatting: `_("罠を仕掛ける（%d）") % 5` | `"Set a trap (5)"` | **PASSED** |
-| **Save/Load State** | Write save slot and verify with `renpy.can_load()` | `True` (persistent & save compatible) | **PASSED** |
-| **Visual Rendering** | Native screenshot capture via `renpy.screenshot()` | `True` (82,642 bytes PNG) | **PASSED** |
+| **Main Menu Rendering** | Native `main_menu` screen displayed and rendered | `True` (2,541,454 bytes screenshot) | **PASSED** |
+| **Preferences Navigation** | Native `preferences` screen displayed and rendered | `True` (40,629 bytes screenshot) | **PASSED** |
+| **Dialogue Scene Rendering**| Native `say` screen rendered with speaker `Mob` and translated dialogue | `True` (15,683 bytes screenshot) | **PASSED** |
+| **Save/Load Persistence** | Write save slot and verify with `renpy.can_load()` | `True` | **PASSED** |
+| **State Restoration** | Mutate in-memory store, verify `renpy.get_save_data()` restores persisted known marker | `True` (`"gl040_persisted_known_state_98765"` restored) | **PASSED** |
+
+---
+
+## 7. Categorization of Acceptance Checks
+
+To distinguish fully automated verification from visual and remaining manual checks:
+
+### 7.1 Automated Checks (Completed & Passed)
+- [x] Full fixture baseline manifest computed (1,391 files).
+- [x] Unique disposable run directory created with validated ownership marker.
+- [x] Prior completed runs safely pruned; unrelated directories left intact.
+- [x] Offline translation executed with sentinel drop protection.
+- [x] 40 units reviewed, 36 approved, 4 rejected in SQLite database.
+- [x] Patch plan generated with dry-run preview validation.
+- [x] Patch applied atomically; backup directory verified.
+- [x] Live engine launched with process exit code 0.
+- [x] Engine log captured (47 lines), with 0 tracebacks and 0 unhandled exceptions.
+- [x] English language preferences activated automatically.
+- [x] 36 / 36 approved translations verified in live engine.
+- [x] 4 / 4 rejected translations verified retaining original Japanese.
+- [x] Dynamic text hook wrapper verified translating dynamic combat entity.
+- [x] Multiline formatting verified with intact line breaks.
+- [x] Variable interpolation verified without KeyError or syntax crashes.
+- [x] Native `main_menu` screen rendered without error.
+- [x] Native `preferences` screen rendered without error.
+- [x] Native `say` dialogue screen rendered without error.
+- [x] Save slot persistence verified with `renpy.can_load()`.
+- [x] Genuine state restoration verified via `renpy.get_save_data()` after store mutation.
+- [x] Rollback restore executed; patch files and translation directories pruned.
+- [x] Clean engine relaunch on restored copy verified (code 0, 0 tracebacks, log captured).
+- [x] Post-run full manifest recomputed (1,391 files match baseline with 0 modifications).
+- [x] Safe post-run cleanup of disposable run directory completed.
+
+### 7.2 Visual Checks (Performed & Audited)
+- [x] Diagnostic test frame rendered with English buttons, dialogue, and multiline text.
+- [x] Game native main menu graphic screen rendered.
+- [x] Game native preferences menu screen rendered.
+- [x] Game native dialogue scene rendered with speaker name `"Mob"` and dialogue `"Huh? What do you want?"`.
+- [x] All 4 screenshot image files verified on disk with size > 5,000 bytes and audited SHA-256 hashes.
+
+### 7.3 Checks Remaining Manual or Unavailable
+- Full playthrough across all game routes (requires full commercial script translation).
+- Automated pixel-level bounding-box text clipping detection on custom minigame screens.
+
+---
+
+## 8. Audited Evidence Artifacts & Checksums
+
+All evidence artifacts have been persisted and mirrored across both project repository storage (`evidence/gl040_pilot/`) and artifact storage:
+
+| Artifact Name | Filename | Size (Bytes) | SHA-256 Checksum |
+| :--- | :--- | :--- | :--- |
+| **Diagnostic Screen** | `gl040_pilot_diagnostic_screen.png` | 81,270 | `d77e96376e95e9af20f4efc498501b37258d23bf369ac350172491ebd0f66598` |
+| **Main Menu Screen** | `gl040_pilot_main_menu.png` | 2,541,454 | `5a7abd808618f78befdb2d0a5874cc929bfbf1f33356dfa1b5685428d2b5aabf` |
+| **Preferences Screen** | `gl040_pilot_preferences.png` | 40,629 | `586ceff3ddae91e49cd9d91d5ca396de259da9d19b11c1cb8f693d3392f710aa` |
+| **Dialogue Scene Screen** | `gl040_pilot_dialogue_scene.png` | 15,683 | `f3bbee31a57ead17cff8ae4fb3edb200fa4a1fec20c71abbfc02b34364bc8e8d` |
+| **Pilot Evidence JSON** | `gl040_real_game_pilot_evidence.json` | 30,243 | `4961d763a8be771c5324b1ff5ba549553b47c0936fa5e2d140e6532463eefd6b` |
+| **Engine Execution Log** | `gl040_real_game_pilot_log.txt` | 1,809 | `b63a92543b59302636a0eeb9ae4948a3aa6cefd82054c229ea7ec813b1940989` |
+| **Legacy Screenshot Alias** | `gl040_real_game_pilot_screenshot.png` | 81,270 | `d77e96376e95e9af20f4efc498501b37258d23bf369ac350172491ebd0f66598` |
 
 ---
 
 ## 9. Rollback & Restoration Integrity
 
-To verify complete reversibility, GameLingo's `execute_restore(execute=True)` was invoked against the backup:
-1. `execute_restore` deleted newly added `game/tl/english/strings.rpy` and `game/gamelingo_activate.rpy`.
-2. Compiled bytecode artifacts (`.rpyc`) generated during engine execution were removed.
-3. The empty translation directory `game/tl/english` was cleanly pruned.
-4. **100% Cryptographic Hash Parity:** All 6 baseline files in the disposable game directory matched their pristine SHA-256 hashes exactly.
-5. **Clean Engine Relaunch:** The restored game was launched again with the engine; it exited with code 0 and 0 tracebacks.
-
----
-
-## 10. Untouched Original Game Audit
-
-A final audit was performed on `D:\New folder\island-1.0-win`. All 6 critical files were re-hashed:
-- `island.exe`: `4984fccdf9101352...` (MATCH)
-- `island.py`: `5a2d8e648e3f4cbd...` (MATCH)
-- `readme.txt`: `2a5cbb1c70628543...` (MATCH)
-- `gamelingo.db`: `32df6085def5b066...` (MATCH)
-- `game/archive.rpa`: `6faca6ff190c3577...` (MATCH)
-- `game/script_version.txt`: `0ec68941f39d8b11...` (MATCH)
-
-**Confirmation: 0 bytes in the original game fixture were modified.**
-
----
-
-## 11. Evidence Artifacts
-
-The following evidence artifacts were generated and persisted during this pilot:
-
-- **Pilot Evidence JSON:**  
-  `C:\Users\amvbl\.gemini\antigravity\brain\7571864e-483c-4cf2-aba4-7a69942cfe31\gl040_evidence\gl040_real_game_pilot_evidence.json`
-- **Engine Execution Log:**  
-  `C:\Users\amvbl\.gemini\antigravity\brain\7571864e-483c-4cf2-aba4-7a69942cfe31\gl040_evidence\gl040_real_game_pilot_log.txt`
-- **Rendered Visual Screenshot:**  
-  `C:\Users\amvbl\.gemini\antigravity\brain\7571864e-483c-4cf2-aba4-7a69942cfe31\gl040_evidence\gl040_real_game_pilot_screenshot.png`
-
----
-
-## 12. Limitations & Future Work
-
-While GL-040.3 demonstrates end-to-end viability on real Ren'Py 8.5 games, several areas are targeted for future development:
-1. **Model Capability:** The lightweight offline Argos model exhibits hallucination and single-kana truncation on isolated video game terms. Integrating high-capability cloud LLMs (e.g. Gemini 1.5 Pro) with domain glossaries will drastically reduce manual review overhead.
-2. **Complex Tag Preservation:** Machine translation engines frequently mangle nested formatting tags (`{color}`, `{size}`, `{font}`). Implementing token masking before translation and unmasking post-translation will prevent sentinel drops.
-3. **UI Overflow Detection:** Visual inspection confirmed that English strings fit within the test screen frames, but full games require automated bounding-box and text overflow analysis.
-4. **Distribution Packaging:** Packaging translation patches as standalone patch installers or zip archives for end users.
+To verify complete reversibility:
+1. `execute_restore` removed `game/tl/english/strings.rpy` and `game/gamelingo_activate.rpy`.
+2. Ren'Py bytecode artifacts (`.rpyc`) generated during engine execution were cleaned.
+3. The translation directory `game/tl/english` was pruned.
+4. Clean relaunch of the restored game copy exited with return code 0 and 0 tracebacks.
+5. All 1,391 baseline files matched their original SHA-256 hashes exactly.

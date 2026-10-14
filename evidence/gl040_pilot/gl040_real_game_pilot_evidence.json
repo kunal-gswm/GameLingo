@@ -1,0 +1,681 @@
+{
+  "milestone": "GL-040.3.1",
+  "date": "2026-10-14 11:31:40",
+  "original_game": "D:\\New folder\\island-1.0-win",
+  "engine_verified": "Ren'Py 8.5.0.25111603 (Python 3.12.7 64-bit AMD64)",
+  "source_game": "island-1.0-win",
+  "provider": "ArgosTranslateProvider (translate-ja_en 1.1)",
+  "steps": {
+    "step_1_preflight": {
+      "status": "passed",
+      "full_file_count": 1391,
+      "baseline_hashes": {
+        "island.exe": {
+          "sha256": "4984fccdf91013521fdbcd61aab917050372e1acc5e22bf99d3b79b297f5e415",
+          "size": 204288
+        },
+        "island.py": {
+          "sha256": "5a2d8e648e3f4cbdcd32cbd2bb0ba48d10de32fe14042e201a8bb7088cefad79",
+          "size": 8944
+        },
+        "readme.txt": {
+          "sha256": "2a5cbb1c70628543a29ca74d1450c57709b84b3212ba44cea2da920c8a2a3b4f",
+          "size": 7953
+        },
+        "gamelingo.db": {
+          "sha256": "32df6085def5b06610aaf7f902ee2e350e2a984c78a8f9bf9e3e385b8d8b2536",
+          "size": 102400
+        },
+        "game/archive.rpa": {
+          "sha256": "6faca6ff190c3577d1062a3e166da4e7616ae26d58d4360635912051aeeb1dca",
+          "size": 948453940
+        },
+        "game/script_version.txt": {
+          "sha256": "0ec68941f39d8b11740af172ae548a7455ac63baaa2dc5e62702e37fe9b1c3c0",
+          "size": 9
+        }
+      }
+    },
+    "step_2_disposable_copy": {
+      "status": "passed",
+      "run_dir": "E:\\temp_gl040_pilot\\run_20261014_113142_a1729b46",
+      "disposable_path": "E:\\temp_gl040_pilot\\run_20261014_113142_a1729b46\\island-1.0-win",
+      "copy_duration_sec": 0.98,
+      "verified_file_count": 1391,
+      "copy_diff_clean": true
+    },
+    "step_3_selection": {
+      "status": "passed",
+      "total_units": 40,
+      "category_counts": {
+        "dialogue": 12,
+        "ui": 10,
+        "dynamic_status": 8,
+        "variables_tags": 6,
+        "multiline": 3,
+        "technical": 1
+      }
+    },
+    "step_4_translation": {
+      "status": "passed",
+      "duration_sec": 11.21,
+      "succeeded_count": 36,
+      "rejected_count": 4,
+      "pipeline_errors": [
+        {
+          "id": "bench_070",
+          "error": "Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output."
+        },
+        {
+          "id": "bench_071",
+          "error": "Placeholder error: Sentinel 'XXXTOKEN2XXX' is missing from the translation output."
+        },
+        {
+          "id": "bench_072",
+          "error": "Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output."
+        },
+        {
+          "id": "bench_074",
+          "error": "Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output."
+        }
+      ]
+    },
+    "step_5_review": {
+      "status": "passed",
+      "total_reviewed": 40,
+      "approved_as_is": 6,
+      "manually_corrected": 30,
+      "rejected": 4,
+      "total_approved": 36,
+      "records": [
+        {
+          "id": "bench_001",
+          "unit_id": "pilot::bench_001",
+          "category": "dialogue",
+          "source_text": "あぁ？　なんだよ、お前",
+          "raw_machine_text": "あぁ？　なんだよ、お前",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Huh? What do you want?",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Repaired untranslated Japanese fallback to natural hostile dialogue matching character mob_1."
+        },
+        {
+          "id": "bench_002",
+          "unit_id": "pilot::bench_002",
+          "category": "dialogue",
+          "source_text": "い、いえ、なんでも……っ",
+          "raw_machine_text": "......",
+          "raw_machine_error": null,
+          "final_reviewed_text": "N-No, it's nothing...!",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Restored dialogue lost to ellipsis truncation; preserved stutter and exclamation."
+        },
+        {
+          "id": "bench_003",
+          "unit_id": "pilot::bench_003",
+          "category": "dialogue",
+          "source_text": "効かない。男にはまるで。",
+          "raw_machine_text": "Not effective. Like a man.",
+          "raw_machine_error": null,
+          "final_reviewed_text": "It doesn't work. Not at all on men.",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Fixed awkward literal translation to natural internal monologue."
+        },
+        {
+          "id": "bench_004",
+          "unit_id": "pilot::bench_004",
+          "category": "dialogue",
+          "source_text": "どうして……？",
+          "raw_machine_text": "Why?",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Why...?",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Preserved question with trailing ellipsis."
+        },
+        {
+          "id": "bench_006",
+          "unit_id": "pilot::bench_006",
+          "category": "dialogue",
+          "source_text": "……あ！ここにきて食べた——あの変な実か！",
+          "raw_machine_text": "That’s it!",
+          "raw_machine_error": null,
+          "final_reviewed_text": "...Ah! That strange fruit I ate when I got here—!",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Restored full dialogue from severe machine truncation."
+        },
+        {
+          "id": "bench_010",
+          "unit_id": "pilot::bench_010",
+          "category": "dialogue",
+          "source_text": "この島がどこかも、助けが来るのかも、まるでわからない。",
+          "raw_machine_text": "I don’t know where to help.",
+          "raw_machine_error": null,
+          "final_reviewed_text": "I have no idea where this island is, or if help will ever come.",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected hallucinated output to accurate reflective narration."
+        },
+        {
+          "id": "bench_012",
+          "unit_id": "pilot::bench_012",
+          "category": "dialogue",
+          "source_text": "まずは、動くしかない。",
+          "raw_machine_text": "First of all, you have to move.",
+          "raw_machine_error": null,
+          "final_reviewed_text": "For now, all I can do is move.",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected 2nd person pronoun to 1st person internal monologue."
+        },
+        {
+          "id": "bench_016",
+          "unit_id": "pilot::bench_016",
+          "category": "dialogue",
+          "source_text": "ピンクのパーカー。あどけない顔。学生だろうか。",
+          "raw_machine_text": "Pink sandals. I can't face. Are you a student?",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Pink hoodie. An innocent face. A student, perhaps?",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Fixed hallucinated 'sandals' and mistranslated face to hoodie and innocent face."
+        },
+        {
+          "id": "bench_020",
+          "unit_id": "pilot::bench_020",
+          "category": "dialogue",
+          "source_text": "試すなら。抵抗のなさそうな、この子で——。",
+          "raw_machine_text": "Contact Us In this child, it seems to be resistant.",
+          "raw_machine_error": null,
+          "final_reviewed_text": "If I'm going to test it. On this girl, who looks defenseless—.",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Fixed hallucinated phrase 'Contact Us' to narrative line."
+        },
+        {
+          "id": "bench_025",
+          "unit_id": "pilot::bench_025",
+          "category": "dialogue",
+          "source_text": "あった……っ",
+          "raw_machine_text": "......",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Found it...!",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Restored truncated dialogue."
+        },
+        {
+          "id": "bench_030",
+          "unit_id": "pilot::bench_030",
+          "category": "dialogue",
+          "source_text": "そんな……っ",
+          "raw_machine_text": "That's it.",
+          "raw_machine_error": null,
+          "final_reviewed_text": "No way...!",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected despair exclamation to 'No way...!'."
+        },
+        {
+          "id": "bench_035",
+          "unit_id": "pilot::bench_035",
+          "category": "dialogue",
+          "source_text": "捜したじゃない。お世話係でしょ。なんで自分の食料を先に探してるわけ？",
+          "raw_machine_text": "Not searched. It’s a staff. Why are you looking for your food?",
+          "raw_machine_error": null,
+          "final_reviewed_text": "I've been looking for you. You're my attendant, aren't you? Why are you searching for your own food first?",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Fixed broken grammar and terminology ('staff' -> 'attendant')."
+        },
+        {
+          "id": "bench_036",
+          "unit_id": "pilot::bench_036",
+          "category": "ui",
+          "source_text": "設定",
+          "raw_machine_text": "Settings",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Settings",
+          "review_status": "approved",
+          "human_action": "approved_as_is",
+          "reviewer_notes": "Exact UI setting label match."
+        },
+        {
+          "id": "bench_037",
+          "unit_id": "pilot::bench_037",
+          "category": "ui",
+          "source_text": "セーブ",
+          "raw_machine_text": "ブ",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Save",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Fixed single kana truncation 'ブ' to standard 'Save'."
+        },
+        {
+          "id": "bench_038",
+          "unit_id": "pilot::bench_038",
+          "category": "ui",
+          "source_text": "ロード",
+          "raw_machine_text": "Load",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Load",
+          "review_status": "approved",
+          "human_action": "approved_as_is",
+          "reviewer_notes": "Exact UI load label match."
+        },
+        {
+          "id": "bench_039",
+          "unit_id": "pilot::bench_039",
+          "category": "ui",
+          "source_text": "スキップ",
+          "raw_machine_text": "スキップ",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Skip",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Translated katakana UI button to standard English 'Skip'."
+        },
+        {
+          "id": "bench_041",
+          "unit_id": "pilot::bench_041",
+          "category": "ui",
+          "source_text": "スタート",
+          "raw_machine_text": "Start",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Start",
+          "review_status": "approved",
+          "human_action": "approved_as_is",
+          "reviewer_notes": "Exact UI start label match."
+        },
+        {
+          "id": "bench_043",
+          "unit_id": "pilot::bench_043",
+          "category": "ui",
+          "source_text": "巻き戻し",
+          "raw_machine_text": "Rewind",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Rollback",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Adjusted generic 'Rewind' to standard Ren'Py visual novel terminology 'Rollback'."
+        },
+        {
+          "id": "bench_044",
+          "unit_id": "pilot::bench_044",
+          "category": "ui",
+          "source_text": "Q.セーブ",
+          "raw_machine_text": "Q.Save",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Q.Save",
+          "review_status": "approved",
+          "human_action": "approved_as_is",
+          "reviewer_notes": "Exact quick save UI label match."
+        },
+        {
+          "id": "bench_045",
+          "unit_id": "pilot::bench_045",
+          "category": "ui",
+          "source_text": "Q.ロード",
+          "raw_machine_text": "Q. Loading",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Q.Load",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected 'Q. Loading' to concise UI label 'Q.Load'."
+        },
+        {
+          "id": "bench_048",
+          "unit_id": "pilot::bench_048",
+          "category": "ui",
+          "source_text": "よろしいですか？",
+          "raw_machine_text": "Is it good?",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Are you sure?",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected literal translation 'Is it good?' to standard confirmation dialog phrasing."
+        },
+        {
+          "id": "bench_053",
+          "unit_id": "pilot::bench_053",
+          "category": "ui",
+          "source_text": "スキップを開始しますか？",
+          "raw_machine_text": "Start skipping?",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Start skipping?",
+          "review_status": "approved",
+          "human_action": "approved_as_is",
+          "reviewer_notes": "Natural and accurate prompt text."
+        },
+        {
+          "id": "bench_054",
+          "unit_id": "pilot::bench_054",
+          "category": "dynamic_status",
+          "source_text": "野犬",
+          "raw_machine_text": "Dogs",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Wild Dog",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected enemy name to singular 'Wild Dog'."
+        },
+        {
+          "id": "bench_055",
+          "unit_id": "pilot::bench_055",
+          "category": "dynamic_status",
+          "source_text": "島ネズミの群れ",
+          "raw_machine_text": "Islands",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Swarm of Island Rats",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Restored enemy name from truncation."
+        },
+        {
+          "id": "bench_056",
+          "unit_id": "pilot::bench_056",
+          "category": "dynamic_status",
+          "source_text": "大猪",
+          "raw_machine_text": "大",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Giant Boar",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Fixed single kanji truncation '大' to 'Giant Boar'."
+        },
+        {
+          "id": "bench_058",
+          "unit_id": "pilot::bench_058",
+          "category": "dynamic_status",
+          "source_text": "ならず者",
+          "raw_machine_text": "Others",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Ruffian",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected mistranslation 'Others' to 'Ruffian'."
+        },
+        {
+          "id": "bench_060",
+          "unit_id": "pilot::bench_060",
+          "category": "dynamic_status",
+          "source_text": "ずる賢い男",
+          "raw_machine_text": "smart man",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Cunning Man",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Adjusted terminology from 'smart man' to accurate 'Cunning Man'."
+        },
+        {
+          "id": "bench_062",
+          "unit_id": "pilot::bench_062",
+          "category": "dynamic_status",
+          "source_text": "こちらが押されている",
+          "raw_machine_text": "This is pressed",
+          "raw_machine_error": null,
+          "final_reviewed_text": "We are being pushed back",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Fixed literal translation 'This is pressed' to battle status 'We are being pushed back'."
+        },
+        {
+          "id": "bench_065",
+          "unit_id": "pilot::bench_065",
+          "category": "dynamic_status",
+          "source_text": "俺を信頼する",
+          "raw_machine_text": "Trust Our Partners",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Trust me",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Removed hallucinated corporate phrase 'Trust Our Partners'."
+        },
+        {
+          "id": "bench_068",
+          "unit_id": "pilot::bench_068",
+          "category": "dynamic_status",
+          "source_text": "NEW  図鑑に登録",
+          "raw_machine_text": "NEW Sign up for the book",
+          "raw_machine_error": null,
+          "final_reviewed_text": "NEW  Registered in Encyclopedia",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected 'Sign up for the book' to 'Registered in Encyclopedia'."
+        },
+        {
+          "id": "bench_069",
+          "unit_id": "pilot::bench_069",
+          "category": "variables_tags",
+          "source_text": "主人公　HP [hero_hp]/[hero_maxhp]　罠 [traps]",
+          "raw_machine_text": "HP [hero_hp]/[hero_maxhp]   [traps]",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Protagonist  HP [hero_hp]/[hero_maxhp]  Traps [traps]",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Restored label and spacing while preserving [hero_hp], [hero_maxhp], [traps] tags."
+        },
+        {
+          "id": "bench_070",
+          "unit_id": "pilot::bench_070",
+          "category": "variables_tags",
+          "source_text": "{color=#8a9aad}[label] {/color}{color=#e8eef4}[value]{/color}",
+          "raw_machine_text": "",
+          "raw_machine_error": "Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
+          "final_reviewed_text": null,
+          "review_status": "rejected",
+          "human_action": "rejected",
+          "reviewer_notes": "Fail-closed rejection: Dropped sentinel error in complex color formatting tags."
+        },
+        {
+          "id": "bench_071",
+          "unit_id": "pilot::bench_071",
+          "category": "variables_tags",
+          "source_text": "{size=21}{color=#b0b8d0}%d日目{/color}{color=%s}　迎えの船まで %d日{/color}{/size}",
+          "raw_machine_text": "",
+          "raw_machine_error": "Placeholder error: Sentinel 'XXXTOKEN2XXX' is missing from the translation output.",
+          "final_reviewed_text": null,
+          "review_status": "rejected",
+          "human_action": "rejected",
+          "reviewer_notes": "Fail-closed rejection: Dropped sentinel error in nested size and color tags."
+        },
+        {
+          "id": "bench_072",
+          "unit_id": "pilot::bench_072",
+          "category": "variables_tags",
+          "source_text": "%s の反撃！ %d ダメージ",
+          "raw_machine_text": "",
+          "raw_machine_error": "Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
+          "final_reviewed_text": null,
+          "review_status": "rejected",
+          "human_action": "rejected",
+          "reviewer_notes": "Fail-closed rejection: Dropped sentinel error in multi-token combat string."
+        },
+        {
+          "id": "bench_074",
+          "unit_id": "pilot::bench_074",
+          "category": "variables_tags",
+          "source_text": "渾身の一撃！ %s に %d ダメージ",
+          "raw_machine_text": "",
+          "raw_machine_error": "Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
+          "final_reviewed_text": null,
+          "review_status": "rejected",
+          "human_action": "rejected",
+          "reviewer_notes": "Fail-closed rejection: Dropped sentinel error in combat message."
+        },
+        {
+          "id": "bench_080",
+          "unit_id": "pilot::bench_080",
+          "category": "variables_tags",
+          "source_text": "罠を仕掛ける（%d）",
+          "raw_machine_text": "the   (%d)",
+          "raw_machine_error": null,
+          "final_reviewed_text": "Set a trap (%d)",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected mangled translation while preserving (%d) interpolation token."
+        },
+        {
+          "id": "bench_084",
+          "unit_id": "pilot::bench_084",
+          "category": "multiline",
+          "source_text": "ここからは、日々を自分で組み立てる。\nゴールは下段の『物語を進める』——カードに出ている条件（陥落度など）を満たせば、物語の続きが始まる。\nそのために、昼に稼ぎ、夜に堕とす。",
+          "raw_machine_text": "From here, assemble your own day.\nThe goal is to meet the conditions on the card (e.g., degradation).\nFor that reason, earn at lunch and fall at night.",
+          "raw_machine_error": null,
+          "final_reviewed_text": "From here on, you organize each day yourself.\nThe goal is 'Advance Story' at the bottom—satisfying card conditions (such as corruption) begins the next part of the story.\nTo that end, earn by day and corrupt by night.",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Corrected awkward phrasing ('earn at lunch and fall at night') and restored 3-line multiline layout."
+        },
+        {
+          "id": "bench_086",
+          "unit_id": "pilot::bench_086",
+          "category": "multiline",
+          "source_text": "【夜の本命】彼女たちのカードから催眠をかけ、陥落度を上げる。\n堕とすほど深い暗示・Hイベント・物語が解禁されていく。\nカードの顔と状態は、堕ちるほど変わっていく。",
+          "raw_machine_text": "[Current life] Hypnosis is applied from the cards of hers, increasing the degree of fall.\nA deeper memorandum, H events, and stories are denied.\nThe face and state of the card will change.",
+          "raw_machine_error": null,
+          "final_reviewed_text": "[[Night Target]] Use hypnosis via their cards to increase corruption.\nThe deeper they fall, the more deep suggestions, events, and story chapters unlock.\nTheir card portraits and statuses evolve as they fall deeper.",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Escaped Ren'Py interpolation brackets ([[]]) to prevent variable lookup syntax crashes, corrected meaning, preserved 3 lines."
+        },
+        {
+          "id": "bench_090",
+          "unit_id": "pilot::bench_090",
+          "category": "multiline",
+          "source_text": "いまの尖った声は【抵抗】の印だ。抵抗に撃った暗示は通らない。\nそれどころか【覚醒リスク】——正気に戻られる危険——が跳ね上がる。\n100に達すれば覚醒され、その夜は強制終了。積み上げた成果も削られる。\n——撃つな。こういう時は『見つめる』で心を揺さぶり、隙を作れ。",
+          "raw_machine_text": "This is the mark of resistance. There is no implications shot on the resistance.\n[A。ning Risks]—H。ds that can be returned positively——there is a bounce.\nA。ned when reaching 100, the night is forced to 。. You can sharpen the results of stacking.\nDutch In such a case, shake your mind and make a gap with \"seeing\".",
+          "raw_machine_error": null,
+          "final_reviewed_text": "That sharp voice is the sign of [[Resistance]]. Suggestions fired into resistance will not take.\nWhat's worse, [[Awakening Risk]]—the danger of her returning to her senses—surges.\nReaching 100 triggers awakening, abruptly ending the night and chipping away accumulated progress.\n—Do not suggest. In times like this, shake her heart by 'Staring' and create an opening.",
+          "review_status": "approved",
+          "human_action": "manually_corrected",
+          "reviewer_notes": "Repaired severely corrupted output ('A。ning Risks', 'Dutch', etc.) while escaping brackets ([[]]) and preserving 4 lines."
+        },
+        {
+          "id": "bench_094",
+          "unit_id": "pilot::bench_094",
+          "category": "technical",
+          "source_text": "SAVE",
+          "raw_machine_text": "SAVE",
+          "raw_machine_error": null,
+          "final_reviewed_text": "SAVE",
+          "review_status": "approved",
+          "human_action": "approved_as_is",
+          "reviewer_notes": "Intentional passthrough verified and approved unchanged."
+        }
+      ]
+    },
+    "step_6_plan_preview": {
+      "status": "passed",
+      "valid_edits_count": 37,
+      "rejected_edits_count": 4,
+      "affected_files": [
+        "game/tl/english/strings.rpy",
+        "game/gamelingo_activate.rpy"
+      ]
+    },
+    "step_7_apply": {
+      "status": "passed",
+      "backup_id": "c3ccd793-59e6-45fd-95ca-878c96e956fe",
+      "backup_dir": "E:\\temp_gl040_pilot\\run_20261014_113142_a1729b46\\backup\\c3ccd793-59e6-45fd-95ca-878c96e956fe",
+      "strings_size_bytes": 5735,
+      "activation_size_bytes": 3082
+    },
+    "step_8_live_engine": {
+      "status": "passed",
+      "probe_results": {
+        "engine_version": "Ren'Py 8.5.0.25111603",
+        "python_version": "3.12.7 (heads/mingw-v3.12.7-dirty:d21f60d4a8b, Oct 29 2025, 19:34:29)  [GCC UCRT Clang 19.1.6 64 bit (AMD64)]",
+        "active_language": "english",
+        "language_activation_ok": true,
+        "approved_tested_count": 36,
+        "approved_matched_count": 36,
+        "rejected_tested_count": 4,
+        "rejected_retained_source_count": 4,
+        "dynamic_hook_translated": true,
+        "multiline_newlines_intact": true,
+        "variable_interpolation_ok": true,
+        "main_menu_rendered": true,
+        "preferences_rendered": true,
+        "dialogue_scene_rendered": true,
+        "save_load_persistence_ok": true,
+        "state_restoration_ok": true,
+        "screenshots": {
+          "diagnostic": true,
+          "main_menu": true,
+          "preferences": true,
+          "dialogue": true
+        },
+        "mismatches": [],
+        "error": null,
+        "traceback": null
+      },
+      "log_summary": {
+        "log_captured": true,
+        "tracebacks_detected": false,
+        "log_error": null,
+        "lines_count": 47
+      },
+      "screenshots": {
+        "diagnostic": {
+          "filename": "gl040_pilot_diagnostic_screen.png",
+          "path": "E:\\temp_gl040_pilot\\run_20261014_113142_a1729b46\\screenshots\\gl040_pilot_diagnostic_screen.png",
+          "size_bytes": 81270,
+          "sha256": "d77e96376e95e9af20f4efc498501b37258d23bf369ac350172491ebd0f66598"
+        },
+        "main_menu": {
+          "filename": "gl040_pilot_main_menu.png",
+          "path": "E:\\temp_gl040_pilot\\run_20261014_113142_a1729b46\\screenshots\\gl040_pilot_main_menu.png",
+          "size_bytes": 2541454,
+          "sha256": "5a7abd808618f78befdb2d0a5874cc929bfbf1f33356dfa1b5685428d2b5aabf"
+        },
+        "preferences": {
+          "filename": "gl040_pilot_preferences.png",
+          "path": "E:\\temp_gl040_pilot\\run_20261014_113142_a1729b46\\screenshots\\gl040_pilot_preferences.png",
+          "size_bytes": 40629,
+          "sha256": "586ceff3ddae91e49cd9d91d5ca396de259da9d19b11c1cb8f693d3392f710aa"
+        },
+        "dialogue": {
+          "filename": "gl040_pilot_dialogue_scene.png",
+          "path": "E:\\temp_gl040_pilot\\run_20261014_113142_a1729b46\\screenshots\\gl040_pilot_dialogue_scene.png",
+          "size_bytes": 15683,
+          "sha256": "f3bbee31a57ead17cff8ae4fb3edb200fa4a1fec20c71abbfc02b34364bc8e8d"
+        }
+      }
+    },
+    "step_9_rollback": {
+      "status": "passed",
+      "restore_report": {
+        "status": "success",
+        "restored": [
+          "game/tl/english/strings.rpy",
+          "game/gamelingo_activate.rpy"
+        ]
+      },
+      "clean_relaunch_code": 0,
+      "clean_relaunch_tracebacks": false,
+      "clean_relaunch_log_captured": true
+    },
+    "step_10_original_audit": {
+      "status": "passed",
+      "total_verified_files": 1391,
+      "full_manifest_intact": true,
+      "diff": {
+        "missing": [],
+        "added": [],
+        "modified": []
+      }
+    }
+  },
+  "all_passed": true,
+  "failures": [],
+  "cleanup": {
+    "status": "cleaned",
+    "deleted_path": "E:\\temp_gl040_pilot\\run_20261014_113142_a1729b46"
+  }
+}
