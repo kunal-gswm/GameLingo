@@ -26,6 +26,27 @@ class DisposableSafetyError(Exception):
     pass
 
 
+def is_reparse_point_or_link(path: Path) -> bool:
+    """
+    Returns True if path is a symbolic link or a Windows junction / reparse point.
+    Does not follow links.
+    """
+    try:
+        p_str = str(path)
+        if path.is_symlink() or os.path.islink(p_str):
+            return True
+        st = os.lstat(p_str)
+        if getattr(st, "st_reparse_tag", 0) != 0:
+            return True
+        if (
+            getattr(st, "st_file_attributes", 0) & 0x0400
+        ):  # FILE_ATTRIBUTE_REPARSE_POINT
+            return True
+    except OSError:
+        pass
+    return False
+
+
 def create_disposable_run_dir(
     pilot_root: Path,
     run_id: Optional[str] = None,
@@ -53,6 +74,7 @@ def create_disposable_run_dir(
     marker_payload = {
         "pilot_owner": OWNERSHIP_MARKER_MAGIC,
         "run_id": run_id,
+        "status": "in_progress",
         "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "pilot_root": str(pilot_root),
         "metadata": extra_metadata or {},
@@ -64,17 +86,40 @@ def create_disposable_run_dir(
     return run_dir
 
 
-def verify_ownership_marker(target_dir: Path) -> Dict[str, Any]:
+def mark_disposable_run_completed(run_dir: Path) -> Path:
+    """
+    Marks an owned disposable run as completed in its ownership marker.
+    Only completed runs are eligible for automatic cleanup.
+    """
+    run_dir = Path(run_dir).resolve()
+    marker_path = run_dir / OWNERSHIP_MARKER_FILE
+    data = verify_ownership_marker(run_dir)
+    data["status"] = "completed"
+    data["completed_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    marker_path.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return run_dir
+
+
+def verify_ownership_marker(
+    target_dir: Path,
+    expected_run_id: Optional[str] = None,
+    expected_pilot_root: Optional[Path] = None,
+    require_completed: bool = False,
+) -> Dict[str, Any]:
     """
     Verifies that target_dir contains a valid, non-symlink ownership marker
-    matching the expected magic string. Returns marker payload if valid.
+    matching the expected magic string and metadata constraints.
     """
+    target_dir = Path(target_dir)
     marker_path = target_dir / OWNERSHIP_MARKER_FILE
     if not marker_path.exists():
         raise DisposableSafetyError(
             f"Directory is not owned by GameLingo pilot: missing marker {marker_path}"
         )
-    if marker_path.is_symlink() or os.path.islink(str(marker_path)):
+    if is_reparse_point_or_link(marker_path):
         raise DisposableSafetyError(
             f"Security violation: marker {marker_path} is a symlink or junction"
         )
@@ -93,6 +138,28 @@ def verify_ownership_marker(target_dir: Path) -> Dict[str, Any]:
             f"Invalid ownership marker magic in {target_dir}: expected {OWNERSHIP_MARKER_MAGIC}"
         )
 
+    marker_run_id = data.get("run_id")
+    target_run_id = expected_run_id or target_dir.name
+    if marker_run_id and marker_run_id != target_run_id:
+        raise DisposableSafetyError(
+            f"Security violation: run ID mismatch in marker ({marker_run_id!r}) vs target ({target_run_id!r})"
+        )
+
+    if expected_pilot_root is not None:
+        marker_root = data.get("pilot_root")
+        if (
+            not marker_root
+            or Path(marker_root).resolve() != Path(expected_pilot_root).resolve()
+        ):
+            raise DisposableSafetyError(
+                f"Security violation: pilot root mismatch in marker ({marker_root!r}) vs expected ({expected_pilot_root!r})"
+            )
+
+    if require_completed and data.get("status") != "completed":
+        raise DisposableSafetyError(
+            f"Safety restriction: run {target_dir.name} is not marked completed (status={data.get('status')!r})"
+        )
+
     return data
 
 
@@ -100,6 +167,7 @@ def validate_cleanup_target(
     target_dir: Path,
     pilot_root: Path,
     original_game_path: Optional[Path] = None,
+    require_completed: bool = False,
 ) -> Path:
     """
     Strictly validates that target_dir is safe to delete:
@@ -109,8 +177,9 @@ def validate_cleanup_target(
     4. Rejects if target_dir resolves to pilot_root itself (never delete configured root!).
     5. Rejects if target_dir is outside pilot_root.
     6. Rejects if target_dir matches or contains original_game_path.
-    7. Rejects if any segment in the resolved path from pilot_root to target_dir is a symlink or junction.
-    8. Rejects if ownership marker is missing or invalid.
+    7. Rejects if target_dir or any of its ancestors is a symlink or junction.
+    8. Rejects if any descendant inside target_dir is a symlink or junction.
+    9. Rejects if ownership marker is missing, forged, or invalid.
     """
     pilot_root = Path(pilot_root)
     if not pilot_root.exists():
@@ -120,6 +189,10 @@ def validate_cleanup_target(
     if not pilot_root.is_dir():
         raise DisposableSafetyError(
             f"Configured pilot root is not a directory: {pilot_root}"
+        )
+    if is_reparse_point_or_link(pilot_root):
+        raise DisposableSafetyError(
+            f"Security violation: pilot root is a symlink or junction: {pilot_root}"
         )
 
     pilot_root_resolved = pilot_root.resolve(strict=True)
@@ -131,10 +204,19 @@ def validate_cleanup_target(
         raise DisposableSafetyError(f"Target path is not a directory: {target_dir}")
 
     # Symlink / junction check on target_dir itself
-    if target_dir.is_symlink() or os.path.islink(str(target_dir)):
+    if is_reparse_point_or_link(target_dir):
         raise DisposableSafetyError(
             f"Security violation: target directory is a symlink or junction: {target_dir}"
         )
+
+    # Check for symlinks/junctions in the path tree up from target_dir
+    curr = target_dir
+    while curr != curr.parent:
+        if is_reparse_point_or_link(curr):
+            raise DisposableSafetyError(
+                f"Security violation: path or ancestor is a symlink or junction: {curr}"
+            )
+        curr = curr.parent
 
     target_dir_resolved = target_dir.resolve(strict=True)
 
@@ -175,17 +257,28 @@ def validate_cleanup_target(
         except OSError:
             pass
 
-    # Check for symlinks/junctions in the path tree up to pilot_root
-    curr = target_dir
-    while curr != pilot_root and curr != curr.parent:
-        if curr.is_symlink() or os.path.islink(str(curr)):
-            raise DisposableSafetyError(
-                f"Security violation: path contains symlink or junction: {curr}"
-            )
-        curr = curr.parent
+    # Check descendants: fail closed before deletion if any symlink or junction exists inside
+    for root, dirs, files in os.walk(str(target_dir_resolved), followlinks=False):
+        for d in dirs:
+            dp = Path(root) / d
+            if is_reparse_point_or_link(dp):
+                raise DisposableSafetyError(
+                    f"Security violation: descendant directory is a symlink or junction: {dp}"
+                )
+        for f in files:
+            fp = Path(root) / f
+            if is_reparse_point_or_link(fp):
+                raise DisposableSafetyError(
+                    f"Security violation: descendant file is a symlink or junction: {fp}"
+                )
 
-    # Require ownership marker in the target directory
-    verify_ownership_marker(target_dir_resolved)
+    # Require ownership marker in the target directory with strict metadata matching
+    verify_ownership_marker(
+        target_dir_resolved,
+        expected_run_id=target_dir_resolved.name,
+        expected_pilot_root=pilot_root_resolved,
+        require_completed=require_completed,
+    )
 
     return target_dir_resolved
 
@@ -194,12 +287,16 @@ def safe_cleanup_disposable_dir(
     target_dir: Path,
     pilot_root: Path,
     original_game_path: Optional[Path] = None,
+    require_completed: bool = False,
 ) -> Dict[str, Any]:
     """
     Safely deletes target_dir only after all validations pass.
     """
     target_resolved = validate_cleanup_target(
-        target_dir, pilot_root, original_game_path
+        target_dir,
+        pilot_root,
+        original_game_path,
+        require_completed=require_completed,
     )
     shutil.rmtree(target_resolved)
     return {
@@ -213,8 +310,10 @@ def cleanup_prior_owned_runs(
     original_game_path: Optional[Path] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Cleans up prior owned run directories under pilot_root that have a valid ownership marker.
-    Fails closed if any run directory has an invalid/corrupted marker or violates safety checks.
+    Cleans up prior owned run directories under pilot_root that have a valid ownership marker
+    and are marked with status == "completed".
+    Fails closed if any run directory has an invalid/corrupted marker, forged ID, or violates safety checks.
+    Preserves failed, in-progress, or uncompleted runs untouched for diagnosis.
     Leaves non-run items untouched.
     """
     cleaned: List[Dict[str, Any]] = []
@@ -224,8 +323,20 @@ def cleanup_prior_owned_runs(
 
     for item in sorted(pilot_root.iterdir()):
         if item.is_dir() and item.name.startswith("run_"):
-            res = safe_cleanup_disposable_dir(item, pilot_root, original_game_path)
-            cleaned.append(res)
+            # Check ownership marker integrity (magic, run_id, pilot_root)
+            marker = verify_ownership_marker(
+                item,
+                expected_run_id=item.name,
+                expected_pilot_root=pilot_root,
+                require_completed=False,
+            )
+            # Automatic cleanup only removes runs that successfully completed.
+            # Retain failed, in-progress, or ambiguous runs untouched for diagnosis.
+            if marker.get("status") == "completed":
+                res = safe_cleanup_disposable_dir(
+                    item, pilot_root, original_game_path, require_completed=True
+                )
+                cleaned.append(res)
     return cleaned
 
 
