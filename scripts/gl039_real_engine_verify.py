@@ -11,6 +11,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -23,15 +24,27 @@ if hasattr(sys.stderr, "reconfigure"):
 from gamelingo.adapters.renpy import detect_renpy_runtime
 from gamelingo.adapters.renpy_strings import generate_activation_rpy
 
-ORIGINAL_GAME_PATH = Path("D:/New folder/island-1.0-win")
-TEMP_BASE_DIR = Path("E:/temp_gl039_verify")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+ORIGINAL_GAME_PATH = (
+    Path(os.environ["GAMELINGO_GL039_ORIGINAL_GAME_PATH"]).expanduser()
+    if os.environ.get("GAMELINGO_GL039_ORIGINAL_GAME_PATH")
+    else None
+)
+TEMP_BASE_DIR = Path(
+    os.environ.get(
+        "GAMELINGO_GL039_TEMP_DIR",
+        str(Path(tempfile.gettempdir()) / "gamelingo_gl039_verify"),
+    )
+).expanduser()
 DISPOSABLE_GAME_PATH = TEMP_BASE_DIR / "island-1.0-win"
 ISOLATED_CONFIG_DIR = TEMP_BASE_DIR / "renpy_config"
 EVIDENCE_DIR = Path(
-    "C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl039_evidence"
-)
+    os.environ.get(
+        "GAMELINGO_GL039_EVIDENCE_DIR", str(REPO_ROOT / "evidence/gl039_acceptance")
+    )
+).expanduser()
 FALLBACK_EVIDENCE_FILE = (
-    Path(os.environ.get("TEMP", "C:/temp"))
+    Path(os.environ.get("TEMP") or tempfile.gettempdir())
     / "gl039_evidence"
     / "gl039_real_engine_verification_summary.json"
 )
@@ -1423,8 +1436,10 @@ def main():
 
     # 1. Inspect original game
     print("\n[Step 1] Inspecting original game installation...")
-    if not ORIGINAL_GAME_PATH.is_dir():
-        print(f"ERROR: Original game path {ORIGINAL_GAME_PATH} does not exist!")
+    if ORIGINAL_GAME_PATH is None or not ORIGINAL_GAME_PATH.is_dir():
+        print(
+            "ERROR: Set GAMELINGO_GL039_ORIGINAL_GAME_PATH to the Ren'Py game directory."
+        )
         sys.exit(1)
 
     runtime_info = detect_renpy_runtime(ORIGINAL_GAME_PATH)

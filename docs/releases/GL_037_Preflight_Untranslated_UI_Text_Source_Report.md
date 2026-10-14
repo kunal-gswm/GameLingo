@@ -199,7 +199,7 @@ Image assets containing text cannot be translated via `strings.rpy`. GameLingo p
   - Zero duplicate edit targets.
   - 2,412 translation units extracted without asset path leaks.
 - **Unit Test Suite:**
-  - Added [test_renpy_ui_extraction.py](file:///e:/GameLingo/tests/unit/test_renpy_ui_extraction.py) with 15 focused tests covering all 5 categories.
+  - Added [test_renpy_ui_extraction.py](../../tests/unit/test_renpy_ui_extraction.py) with 15 focused tests covering all 5 categories.
   - Test 15 validates extraction of Python data structures (`HUB_TUT_CARDS` tutorial list and `HYPNO_LIST` action tuples).
   - Full test suite: **182 tests passed** (`100%` pass rate).
   - Code formatting and linting: `ruff check` and `ruff format` clean across 78 files.

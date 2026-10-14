@@ -50,3 +50,6 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 crash_log.txt
+
+# Project-specific PyInstaller configuration used by build_windows.ps1
+!GameLingo.spec

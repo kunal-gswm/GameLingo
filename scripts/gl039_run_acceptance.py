@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict
@@ -533,7 +534,12 @@ label before_main_menu:
 
 
 def main():
-    base_dir = Path(r"E:\temp_gl039_tests")
+    base_dir = Path(
+        os.environ.get(
+            "GAMELINGO_GL039_ACCEPTANCE_ROOT",
+            str(Path(tempfile.gettempdir()) / "gamelingo_gl039_acceptance"),
+        )
+    ).expanduser()
     disp_base = base_dir / "disposable"
     logs_base = base_dir / "logs"
     manifest_path = logs_base / "baseline_manifests.json"

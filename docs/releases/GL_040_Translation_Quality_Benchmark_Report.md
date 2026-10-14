@@ -18,12 +18,12 @@ In GL-040.1, GameLingo established an initial translation benchmark across 100 r
 3. **Flawed Passthrough Handling**: Intentional passthroughs (e.g. `SAVE`, `mat`, `END`, `----`, and variable tags) that correctly remained unchanged were flagged as `IDENTICAL_TO_SOURCE` and penalized as untranslated failures ($0/5$).
 
 In **GL-040.2 through GL-040.2.3**, the evaluation framework has been completely restructured into a **decoupled, reproducible benchmark architecture** (`gamelingo.benchmark.evaluator`):
-- **Decoupled Annotations**: Manual review annotations are stored separately in [`annotations_gl040.json`](file:///e:/GameLingo/src/gamelingo/benchmark/annotations_gl040.json) and pinned to the exact target text via SHA-256 hashes (`reviewed_target_hash`) and prompt context hashes (`reviewed_context_hash`). If an output changes, previous annotations are automatically invalidated and marked `pending_review`/`stale`.
+- **Decoupled Annotations**: Manual review annotations are stored separately in [`annotations_gl040.json`](../../src/gamelingo/benchmark/annotations_gl040.json) and pinned to the exact target text via SHA-256 hashes (`reviewed_target_hash`) and prompt context hashes (`reviewed_context_hash`). If an output changes, previous annotations are automatically invalidated and marked `pending_review`/`stale`.
 - **Programmatic Passthrough Detection**: `expected_behavior` and reference parity are used to separate intentional passthrough from Japanese text requiring translation. Correctly unchanged technical identifiers are verified as valid passthroughs.
 - **Strict Input Alignment (GL-040.2.3)**: Dataset items and raw translation records are matched by unique, stable item ID (`align_benchmark_inputs`). Missing, extra, duplicate, or mismatched records reject execution fail-closed.
 - **Explicit Runtime Safety Metric (GL-040.2.3)**: Programmatic verification explicitly distinguishes basic structural validity ($82.0\%$) from runtime engine safety ($77.0\%$). Structurally valid text containing unexpected interpolation tokens (e.g. `[Current life]`) is classified as unsafe.
 - **Timing Fallback Elimination (GL-040.2.3)**: Silent fallback durations have been removed. Throughput availability is tracked explicitly ($5.80\text{ items/sec}$ over $17.25\text{s}$ recorded duration).
-- **Frozen Baseline Preservation**: The historical GL-040.1 baseline is preserved verbatim in [`gl040_1_baseline_snapshot.json`](file:///e:/GameLingo/src/gamelingo/benchmark/results/gl040_1_baseline_snapshot.json).
+- **Frozen Baseline Preservation**: The historical GL-040.1 baseline is preserved verbatim in [`gl040_1_baseline_snapshot.json`](../../src/gamelingo/benchmark/results/gl040_1_baseline_snapshot.json).
 
 ---
 
@@ -166,7 +166,7 @@ The table below contrasts the frozen GL-040.1 baseline snapshot against the corr
 
 ## 6. Verification & Automated Test Evidence (GL-040.2 through GL-040.2.3)
 
-The evaluation methodology and its hardened integrity checks are verified by 21 dedicated automated unit tests in [`tests/unit/test_quality_benchmark.py`](file:///e:/GameLingo/tests/unit/test_quality_benchmark.py):
+The evaluation methodology and its hardened integrity checks are verified by 21 dedicated automated unit tests in [`tests/unit/test_quality_benchmark.py`](../../tests/unit/test_quality_benchmark.py):
 1. **Complete Placeholder Inventory Checks**: Proves programmatic checks compare source and target inventories, catching missing tokens, dropped occurrences (`%d/%d` vs `%d/`), duplicated tokens (`%d` vs `%d %d`), missing closing tags (`{b}...{/b}`), and unexpected target tokens (`%d` vs `%d %s`, or plain text vs `%s`).
 2. **Unexpected Placeholder Syntax Rejection**: Proves introducing placeholder syntax into strings without source markup fails with `has_markup=True` and clear diagnostic details.
 3. **Newline Count Parity**: Proves exact newline preservation validation across multiline cards (lost or added newlines fail).
@@ -181,7 +181,7 @@ The evaluation methodology and its hardened integrity checks are verified by 21 
 12. **Passthrough Handling**: Proves `SAVE`, `mat`, `END`, `----` are recognized as `is_passthrough_expected=True`, assigned `passthrough_status="Pass"`, and excluded from untranslated failures.
 13. **Untranslated Japanese Fallback Detection**: Proves Japanese dialogue left untranslated is flagged as `Untranslated Japanese Fallback`.
 14. **Structural Validity vs Quality Separation**: Proves hallucinated outputs like `"Home"` are marked `structural_status="Valid"` but excluded from acceptable quality passes (`meaning_score=1`).
-15. **Frozen Baseline Verification**: Loads [`gl040_1_baseline_snapshot.json`](file:///e:/GameLingo/src/gamelingo/benchmark/results/gl040_1_baseline_snapshot.json) and verifies historical numbers ($2.58$ meaning, $2.83$ grammar, $1.57$ technical) and byte-for-byte SHA-256 (`024cb0d7536f22aefd10b6522f35f8c13941a36d2ae37c1885c3780496b1a361`).
+15. **Frozen Baseline Verification**: Loads [`gl040_1_baseline_snapshot.json`](../../src/gamelingo/benchmark/results/gl040_1_baseline_snapshot.json) and verifies historical numbers ($2.58$ meaning, $2.83$ grammar, $1.57$ technical) and byte-for-byte SHA-256 (`024cb0d7536f22aefd10b6522f35f8c13941a36d2ae37c1885c3780496b1a361`).
 16. **Deterministic Aggregation & Explicit Denominators**: Verifies all metric groups use explicit denominators and produce identical results across repeated runs.
 17. **Dataset Schema Verification**: Proves all 100 items in `dataset_gl040_real_game.json` satisfy `validate_benchmark_item()`.
 18. **Input Alignment Validation (GL-040.2.3)**: Proves 1-to-1 input alignment by unique item ID, rejecting duplicates, missing records, extra records, and missing ID fields with descriptive errors, while preserving dataset item ordering across reordered raw records.

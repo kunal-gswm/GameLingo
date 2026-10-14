@@ -123,7 +123,7 @@ uv sync --locked --extra gui --extra argos --group dev
 # Launch desktop GUI
 uv run python -m gamelingo.gui.main
 
-# Run test suite (130 automated tests)
+# Run the complete test suite
 uv run pytest
 
 # Check code formatting and linting
@@ -178,6 +178,8 @@ GameLingo enforces strict filesystem safety guarantees:
 - **Product Requirements:** [`docs/product/PRD.md`](docs/product/PRD.md)
 - **Milestone & Release History:** [`docs/history/MILESTONE_HISTORY.md`](docs/history/MILESTONE_HISTORY.md)
 - **Ren'Py Support & Hardening Report:** [`docs/releases/GL_033_RenPy_Support_Report.md`](docs/releases/GL_033_RenPy_Support_Report.md)
+- **Release Report Index:** [`docs/releases/README.md`](docs/releases/README.md)
+- **Real-Game Harness Setup:** [`docs/development/pilot-harnesses.md`](docs/development/pilot-harnesses.md)
 
 ---
 

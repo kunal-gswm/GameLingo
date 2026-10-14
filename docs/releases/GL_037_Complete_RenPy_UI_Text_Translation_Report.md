@@ -144,7 +144,7 @@ The Windows distribution was compiled using `build_windows.ps1` with PyInstaller
 ## 6. End-to-End Runtime Verification (GL-037.1)
 
 Full runtime verification has been completed on the running game `island-1.0-win` (disposable copy `D:\New folder\island-1.0-win-disposable`), proving that all 5 target screens render in English without engine errors:
-- See full verification report and captured screen proofs in [GL_037_1_End_to_End_RenPy_UI_Translation_Verification_Report.md](file:///e:/GameLingo/GL_037_1_End_to_End_RenPy_UI_Translation_Verification_Report.md).
+- See full verification report and captured screen proofs in [GL_037_1_End_to_End_RenPy_UI_Translation_Verification_Report.md](GL_037_1_End_to_End_RenPy_UI_Translation_Verification_Report.md).
 - Captured screenshots:
   1. Main Menu (`docs/screenshots/screen_1_main_menu.png`)
   2. Quit Confirmation Dialog (`docs/screenshots/screen_2_quit_confirmation.png`)

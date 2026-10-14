@@ -1,4 +1,5 @@
 import ast
+import os
 import textwrap
 from pathlib import Path
 
@@ -814,12 +815,12 @@ def test_diagnostics_for_malformed_version_in_apply_plan(tmp_path: Path):
 
 
 def test_actual_game_island_runtime_detection():
-    """Verify runtime detection against the verified game island-1.0-win release."""
-    target_path = Path("D:/New folder/island-1.0-win")
-    if not target_path.exists():
-        target_path = Path("D:/New folder/island-1.0-win-disposable")
+    """Verify runtime detection against an optionally configured real-game fixture."""
+    target_path = os.environ.get("GAMELINGO_RENPY_COMPATIBILITY_GAME")
+    if target_path:
+        target_path = Path(target_path).expanduser()
 
-    if target_path.exists():
+    if target_path and target_path.exists():
         info = detect_renpy_runtime(target_path)
         assert info["major_version"] == 8
         assert info["python_family"] == "python3"

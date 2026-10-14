@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -44,14 +45,26 @@ from gamelingo.translation.review import ReviewService
 # -----------------------------------------------------------------------------
 # Configuration & Paths
 # -----------------------------------------------------------------------------
-ORIGINAL_GAME_PATH = Path("D:/New folder/island-1.0-win")
-PILOT_ROOT = Path("E:/temp_gl040_pilot")
-PROJECT_EVIDENCE_DIR = Path("evidence/gl040_pilot")
-EVIDENCE_DIR = Path(
-    "C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl040_evidence"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+ORIGINAL_GAME_PATH = (
+    Path(os.environ["GAMELINGO_GL040_ORIGINAL_GAME_PATH"]).expanduser()
+    if os.environ.get("GAMELINGO_GL040_ORIGINAL_GAME_PATH")
+    else None
 )
-FALLBACK_EVIDENCE_DIR = Path(os.environ.get("TEMP", "C:/temp")) / "gl040_evidence"
-DATASET_PATH = Path("src/gamelingo/benchmark/dataset_gl040_real_game.json")
+PILOT_ROOT = Path(
+    os.environ.get(
+        "GAMELINGO_GL040_PILOT_ROOT",
+        str(Path(tempfile.gettempdir()) / "gamelingo_gl040_pilot"),
+    )
+).expanduser()
+PROJECT_EVIDENCE_DIR = REPO_ROOT / "evidence/gl040_pilot"
+EVIDENCE_DIR = Path(
+    os.environ.get(
+        "GAMELINGO_GL040_EVIDENCE_DIR",
+        str(Path(tempfile.gettempdir()) / "gamelingo_gl040_evidence"),
+    )
+).expanduser()
+DATASET_PATH = REPO_ROOT / "src/gamelingo/benchmark/dataset_gl040_real_game.json"
 
 CRITICAL_ORIGINAL_FILES = [
     "island.exe",
@@ -566,7 +579,11 @@ def run_real_game_pilot() -> Dict[str, Any]:
     pilot_evidence: Dict[str, Any] = {
         "milestone": "GL-040.3.2",
         "date": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "original_game": str(ORIGINAL_GAME_PATH.resolve()),
+        "original_game": (
+            str(ORIGINAL_GAME_PATH.resolve())
+            if ORIGINAL_GAME_PATH is not None
+            else None
+        ),
         "engine_verified": "Ren'Py 8.5.0.25111603 (Python 3.12.7 64-bit AMD64)",
         "source_game": "island-1.0-win",
         "provider": "ArgosTranslateProvider (translate-ja_en 1.1)",
@@ -581,8 +598,8 @@ def run_real_game_pilot() -> Dict[str, Any]:
     print(
         "\n[Step 1] Auditing Original Game Fixture & Recording Full Inventory Hashes..."
     )
-    if not ORIGINAL_GAME_PATH.exists():
-        err = f"Original game fixture not found at {ORIGINAL_GAME_PATH}"
+    if ORIGINAL_GAME_PATH is None or not ORIGINAL_GAME_PATH.is_dir():
+        err = "Set GAMELINGO_GL040_ORIGINAL_GAME_PATH to the read-only Ren'Py game directory."
         print(f"  ERROR: {err}", file=sys.stderr)
         pilot_evidence["failures"].append(err)
         return pilot_evidence
