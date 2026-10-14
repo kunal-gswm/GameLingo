@@ -291,6 +291,11 @@ def test_historical_gl040_1_baseline_snapshot_preserved():
     content_bytes = snapshot_file.read_bytes()
     expected_sha256 = "024cb0d7536f22aefd10b6522f35f8c13941a36d2ae37c1885c3780496b1a361"
     actual_sha256 = hashlib.sha256(content_bytes).hexdigest()
+    if actual_sha256 != expected_sha256:
+        # Cross-platform check: Git checkouts on Linux runners use LF line endings
+        crlf_bytes = content_bytes.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+        actual_sha256 = hashlib.sha256(crlf_bytes).hexdigest()
+
     assert actual_sha256 == expected_sha256, (
         f"Frozen snapshot SHA-256 modified! Expected {expected_sha256}, got {actual_sha256}"
     )
