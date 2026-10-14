@@ -481,6 +481,194 @@ def test_outside_root_redirection(tmp_path: Path):
     assert outside_dir.exists()
 
 
+def test_refuse_missing_or_empty_run_id(tmp_path: Path):
+    """Refuses cleanup when ownership marker has missing, empty, or whitespace run_id."""
+    pilot_root = tmp_path / "pilot_runs"
+    pilot_root.mkdir()
+
+    # Case A: Missing run_id key
+    run_missing = pilot_root / "run_missing_id"
+    run_missing.mkdir()
+    marker_missing = {
+        "pilot_owner": OWNERSHIP_MARKER_MAGIC,
+        "pilot_root": str(pilot_root.resolve()),
+        "status": "completed",
+    }
+    (run_missing / OWNERSHIP_MARKER_FILE).write_text(
+        json.dumps(marker_missing), encoding="utf-8"
+    )
+    (run_missing / "canary.txt").write_text("should not be deleted", encoding="utf-8")
+
+    with pytest.raises(DisposableSafetyError, match="missing or empty run_id"):
+        verify_ownership_marker(run_missing, expected_run_id=run_missing.name)
+    with pytest.raises(DisposableSafetyError, match="missing or empty run_id"):
+        safe_cleanup_disposable_dir(run_missing, pilot_root)
+    assert run_missing.exists()
+    assert (run_missing / "canary.txt").exists()
+
+    # Case B: Empty string run_id
+    run_empty = pilot_root / "run_empty_id"
+    run_empty.mkdir()
+    marker_empty = {
+        "pilot_owner": OWNERSHIP_MARKER_MAGIC,
+        "run_id": "",
+        "pilot_root": str(pilot_root.resolve()),
+        "status": "completed",
+    }
+    (run_empty / OWNERSHIP_MARKER_FILE).write_text(
+        json.dumps(marker_empty), encoding="utf-8"
+    )
+    (run_empty / "canary.txt").write_text("should not be deleted", encoding="utf-8")
+
+    with pytest.raises(DisposableSafetyError, match="missing or empty run_id"):
+        verify_ownership_marker(run_empty, expected_run_id=run_empty.name)
+    with pytest.raises(DisposableSafetyError, match="missing or empty run_id"):
+        safe_cleanup_disposable_dir(run_empty, pilot_root)
+    assert run_empty.exists()
+    assert (run_empty / "canary.txt").exists()
+
+    # Case C: Whitespace-only run_id
+    run_ws = pilot_root / "run_whitespace_id"
+    run_ws.mkdir()
+    marker_ws = {
+        "pilot_owner": OWNERSHIP_MARKER_MAGIC,
+        "run_id": "   \t  ",
+        "pilot_root": str(pilot_root.resolve()),
+        "status": "completed",
+    }
+    (run_ws / OWNERSHIP_MARKER_FILE).write_text(json.dumps(marker_ws), encoding="utf-8")
+    (run_ws / "canary.txt").write_text("should not be deleted", encoding="utf-8")
+
+    with pytest.raises(DisposableSafetyError, match="missing or empty run_id"):
+        verify_ownership_marker(run_ws, expected_run_id=run_ws.name)
+    with pytest.raises(DisposableSafetyError, match="missing or empty run_id"):
+        safe_cleanup_disposable_dir(run_ws, pilot_root)
+    assert run_ws.exists()
+    assert (run_ws / "canary.txt").exists()
+
+    # Automatic cleanup also fails closed when inspecting run with missing run_id
+    with pytest.raises(DisposableSafetyError, match="missing or empty run_id"):
+        cleanup_prior_owned_runs(pilot_root)
+
+
+def test_inaccessible_path_inspection_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Fails closed when filesystem inspection encounters an OSError (e.g. PermissionError)."""
+    pilot_root = tmp_path / "pilot_runs"
+    run_dir = create_disposable_run_dir(pilot_root, run_id="run_inaccessible_inspect")
+    mark_disposable_run_completed(run_dir)
+    canary = run_dir / "preserve.txt"
+    canary.write_text("preserve me", encoding="utf-8")
+
+    external_canary = tmp_path / "external_canary.txt"
+    external_canary.write_text("external data untouched", encoding="utf-8")
+
+    orig_lstat = os.lstat
+
+    def fake_lstat(path, *args, **kwargs):
+        if "preserve.txt" in str(path):
+            raise PermissionError(f"Access denied to {path}")
+        return orig_lstat(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "lstat", fake_lstat)
+
+    # 1. Direct call to is_reparse_point_or_link fails closed
+    with pytest.raises(DisposableSafetyError, match="filesystem inspection failed"):
+        is_reparse_point_or_link(canary)
+
+    # 2. Cleanup validation fails closed during descendant inspection
+    with pytest.raises(DisposableSafetyError, match="filesystem inspection failed"):
+        safe_cleanup_disposable_dir(run_dir, pilot_root)
+
+    monkeypatch.undo()
+
+    # 3. Target directory and external files remain untouched
+    assert run_dir.exists()
+    assert canary.exists()
+    assert canary.read_text(encoding="utf-8") == "preserve me"
+    assert external_canary.exists()
+    assert external_canary.read_text(encoding="utf-8") == "external data untouched"
+
+
+def test_descendant_traversal_error_aborts_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Aborts cleanup and fails closed when recursive descendant traversal encounters an OSError."""
+    pilot_root = tmp_path / "pilot_runs"
+    run_dir = create_disposable_run_dir(pilot_root, run_id="run_walk_err")
+    mark_disposable_run_completed(run_dir)
+
+    sub_dir = run_dir / "inaccessible_sub"
+    sub_dir.mkdir()
+    (sub_dir / "nested_file.txt").write_text("nested", encoding="utf-8")
+    (run_dir / "sibling_file.txt").write_text("sibling", encoding="utf-8")
+
+    external_canary = tmp_path / "external_preserve.txt"
+    external_canary.write_text("external safe", encoding="utf-8")
+
+    orig_scandir = os.scandir
+
+    def fake_scandir(path=None):
+        if path is not None and "inaccessible_sub" in str(path):
+            raise PermissionError(f"Access denied to {path}")
+        return orig_scandir(path)
+
+    monkeypatch.setattr(os, "scandir", fake_scandir)
+
+    with pytest.raises(DisposableSafetyError, match="descendant tree traversal failed"):
+        validate_cleanup_target(run_dir, pilot_root)
+
+    with pytest.raises(DisposableSafetyError, match="descendant tree traversal failed"):
+        safe_cleanup_disposable_dir(run_dir, pilot_root)
+
+    monkeypatch.undo()
+
+    # Target directory and all internal/external files must be completely untouched
+    assert run_dir.exists()
+    assert sub_dir.exists()
+    assert (sub_dir / "nested_file.txt").read_text(encoding="utf-8") == "nested"
+    assert (run_dir / "sibling_file.txt").read_text(encoding="utf-8") == "sibling"
+    assert external_canary.exists()
+    assert external_canary.read_text(encoding="utf-8") == "external safe"
+
+
+def test_validation_failure_preserves_target_and_external_files(tmp_path: Path):
+    """Verifies that validation failures leave the target directory and external files untouched."""
+    pilot_root = tmp_path / "pilot_runs"
+    pilot_root.mkdir()
+    external_dir = tmp_path / "external_data"
+    external_dir.mkdir()
+    external_file = external_dir / "sensitive_state.json"
+    external_file.write_text('{"important": true}', encoding="utf-8")
+
+    # Target directory with invalid marker (missing required run_id)
+    run_dir = pilot_root / "run_preserve_test"
+    run_dir.mkdir()
+    (run_dir / OWNERSHIP_MARKER_FILE).write_text(
+        json.dumps(
+            {
+                "pilot_owner": OWNERSHIP_MARKER_MAGIC,
+                "pilot_root": str(pilot_root.resolve()),
+                "status": "completed",
+            }
+        ),
+        encoding="utf-8",
+    )
+    target_file = run_dir / "game_save.sav"
+    target_file.write_text("binary_save_data", encoding="utf-8")
+
+    with pytest.raises(DisposableSafetyError):
+        safe_cleanup_disposable_dir(run_dir, pilot_root)
+
+    # Both target and external must be preserved
+    assert run_dir.exists()
+    assert target_file.exists()
+    assert target_file.read_text(encoding="utf-8") == "binary_save_data"
+    assert external_file.exists()
+    assert external_file.read_text(encoding="utf-8") == '{"important": true}'
+
+
 @pytest.fixture
 def valid_pilot_evidence():
     """Provides a valid, complete pilot evidence dictionary matching all GL-040.3.1 criteria."""

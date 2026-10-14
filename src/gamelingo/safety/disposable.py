@@ -30,6 +30,7 @@ def is_reparse_point_or_link(path: Path) -> bool:
     """
     Returns True if path is a symbolic link or a Windows junction / reparse point.
     Does not follow links.
+    Fails closed if filesystem inspection encounters an OSError.
     """
     try:
         p_str = str(path)
@@ -42,8 +43,10 @@ def is_reparse_point_or_link(path: Path) -> bool:
             getattr(st, "st_file_attributes", 0) & 0x0400
         ):  # FILE_ATTRIBUTE_REPARSE_POINT
             return True
-    except OSError:
-        pass
+    except OSError as e:
+        raise DisposableSafetyError(
+            f"Security violation: filesystem inspection failed for {path}: {e}"
+        ) from e
     return False
 
 
@@ -93,7 +96,7 @@ def mark_disposable_run_completed(run_dir: Path) -> Path:
     """
     run_dir = Path(run_dir).resolve()
     marker_path = run_dir / OWNERSHIP_MARKER_FILE
-    data = verify_ownership_marker(run_dir)
+    data = verify_ownership_marker(run_dir, expected_run_id=run_dir.name)
     data["status"] = "completed"
     data["completed_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     marker_path.write_text(
@@ -138,19 +141,35 @@ def verify_ownership_marker(
             f"Invalid ownership marker magic in {target_dir}: expected {OWNERSHIP_MARKER_MAGIC}"
         )
 
-    marker_run_id = data.get("run_id")
-    target_run_id = expected_run_id or target_dir.name
-    if marker_run_id and marker_run_id != target_run_id:
-        raise DisposableSafetyError(
-            f"Security violation: run ID mismatch in marker ({marker_run_id!r}) vs target ({target_run_id!r})"
-        )
+    if expected_run_id is not None:
+        marker_run_id = data.get("run_id")
+        if not isinstance(marker_run_id, str) or not marker_run_id.strip():
+            raise DisposableSafetyError(
+                f"Security violation: missing or empty run_id in ownership marker for {target_dir}"
+            )
+        if marker_run_id != expected_run_id or marker_run_id != target_dir.name:
+            raise DisposableSafetyError(
+                f"Security violation: run ID mismatch in marker ({marker_run_id!r}) vs target ({target_dir.name!r}) or expected ({expected_run_id!r})"
+            )
+    else:
+        marker_run_id = data.get("run_id")
+        if marker_run_id is not None:
+            if not isinstance(marker_run_id, str) or not marker_run_id.strip():
+                raise DisposableSafetyError(
+                    f"Security violation: missing or empty run_id in ownership marker for {target_dir}"
+                )
+            if marker_run_id != target_dir.name:
+                raise DisposableSafetyError(
+                    f"Security violation: run ID mismatch in marker ({marker_run_id!r}) vs target ({target_dir.name!r})"
+                )
 
     if expected_pilot_root is not None:
         marker_root = data.get("pilot_root")
-        if (
-            not marker_root
-            or Path(marker_root).resolve() != Path(expected_pilot_root).resolve()
-        ):
+        if not isinstance(marker_root, str) or not marker_root.strip():
+            raise DisposableSafetyError(
+                f"Security violation: missing or empty pilot_root in ownership marker for {target_dir}"
+            )
+        if Path(marker_root).resolve() != Path(expected_pilot_root).resolve():
             raise DisposableSafetyError(
                 f"Security violation: pilot root mismatch in marker ({marker_root!r}) vs expected ({expected_pilot_root!r})"
             )
@@ -258,7 +277,14 @@ def validate_cleanup_target(
             pass
 
     # Check descendants: fail closed before deletion if any symlink or junction exists inside
-    for root, dirs, files in os.walk(str(target_dir_resolved), followlinks=False):
+    def on_walk_error(err: OSError) -> None:
+        raise DisposableSafetyError(
+            f"Security violation: descendant tree traversal failed: {err}"
+        ) from err
+
+    for root, dirs, files in os.walk(
+        str(target_dir_resolved), followlinks=False, onerror=on_walk_error
+    ):
         for d in dirs:
             dp = Path(root) / d
             if is_reparse_point_or_link(dp):
