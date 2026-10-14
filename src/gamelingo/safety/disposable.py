@@ -262,18 +262,22 @@ def validate_cleanup_target(
     if original_game_path is not None:
         try:
             orig_resolved = Path(original_game_path).resolve(strict=True)
-            if target_dir_resolved == orig_resolved:
-                raise DisposableSafetyError(
-                    f"CRITICAL SAFETY VIOLATION: Refused to delete original game fixture: {orig_resolved}"
-                )
-            try:
-                orig_resolved.relative_to(target_dir_resolved)
-                raise DisposableSafetyError(
-                    f"CRITICAL SAFETY VIOLATION: Target directory contains original game fixture: {target_dir_resolved}"
-                )
-            except ValueError:
-                pass
-        except OSError:
+            orig_resolved.stat()
+        except OSError as e:
+            raise DisposableSafetyError(
+                f"Security violation: could not resolve or inspect original game path {original_game_path}: {e}"
+            ) from e
+
+        if target_dir_resolved == orig_resolved:
+            raise DisposableSafetyError(
+                f"CRITICAL SAFETY VIOLATION: Refused to delete original game fixture: {orig_resolved}"
+            )
+        try:
+            orig_resolved.relative_to(target_dir_resolved)
+            raise DisposableSafetyError(
+                f"CRITICAL SAFETY VIOLATION: Target directory contains original game fixture: {target_dir_resolved}"
+            )
+        except ValueError:
             pass
 
     # Check descendants: fail closed before deletion if any symlink or junction exists inside

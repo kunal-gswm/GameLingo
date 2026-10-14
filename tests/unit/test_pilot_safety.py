@@ -141,6 +141,57 @@ def test_refuse_original_game_fixture(tmp_path: Path):
         )
 
 
+@pytest.mark.parametrize("inspection_step", ["resolve", "stat"])
+def test_original_game_inspection_failure_aborts_cleanup_and_preserves_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    inspection_step: str,
+):
+    """Fails closed if the original game cannot be resolved or inspected."""
+    pilot_root = tmp_path / "pilot_runs"
+    run_dir = create_disposable_run_dir(pilot_root, run_id="run_original_path_error")
+    mark_disposable_run_completed(run_dir)
+
+    target_canary = run_dir / "preserve.txt"
+    target_canary.write_text("target data", encoding="utf-8")
+    external_canary = tmp_path / "external_canary.txt"
+    external_canary.write_text("external data", encoding="utf-8")
+    original_game = tmp_path / "original_game"
+    original_game.mkdir()
+
+    error = PermissionError(f"cannot {inspection_step} original game")
+    if inspection_step == "resolve":
+        original_resolve = Path.resolve
+
+        def failing_resolve(path: Path, *args, **kwargs):
+            if path == original_game:
+                raise error
+            return original_resolve(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "resolve", failing_resolve)
+    else:
+        original_stat = Path.stat
+
+        def failing_stat(path: Path, *args, **kwargs):
+            if path == original_game:
+                raise error
+            return original_stat(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "stat", failing_stat)
+
+    with pytest.raises(
+        DisposableSafetyError, match="could not resolve or inspect original game path"
+    ) as exc_info:
+        safe_cleanup_disposable_dir(
+            run_dir, pilot_root, original_game_path=original_game
+        )
+
+    assert exc_info.value.__cause__ is error
+    assert run_dir.is_dir()
+    assert target_canary.read_text(encoding="utf-8") == "target data"
+    assert external_canary.read_text(encoding="utf-8") == "external data"
+
+
 def test_safe_cleanup_owned_directory(tmp_path: Path):
     """Successfully validates and deletes an owned run directory, leaving sibling directories intact."""
     pilot_root = tmp_path / "pilot_runs"
