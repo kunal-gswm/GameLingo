@@ -107,6 +107,67 @@ def validate_benchmark_item(item: Dict[str, Any]) -> None:
     is_passthrough_expected(item)
 
 
+def align_benchmark_inputs(
+    dataset_items: List[Dict[str, Any]],
+    raw_translations: List[Dict[str, Any]],
+) -> List[Tuple[Dict[str, Any], Dict[str, Any]]]:
+    """
+    Validates completeness and 1-to-1 identity alignment between dataset items
+    and raw translation records, matching by stable item ID rather than trusting list order.
+
+    Raises ValueError if:
+    - Any dataset item lacks a unique ID
+    - Any raw record lacks a unique ID
+    - Item counts mismatch
+    - Raw records are missing expected dataset items
+    - Raw records contain unexpected extra items
+
+    Returns an aligned list of (dataset_item, matching_raw_record) in dataset item order.
+    """
+    seen_dataset_ids = set()
+    for it in dataset_items:
+        bid = it.get("id")
+        if not bid or not str(bid).strip():
+            raise ValueError(f"Dataset item missing 'id' field: {it}")
+        bid_str = str(bid).strip()
+        if bid_str in seen_dataset_ids:
+            raise ValueError(f"Duplicate dataset item ID found: '{bid_str}'")
+        seen_dataset_ids.add(bid_str)
+
+    raw_by_id = {}
+    for r in raw_translations:
+        rid = r.get("id")
+        if not rid and isinstance(r.get("item"), dict):
+            rid = r["item"].get("id")
+        if not rid or not str(rid).strip():
+            raise ValueError(f"Raw translation record missing 'id' field: {r}")
+        rid_str = str(rid).strip()
+        if rid_str in raw_by_id:
+            raise ValueError(f"Duplicate raw translation record ID found: '{rid_str}'")
+        raw_by_id[rid_str] = r
+
+    raw_ids = set(raw_by_id.keys())
+    missing_in_raw = seen_dataset_ids - raw_ids
+    extra_in_raw = raw_ids - seen_dataset_ids
+
+    if missing_in_raw:
+        raise ValueError(
+            f"Raw translations missing expected dataset items ({len(missing_in_raw)} missing): "
+            f"{sorted(missing_in_raw)}"
+        )
+    if extra_in_raw:
+        raise ValueError(
+            f"Raw translations contain unexpected extra items ({len(extra_in_raw)} extra): "
+            f"{sorted(extra_in_raw)}"
+        )
+    if len(dataset_items) != len(raw_translations):
+        raise ValueError(
+            f"Item count mismatch: {len(dataset_items)} dataset items != {len(raw_translations)} raw translations"
+        )
+
+    return [(it, raw_by_id[it["id"]]) for it in dataset_items]
+
+
 def evaluate_placeholder_integrity(
     source_text: str, target_text: str, error: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -364,6 +425,14 @@ def evaluate_translation_item(
                 if annot.get("failure_type"):
                     failure_type = annot["failure_type"]
 
+    # 5. Runtime safety evaluation:
+    # Requires structural validity, no pipeline errors, and no placeholder failures (e.g. no unexpected interpolation syntax).
+    is_runtime_safe = bool(
+        structural_status == "Valid"
+        and error is None
+        and placeholder_result["status"] != "Fail"
+    )
+
     return {
         "id": bid,
         "category": cat,
@@ -379,6 +448,7 @@ def evaluate_translation_item(
         "failure_type": failure_type,
         "placeholder_status": placeholder_result["status"],
         "placeholder_details": placeholder_result["details"],
+        "is_runtime_safe": is_runtime_safe,
         "review_status": review_status,
         "meaning_score": meaning_score,
         "grammar_score": grammar_score,
@@ -389,12 +459,13 @@ def evaluate_translation_item(
 
 def aggregate_benchmark_metrics(
     evaluations: List[Dict[str, Any]],
-    total_time_seconds: float = 0.0,
+    total_time_seconds: Optional[float] = None,
 ) -> Dict[str, Any]:
     """
     Computes rigorous, decoupled benchmark metrics with explicit denominators:
     - Provider call success / rejection rate
     - Structural validity rate
+    - Runtime safety rate (valid structure + error-free + intact placeholder & tag markup)
     - Passthrough accuracy rate
     - Placeholder & formatting integrity rate
     - Human-reviewed meaning and grammar averages (strictly over reviewed items)
@@ -419,7 +490,11 @@ def aggregate_benchmark_metrics(
     )
     empty_count = sum(1 for e in evaluations if e["structural_status"] == "Empty")
 
-    # 3. Passthrough metrics (Denominator: passthrough_expected_count)
+    # 3. Runtime safety metrics (Denominator: total_n)
+    runtime_safe_count = sum(1 for e in evaluations if e.get("is_runtime_safe"))
+    runtime_safety_rate = round(runtime_safe_count / total_n * 100, 2)
+
+    # 4. Passthrough metrics (Denominator: passthrough_expected_count)
     passthrough_items = [e for e in evaluations if e["is_passthrough_expected"]]
     passthrough_expected_count = len(passthrough_items)
     passthrough_exact_match_count = sum(
@@ -431,7 +506,7 @@ def aggregate_benchmark_metrics(
         else 0.0
     )
 
-    # 4. Placeholder & Markup metrics (Denominator: markup_items_count)
+    # 5. Placeholder & Markup metrics (Denominator: markup_items_count)
     markup_items = [e for e in evaluations if e["placeholder_status"] != "N/A"]
     markup_items_count = len(markup_items)
     markup_pass_count = sum(
@@ -443,7 +518,7 @@ def aggregate_benchmark_metrics(
         else 0.0
     )
 
-    # 5. Human Semantic Quality (Denominator: reviewed_items_count ONLY)
+    # 6. Human Semantic Quality (Denominator: reviewed_items_count ONLY)
     reviewed_items = [e for e in evaluations if e["review_status"] == "reviewed"]
     reviewed_count = len(reviewed_items)
     pending_review_count = total_n - reviewed_count
@@ -510,6 +585,10 @@ def aggregate_benchmark_metrics(
                 * 100,
                 1,
             ),
+            "runtime_safe_count": sum(1 for e in c_items if e.get("is_runtime_safe")),
+            "runtime_safety_rate_pct": round(
+                sum(1 for e in c_items if e.get("is_runtime_safe")) / c_n * 100, 1
+            ),
             "reviewed_count": c_rev_n,
             "pending_review_count": c_n - c_rev_n,
             "avg_meaning_score": round(c_meaning, 2),
@@ -527,12 +606,19 @@ def aggregate_benchmark_metrics(
             "error_count": sum(1 for e in c_items if e["structural_status"] == "Error"),
         }
 
+    valid_time = (
+        total_time_seconds is not None
+        and isinstance(total_time_seconds, (int, float))
+        and total_time_seconds > 0
+    )
+    time_sec = round(float(total_time_seconds), 2) if valid_time else None
+    throughput = round(total_n / float(total_time_seconds), 2) if valid_time else None
+
     return {
         "total_items": total_n,
-        "total_time_seconds": round(total_time_seconds, 2),
-        "throughput_items_per_sec": round(total_n / total_time_seconds, 2)
-        if total_time_seconds > 0
-        else 0.0,
+        "total_time_seconds": time_sec,
+        "throughput_items_per_sec": throughput,
+        "throughput_available": valid_time,
         "pipeline_execution": {
             "provider_calls_total": total_n,
             "provider_calls_succeeded": provider_calls_succeeded,
@@ -553,6 +639,12 @@ def aggregate_benchmark_metrics(
             "empty_count": empty_count,
             "error_count": error_count,
             "denominator": "total_items",
+        },
+        "runtime_safety": {
+            "runtime_safe_count": runtime_safe_count,
+            "runtime_safety_rate_pct": runtime_safety_rate,
+            "denominator": "total_items",
+            "limitations": "Static syntax and token verification only; does not guarantee that the game cannot crash dynamically.",
         },
         "intentional_passthrough": {
             "passthrough_expected_count": passthrough_expected_count,

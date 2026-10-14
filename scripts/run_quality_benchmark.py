@@ -24,6 +24,7 @@ if sys.platform == "win32":
 
 from gamelingo.benchmark.evaluator import (
     aggregate_benchmark_metrics,
+    align_benchmark_inputs,
     evaluate_translation_item,
     load_annotations,
 )
@@ -148,6 +149,17 @@ def print_benchmark_summary(summary: Dict[str, Any]) -> None:
     print("BENCHMARK METRICS SUMMARY (DECOUPLED EVALUATION)")
     print("=" * 75)
 
+    if summary.get("total_time_seconds") is not None:
+        print(f"Benchmark Duration        : {summary['total_time_seconds']:.2f}s")
+        print(
+            f"Throughput                : {summary['throughput_items_per_sec']:.2f} items/sec"
+        )
+    else:
+        print(
+            "Benchmark Duration        : Unavailable (missing or nonpositive record durations)"
+        )
+        print("Throughput                : Unavailable")
+
     pipe = summary["pipeline_execution"]
     print(
         f"Pipeline Succeeded        : {pipe['provider_calls_succeeded']} / {pipe['provider_calls_total']} ({pipe['provider_calls_succeeded_pct']}%)"
@@ -163,6 +175,12 @@ def print_benchmark_summary(summary: Dict[str, Any]) -> None:
     print(f"  - Untranslated Fallback : {struct['untranslated_count']}")
     print(f"  - Truncated Fragments   : {struct['truncated_count']}")
     print(f"  - Pipeline Error Rejects: {struct['error_count']}")
+
+    safety = summary.get("runtime_safety", {})
+    if safety:
+        print(
+            f"Runtime-Safe Outputs      : {safety['runtime_safe_count']} / {summary['total_items']} ({safety['runtime_safety_rate_pct']}%)  [Denominator: {safety['denominator']}]"
+        )
 
     passthru = summary["intentional_passthrough"]
     print(
@@ -191,16 +209,16 @@ def print_benchmark_summary(summary: Dict[str, Any]) -> None:
         f"Acceptable Quality (M>=3) : {qual['acceptable_quality_count']} / {qual['reviewed_items_count']} ({qual['acceptable_quality_rate_pct']}%)"
     )
 
-    print("\n" + "-" * 75)
+    print("\n" + "-" * 85)
     print(
-        f"{'Category':16s} | {'Count':5s} | {'Valid %':7s} | {'Meaning':7s} | {'Grammar':7s} | {'Accept %':8s} | {'Review Cov':10s}"
+        f"{'Category':16s} | {'Count':5s} | {'Valid %':7s} | {'Safe %':7s} | {'Meaning':7s} | {'Grammar':7s} | {'Accept %':8s} | {'Review Cov':10s}"
     )
-    print("-" * 75)
+    print("-" * 85)
     for cat, s in summary["by_category"].items():
         print(
-            f"{cat.upper():16s} | {s['item_count']:5d} | {s['structural_validity_rate_pct']:6.1f}% | {s['avg_meaning_score']:7.2f} | {s['avg_grammar_score']:7.2f} | {s['acceptable_quality_rate_pct']:7.1f}% | {s['reviewed_count']}/{s['item_count']}"
+            f"{cat.upper():16s} | {s['item_count']:5d} | {s['structural_validity_rate_pct']:6.1f}% | {s.get('runtime_safety_rate_pct', 0.0):6.1f}% | {s['avg_meaning_score']:7.2f} | {s['avg_grammar_score']:7.2f} | {s['acceptable_quality_rate_pct']:7.1f}% | {s['reviewed_count']}/{s['item_count']}"
         )
-    print("-" * 75)
+    print("-" * 85)
 
 
 def recompute_benchmark_evaluation(
@@ -208,10 +226,13 @@ def recompute_benchmark_evaluation(
     raw_translations_path: Path,
     output_file: Path,
     annotations_path: Path | None = None,
+    exit_on_error: bool = False,
 ) -> Dict[str, Any]:
     """
     Recomputes evaluation metrics from committed dataset and raw translation outputs
     without rerunning the machine translation provider.
+    Validates completeness and identity alignment matching by stable item ID.
+    Rejects missing, extra, duplicate, or mismatched records with a clear error.
     """
     print("=" * 75)
     print("GameLingo GL-040.2 Decoupled Benchmark Evaluation (Recompute)")
@@ -222,14 +243,24 @@ def recompute_benchmark_evaluation(
     with open(raw_translations_path, "r", encoding="utf-8") as f:
         raw_translations = json.load(f)
 
+    # 1. Validate completeness and 1-to-1 input alignment
+    try:
+        aligned_pairs = align_benchmark_inputs(items, raw_translations)
+    except ValueError as e:
+        print(f"Alignment Error: {e}", file=sys.stderr)
+        if exit_on_error:
+            sys.exit(1)
+        raise
+
     annotations_store = {}
     if annotations_path and annotations_path.exists():
         annotations_store = load_annotations(annotations_path)
 
     results = []
+    has_valid_durations = True
     total_time = 0.0
 
-    for item, raw in zip(items, raw_translations):
+    for item, raw in aligned_pairs:
         val_issues = []
         for issue in raw.get("validation_issues", []):
             if isinstance(issue, dict) and "code" in issue:
@@ -244,13 +275,24 @@ def recompute_benchmark_evaluation(
             val_issues=val_issues,
             annotations_store=annotations_store,
         )
-        dur = raw.get("duration_seconds", 0.0)
-        eval_result["duration_seconds"] = dur
-        total_time += dur
+
+        dur = raw.get("duration_seconds")
+        if dur is None or not isinstance(dur, (int, float)) or dur <= 0:
+            has_valid_durations = False
+            eval_result["duration_seconds"] = None
+        else:
+            dur_float = round(float(dur), 4)
+            eval_result["duration_seconds"] = dur_float
+            total_time += dur_float
+
         results.append(eval_result)
 
-    total_time = round(total_time, 2) if total_time > 0 else 14.15
-    summary = aggregate_benchmark_metrics(results, total_time_seconds=total_time)
+    total_time_seconds = (
+        round(total_time, 2) if (has_valid_durations and total_time > 0) else None
+    )
+    summary = aggregate_benchmark_metrics(
+        results, total_time_seconds=total_time_seconds
+    )
     summary["benchmark_version"] = "GL-040.2"
     summary["engine"] = "Ren'Py 8.5.0"
     summary["source_game"] = "island-1.0-win"
@@ -283,7 +325,11 @@ if __name__ == "__main__":
 
     if "--recompute-only" in sys.argv:
         recompute_benchmark_evaluation(
-            dataset_file, raw_file, eval_file, annotations_file
+            dataset_file,
+            raw_file,
+            eval_file,
+            annotations_file,
+            exit_on_error=True,
         )
     else:
         run_quality_benchmark(dataset_file, results_dir, annotations_file)

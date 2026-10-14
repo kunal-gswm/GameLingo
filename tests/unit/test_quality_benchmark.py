@@ -6,6 +6,7 @@ import pytest
 
 from gamelingo.benchmark.evaluator import (
     aggregate_benchmark_metrics,
+    align_benchmark_inputs,
     compute_annotation_context_hash,
     evaluate_placeholder_integrity,
     evaluate_structural_status,
@@ -351,6 +352,7 @@ def test_metrics_use_correct_denominators_and_deterministic():
     # Denominator checks
     assert m1["pipeline_execution"]["denominator"] == "total_items"
     assert m1["structural_validity"]["denominator"] == "total_items"
+    assert m1["runtime_safety"]["denominator"] == "total_items"
     assert m1["intentional_passthrough"]["denominator"] == "passthrough_expected_count"
     assert (
         m1["placeholder_formatting_integrity"]["denominator"]
@@ -366,6 +368,10 @@ def test_metrics_use_correct_denominators_and_deterministic():
     assert m1["structural_validity"]["structurally_valid_count"] == 82
     assert m1["structural_validity"]["untranslated_count"] == 4
     assert m1["structural_validity"]["truncated_count"] == 6
+
+    assert m1["runtime_safety"]["runtime_safe_count"] == 77
+    assert m1["runtime_safety"]["runtime_safety_rate_pct"] == 77.0
+    assert "limitations" in m1["runtime_safety"]
 
     assert m1["intentional_passthrough"]["passthrough_expected_count"] == 12
     assert m1["intentional_passthrough"]["passthrough_exact_match_count"] == 5
@@ -878,3 +884,254 @@ def test_corrupted_annotation_hashes_and_missing_context_fail_closed():
     assert qual["pending_review_count"] == 3
     assert qual["avg_meaning_score"] == 0.0
     assert qual["avg_grammar_score"] == 0.0
+
+
+def test_align_benchmark_inputs_validation():
+    """Validates 1-to-1 input alignment by unique ID, rejecting duplicates, missing, and extra items."""
+    # 1. Successful alignment with identical order
+    dataset = [
+        {"id": "bench_001", "source_text": "A"},
+        {"id": "bench_002", "source_text": "B"},
+    ]
+    raw = [
+        {"id": "bench_001", "target_text": "A_trans"},
+        {"id": "bench_002", "target_text": "B_trans"},
+    ]
+    aligned = align_benchmark_inputs(dataset, raw)
+    assert len(aligned) == 2
+    assert aligned[0] == (dataset[0], raw[0])
+    assert aligned[1] == (dataset[1], raw[1])
+
+    # 2. Successful alignment with reordered raw records preserves dataset order
+    raw_reversed = [
+        {"id": "bench_002", "target_text": "B_trans"},
+        {"id": "bench_001", "target_text": "A_trans"},
+    ]
+    aligned_reordered = align_benchmark_inputs(dataset, raw_reversed)
+    assert len(aligned_reordered) == 2
+    assert aligned_reordered[0][0]["id"] == "bench_001"
+    assert aligned_reordered[0][1]["id"] == "bench_001"
+    assert aligned_reordered[1][0]["id"] == "bench_002"
+    assert aligned_reordered[1][1]["id"] == "bench_002"
+
+    # 3. Missing raw record
+    raw_missing = [{"id": "bench_001", "target_text": "A_trans"}]
+    with pytest.raises(ValueError, match="missing expected dataset items"):
+        align_benchmark_inputs(dataset, raw_missing)
+
+    # 4. Extra raw record
+    raw_extra = [
+        {"id": "bench_001", "target_text": "A_trans"},
+        {"id": "bench_002", "target_text": "B_trans"},
+        {"id": "bench_003", "target_text": "C_trans"},
+    ]
+    with pytest.raises(ValueError, match="unexpected extra items"):
+        align_benchmark_inputs(dataset, raw_extra)
+
+    # 5. Duplicate dataset ID
+    dataset_dup = [
+        {"id": "bench_001", "source_text": "A"},
+        {"id": "bench_001", "source_text": "Duplicate"},
+    ]
+    with pytest.raises(ValueError, match="Duplicate dataset item ID"):
+        align_benchmark_inputs(dataset_dup, raw)
+
+    # 6. Duplicate raw ID
+    raw_dup = [
+        {"id": "bench_001", "target_text": "A_trans"},
+        {"id": "bench_001", "target_text": "Duplicate"},
+    ]
+    with pytest.raises(ValueError, match="Duplicate raw translation record ID"):
+        align_benchmark_inputs(dataset, raw_dup)
+
+    # 7. Missing or empty id fields
+    with pytest.raises(ValueError, match="Dataset item missing 'id' field"):
+        align_benchmark_inputs([{"source_text": "A"}], raw)
+
+    with pytest.raises(ValueError, match="Raw translation record missing 'id' field"):
+        align_benchmark_inputs(dataset, [{"target_text": "A_trans"}])
+
+
+def test_runtime_safety_distinguished_from_structural_validity():
+    """Proves runtime safety distinguishes syntax/placeholder crashes from structural validity."""
+    item = {
+        "id": "bench_086",
+        "category": "multiline",
+        "source_text": "一行目\n二行目",
+        "reference": "Line 1\nLine 2",
+        "expected_behavior": "Preserve newlines.",
+        "passthrough_expected": False,
+    }
+
+    # Case 1: Structurally valid string with unexpected bracket token [Current life]
+    # In Ren'Py, unescaped brackets trigger expression evaluation and runtime crashes
+    target_with_unexpected_bracket = "[Current life] Line 1\nLine 2"
+    ev_unsafe = evaluate_translation_item(item, target_with_unexpected_bracket)
+    assert ev_unsafe["structural_status"] == "Valid"
+    assert ev_unsafe["placeholder_status"] == "Fail"
+    assert "[Current life]" in ev_unsafe["placeholder_details"]
+    assert "Unexpected tokens in target" in ev_unsafe["placeholder_details"]
+    assert ev_unsafe["is_runtime_safe"] is False
+
+    # Case 2: Structurally valid string with intact markup
+    target_safe = "Line 1\nLine 2"
+    ev_safe = evaluate_translation_item(item, target_safe)
+    assert ev_safe["structural_status"] == "Valid"
+    assert ev_safe["placeholder_status"] == "Pass"
+    assert ev_safe["is_runtime_safe"] is True
+
+    # Case 3: Structurally valid string without markup (N/A placeholder status)
+    item_simple = {
+        "id": "bench_001",
+        "category": "dialogue",
+        "source_text": "テスト",
+        "reference": "Test",
+        "expected_behavior": "Standard dialogue.",
+        "passthrough_expected": False,
+    }
+    ev_na = evaluate_translation_item(item_simple, "Test")
+    assert ev_na["structural_status"] == "Valid"
+    assert ev_na["placeholder_status"] == "N/A"
+    assert ev_na["is_runtime_safe"] is True
+
+    # Case 4: Pipeline error or empty string
+    ev_error = evaluate_translation_item(item, "", error="TranslationTimeout")
+    assert ev_error["structural_status"] == "Error"
+    assert ev_error["is_runtime_safe"] is False
+
+    ev_empty = evaluate_translation_item(item, "")
+    assert ev_empty["structural_status"] == "Empty"
+    assert ev_empty["is_runtime_safe"] is False
+
+    # Aggregate metric verification
+    metrics = aggregate_benchmark_metrics(
+        [ev_unsafe, ev_safe, ev_na, ev_error, ev_empty]
+    )
+    assert metrics["structural_validity"]["structurally_valid_count"] == 3
+    assert metrics["structural_validity"]["structural_validity_rate_pct"] == 60.0
+    assert metrics["runtime_safety"]["runtime_safe_count"] == 2
+    assert metrics["runtime_safety"]["runtime_safety_rate_pct"] == 40.0
+    assert metrics["runtime_safety"]["denominator"] == "total_items"
+    assert "limitations" in metrics["runtime_safety"]
+
+
+def test_duration_validation_and_throughput_availability(tmp_path):
+    """Proves timing fallbacks are removed and throughput availability is explicitly tracked."""
+    import sys
+
+    scripts_dir = str(Path(__file__).resolve().parent.parent.parent / "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+
+    from run_quality_benchmark import recompute_benchmark_evaluation
+
+    dataset_path = tmp_path / "dataset.json"
+    raw_path = tmp_path / "raw.json"
+    out_path = tmp_path / "eval.json"
+
+    dataset_items = [
+        {
+            "id": "b1",
+            "category": "ui",
+            "source_text": "A",
+            "reference": "A",
+            "expected_behavior": "Translate",
+            "passthrough_expected": False,
+        },
+        {
+            "id": "b2",
+            "category": "ui",
+            "source_text": "B",
+            "reference": "B",
+            "expected_behavior": "Translate",
+            "passthrough_expected": False,
+        },
+    ]
+    with open(dataset_path, "w", encoding="utf-8") as f:
+        json.dump(dataset_items, f)
+
+    # 1. Valid positive durations
+    raw_valid = [
+        {"id": "b1", "target_text": "A_trans", "duration_seconds": 0.5, "error": None},
+        {"id": "b2", "target_text": "B_trans", "duration_seconds": 1.5, "error": None},
+    ]
+    with open(raw_path, "w", encoding="utf-8") as f:
+        json.dump(raw_valid, f)
+
+    summary_valid = recompute_benchmark_evaluation(dataset_path, raw_path, out_path)
+    assert summary_valid["total_time_seconds"] == 2.0
+    assert summary_valid["throughput_items_per_sec"] == 1.0
+    assert summary_valid["throughput_available"] is True
+
+    # 2. Missing duration (None)
+    raw_missing_dur = [
+        {"id": "b1", "target_text": "A_trans", "duration_seconds": None, "error": None},
+        {"id": "b2", "target_text": "B_trans", "duration_seconds": 1.5, "error": None},
+    ]
+    with open(raw_path, "w", encoding="utf-8") as f:
+        json.dump(raw_missing_dur, f)
+
+    summary_missing = recompute_benchmark_evaluation(dataset_path, raw_path, out_path)
+    assert summary_missing["total_time_seconds"] is None
+    assert summary_missing["throughput_items_per_sec"] is None
+    assert summary_missing["throughput_available"] is False
+
+    # 3. Nonpositive duration (0.0)
+    raw_zero_dur = [
+        {"id": "b1", "target_text": "A_trans", "duration_seconds": 0.0, "error": None},
+        {"id": "b2", "target_text": "B_trans", "duration_seconds": 1.5, "error": None},
+    ]
+    with open(raw_path, "w", encoding="utf-8") as f:
+        json.dump(raw_zero_dur, f)
+
+    summary_zero = recompute_benchmark_evaluation(dataset_path, raw_path, out_path)
+    assert summary_zero["total_time_seconds"] is None
+    assert summary_zero["throughput_items_per_sec"] is None
+    assert summary_zero["throughput_available"] is False
+
+
+def test_recompute_benchmark_evaluation_input_alignment_rejection(tmp_path):
+    """Proves recompute_benchmark_evaluation rejects misaligned inputs and honors exit_on_error."""
+    import sys
+
+    scripts_dir = str(Path(__file__).resolve().parent.parent.parent / "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+
+    from run_quality_benchmark import recompute_benchmark_evaluation
+
+    dataset_path = tmp_path / "dataset.json"
+    raw_path = tmp_path / "raw.json"
+    out_path = tmp_path / "eval.json"
+
+    dataset_items = [
+        {
+            "id": "b1",
+            "category": "ui",
+            "source_text": "A",
+            "reference": "A",
+            "expected_behavior": "Translate",
+            "passthrough_expected": False,
+        },
+    ]
+    raw_items_extra = [
+        {"id": "b1", "target_text": "A_trans", "duration_seconds": 0.5, "error": None},
+        {"id": "b2", "target_text": "B_trans", "duration_seconds": 0.5, "error": None},
+    ]
+    with open(dataset_path, "w", encoding="utf-8") as f:
+        json.dump(dataset_items, f)
+    with open(raw_path, "w", encoding="utf-8") as f:
+        json.dump(raw_items_extra, f)
+
+    # With exit_on_error=False, raises ValueError
+    with pytest.raises(ValueError, match="unexpected extra items"):
+        recompute_benchmark_evaluation(
+            dataset_path, raw_path, out_path, exit_on_error=False
+        )
+
+    # With exit_on_error=True, exits with code 1
+    with pytest.raises(SystemExit) as exc_info:
+        recompute_benchmark_evaluation(
+            dataset_path, raw_path, out_path, exit_on_error=True
+        )
+    assert exc_info.value.code == 1
