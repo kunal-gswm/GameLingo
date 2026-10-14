@@ -951,6 +951,13 @@ def test_align_benchmark_inputs_validation():
     with pytest.raises(ValueError, match="Raw translation record missing 'id' field"):
         align_benchmark_inputs(dataset, [{"target_text": "A_trans"}])
 
+    # 8. Conflicting top-level id and nested item id in raw record
+    raw_conflict = [
+        {"id": "bench_001", "item": {"id": "bench_002"}, "target_text": "A_trans"}
+    ]
+    with pytest.raises(ValueError, match="Conflicting top-level id"):
+        align_benchmark_inputs(dataset, raw_conflict)
+
 
 def test_runtime_safety_distinguished_from_structural_validity():
     """Proves runtime safety distinguishes syntax/placeholder crashes from structural validity."""

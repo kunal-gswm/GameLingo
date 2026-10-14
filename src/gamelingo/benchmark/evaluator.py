@@ -137,11 +137,23 @@ def align_benchmark_inputs(
     raw_by_id = {}
     for r in raw_translations:
         rid = r.get("id")
-        if not rid and isinstance(r.get("item"), dict):
-            rid = r["item"].get("id")
-        if not rid or not str(rid).strip():
+        nested_id = None
+        if isinstance(r.get("item"), dict):
+            nested_id = r["item"].get("id")
+
+        if (
+            rid is not None
+            and nested_id is not None
+            and str(rid).strip() != str(nested_id).strip()
+        ):
+            raise ValueError(
+                f"Conflicting top-level id ('{rid}') and nested item id ('{nested_id}') in raw translation record: {r}"
+            )
+
+        final_id = rid if rid is not None else nested_id
+        if not final_id or not str(final_id).strip():
             raise ValueError(f"Raw translation record missing 'id' field: {r}")
-        rid_str = str(rid).strip()
+        rid_str = str(final_id).strip()
         if rid_str in raw_by_id:
             raise ValueError(f"Duplicate raw translation record ID found: '{rid_str}'")
         raw_by_id[rid_str] = r
