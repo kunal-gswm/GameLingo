@@ -86,10 +86,11 @@ All metrics below document their exact denominators explicitly:
 
 ### 3.4 Placeholder & Formatting Integrity
 - **Strings with Markup / Variables / Newlines**: $25$ ($N_{\text{markup}} = 25$)
-- **Markup Preserved Intact**: $17$ (**$68.0\%$**, Denominator: $N_{\text{markup}}$)  
-  *Includes 100% (10/10) line break (`\n`) preservation across all multiline cards.*
-- **Markup Rejected or Lost**: $8$ (**$32.0\%$**, Denominator: $N_{\text{markup}}$)  
-  *All 8 safely rejected by `PlaceholderProtector` fail-closed gate.*
+- **Markup Preserved Intact**: $12$ (**$48.0\%$**, Denominator: $N_{\text{markup}}$)  
+  *Includes 5 multiline cards with 100% intact line breaks and 7 variable cards with preserved sentinels.*
+- **Markup Rejected or Lost**: $13$ (**$52.0\%$**, Denominator: $N_{\text{markup}}$)  
+  * $8$ safely rejected by `PlaceholderProtector` fail-closed gate in `variables_tags`.  
+  * $5$ detected by GL-040.2.2 complete inventory checks in `multiline` (`bench_086`, `bench_088`, `bench_089`, `bench_092`, `bench_093`) where translation introduced unexpected Ren'Py square bracket interpolation tokens (e.g. `[Current life]`, `[Sky]`, `[Resis ]`, `[degradation]`, `[Monstering and Human Hands]`), which would trigger syntax errors during engine execution.
 
 ### 3.5 Human Linguistic Quality (Strictly Reviewed Outputs)
 - **Reviewed Outputs**: $100$ ($N_{\text{reviewed}} = 100$, **$100.0\%$** coverage of historical outputs)
@@ -120,52 +121,58 @@ All metrics below document their exact denominators explicitly:
 
 ## 5. Side-by-Side Comparison: Frozen Baseline vs Corrected Evaluation
 
-The table below contrasts the frozen GL-040.1 baseline snapshot against the corrected GL-040.2 evaluation:
+The table below contrasts the frozen GL-040.1 baseline snapshot against the corrected GL-040.2 / GL-040.2.2 evaluation:
 
 | Dimension / Metric | Frozen GL-040.1 Baseline | Corrected GL-040.2 Evaluation | Primary Rationale for Difference |
 | :--- | :---: | :---: | :--- |
 | **Evaluation Architecture** | Hardcoded item-ID branches in runner script | Decoupled `evaluator.py` + hash-pinned `annotations_gl040.json` | Eliminates hardcoded score assignments; changing target text automatically invalidates stale annotation. |
-| **Intentional Passthroughs (`SAVE`, `mat`, `END`, `----`)** | Penalized as untranslated failures ($0/5$, Untranslated) | Scored as valid passthroughs ($5/5$, Valid) | Corrected handling based on `expected_behavior` and reference parity. |
+| **Intentional Passthroughs (`SAVE`, `mat`, `END`, `----`)** | Penalized as untranslated failures ($0/5$, Untranslated) | Scored as valid passthroughs ($5/5$, Valid) | Corrected handling based on explicit boolean metadata and reference parity. |
 | **Technical Category Meaning Score** | 1.57 / 5.00 | **4.14 / 5.00** | 4 valid passthroughs are no longer miscategorized as untranslated errors. |
 | **Variables Category Meaning Score** | 1.40 / 5.00 | **1.73 / 5.00** | Passthrough variable `[cur_foe.name]` correctly scored as valid passthrough. |
 | **Overall Meaning Score** | 2.58 / 5.00 | **2.81 / 5.00** | Direct mathematical consequence of correcting intentional passthroughs. |
 | **Overall Grammar Score** | 2.83 / 5.00 | **3.08 / 5.00** | Passthrough identifiers have perfect grammatical validity. |
 | **Structural Validity Metric** | 75.0% "Pass Rate" (conflated with quality) | **82.0% Structural Validity Rate** | Structural validity ($82.0\%$) explicitly distinguished from Acceptable Quality ($54.0\%$). |
 | **Acceptable Translation Quality** | Not explicitly reported | **54.0% (54 / 100)** | Defined as reviewed items with Meaning $\ge 3$ and Grammar $\ge 3$. |
-| **Placeholder / Tag Integrity** | Mixed into category tables | **68.0% (17 / 25 intact)** | Evaluated programmatically and reported with explicit denominator ($N_{\text{markup}} = 25$). |
-| **Review Invalidation Safety** | None (static script) | **Strict SHA-256 target pinning** | Any run producing differing output is marked `pending_review` with unassigned scores. |
+| **Placeholder / Tag Integrity** | Mixed into category tables | **48.0% (12 / 25 intact)** | Complete inventory check detects missing source tokens and unexpected output tokens ($N_{\text{markup}} = 25$). |
+| **Review Invalidation Safety** | None (static script) | **Strict Context & Target Hash Pinning** | Recomputed hashes validate annotation integrity; corrupted or legacy records fail closed. |
 
 ---
 
-## 6. Verification & Automated Test Evidence (GL-040.2 & GL-040.2.1)
+## 6. Verification & Automated Test Evidence (GL-040.2, GL-040.2.1, GL-040.2.2)
 
-The evaluation methodology and its hardened integrity checks are verified by 14 dedicated automated unit tests in [`tests/unit/test_quality_benchmark.py`](file:///e:/GameLingo/tests/unit/test_quality_benchmark.py):
-1. **Exact UTF-8 Whitespace Invalidation**: Proves leading (`" Settings"`), trailing (`"Settings "`), or newline (`"Settings\n"`) whitespace modifications invalidate annotations under exact UTF-8 hashing.
-2. **Context Hash Invalidation**: Proves modifying prompt context (source text, reference text, or category) invalidates the annotation as `stale`, even when the target text matches.
-3. **Repeated Placeholder Multiplicity**: Proves programmatic checks compare exact token occurrence counts (`Counter`), detecting dropped tokens (`%d/%d` vs `%d/`), duplicated tokens (`%d` -> `%d/%d/%d`), and unclosed tags (`{b}...{/b}`).
-4. **Newline Count Parity**: Proves exact newline preservation validation across multiline cards.
-5. **Explicit Passthrough Metadata & Strict Japanese Guard**: Proves explicit `"passthrough_expected"` metadata is respected and Japanese text is strictly guarded against passthrough misclassification.
-6. **Stale Annotation Exclusion**: Proves stale or unreviewed items are cleanly excluded from quality score averages.
-7. **Target Output Change Invalidation**: Proves modifying translated text sets review status to `stale` and zeroes quality score contribution.
-8. **Passthrough Handling**: Proves `SAVE`, `mat`, `END`, `----` are recognized as `is_passthrough_expected=True`, assigned `passthrough_status="Pass"`, and excluded from untranslated failures.
-9. **Untranslated Japanese Fallback Detection**: Proves Japanese dialogue left untranslated is flagged as `Untranslated Japanese Fallback`.
-10. **Structural Validity vs Quality Separation**: Proves hallucinated outputs like `"Home"` are marked `structural_status="Valid"` but excluded from acceptable quality passes (`meaning_score=1`).
-11. **Frozen Baseline Verification**: Loads [`gl040_1_baseline_snapshot.json`](file:///e:/GameLingo/src/gamelingo/benchmark/results/gl040_1_baseline_snapshot.json) and verifies historical numbers ($2.58$ meaning, $2.83$ grammar, $1.57$ technical) remain byte-for-byte identical (SHA-256: `024cb0d7536f22aefd10b6522f35f8c13941a36d2ae37c1885c3780496b1a361`).
-12. **Deterministic Aggregation & Explicit Denominators**: Verifies all metric groups use explicit denominators and produce identical results across repeated runs.
-13. **Direct Placeholder Integrity Verification**: Tests `evaluate_placeholder_integrity` directly for tokens and newlines.
-14. **Direct Structural Status Verification**: Tests `evaluate_structural_status` directly for empty and truncated fragments.
+The evaluation methodology and its hardened integrity checks are verified by 17 dedicated automated unit tests in [`tests/unit/test_quality_benchmark.py`](file:///e:/GameLingo/tests/unit/test_quality_benchmark.py):
+1. **Complete Placeholder Inventory Checks**: Proves programmatic checks compare source and target inventories, catching missing tokens, dropped occurrences (`%d/%d` vs `%d/`), duplicated tokens (`%d` vs `%d %d`), missing closing tags (`{b}...{/b}`), and unexpected target tokens (`%d` vs `%d %s`, or plain text vs `%s`).
+2. **Unexpected Placeholder Syntax Rejection**: Proves introducing placeholder syntax into strings without source markup fails with `has_markup=True` and clear diagnostic details.
+3. **Newline Count Parity**: Proves exact newline preservation validation across multiline cards (lost or added newlines fail).
+4. **Strict Boolean Passthrough Metadata**: Proves `passthrough_expected` must be a strict boolean, rejecting string values (`"false"`, `"true"`) and numbers (`1`, `0`) with `TypeError`.
+5. **Japanese Passthrough Safeguard Conflict Rejection**: Proves setting `passthrough_expected=True` for Japanese text raises a `ValueError` validation error.
+6. **Annotation Target Hash Consistency**: Proves recomputed target hash must match stored `reviewed_target_hash`; corrupted hashes fail closed with `review_status="invalid"`.
+7. **Annotation Context Hash Consistency**: Proves recomputed context hash must match stored `reviewed_context_hash`; corrupted context hashes fail closed with `review_status="invalid"`.
+8. **Legacy Annotation Protection**: Proves annotations missing required context fields fail closed with `review_status="pending_review"`.
+9. **Stale / Invalid Exclusion**: Proves stale, corrupted, and pending review annotations are cleanly excluded from quality score averages.
+10. **Exact UTF-8 Whitespace Invalidation**: Proves leading, trailing, or newline modifications strictly invalidate annotations.
+11. **Context Change Invalidation**: Proves modifying prompt context (source, reference, category) invalidates the annotation even if target text matches.
+12. **Passthrough Handling**: Proves `SAVE`, `mat`, `END`, `----` are recognized as `is_passthrough_expected=True`, assigned `passthrough_status="Pass"`, and excluded from untranslated failures.
+13. **Untranslated Japanese Fallback Detection**: Proves Japanese dialogue left untranslated is flagged as `Untranslated Japanese Fallback`.
+14. **Structural Validity vs Quality Separation**: Proves hallucinated outputs like `"Home"` are marked `structural_status="Valid"` but excluded from acceptable quality passes (`meaning_score=1`).
+15. **Frozen Baseline Verification**: Loads [`gl040_1_baseline_snapshot.json`](file:///e:/GameLingo/src/gamelingo/benchmark/results/gl040_1_baseline_snapshot.json) and verifies historical numbers ($2.58$ meaning, $2.83$ grammar, $1.57$ technical) and byte-for-byte SHA-256 (`024cb0d7536f22aefd10b6522f35f8c13941a36d2ae37c1885c3780496b1a361`).
+16. **Deterministic Aggregation & Explicit Denominators**: Verifies all metric groups use explicit denominators and produce identical results across repeated runs.
+17. **Dataset Schema Verification**: Proves all 100 items in `dataset_gl040_real_game.json` satisfy `validate_benchmark_item()`.
 
 ---
 
-## 7. Integrity Checklist (GL-040.2.1)
+## 7. Integrity Checklist (GL-040.2.2)
 
 | Requirement | Implementation | Verified Status |
 | :--- | :--- | :---: |
-| **Strict Exact Target Hashing** | UTF-8 SHA-256 without `.strip()` (`hash_translation_target`) | **Passed** |
-| **Context Binding Hash** | SHA-256 across `item_id \x00 category \x00 source \x00 ref \x00 target` | **Passed** |
-| **Placeholder Multiplicity** | `Counter(source_tokens) == Counter(target_tokens)` & exact newline count | **Passed** |
-| **Explicit Passthrough Metadata** | `"passthrough_expected": true/false` across all 100 items | **Passed** |
-| **Strict Japanese Passthrough Guard** | `JP_CHAR_REGEX.search(src)` blocks passthrough for Japanese text | **Passed** |
-| **Frozen Snapshot Immutability** | Byte-for-byte SHA-256 `024cb0d7536f...` verified | **Passed** |
-| **Decoupled Annotation Storage** | Separate `annotations_gl040.json` with hash validation | **Passed** |
+| **Complete Token Inventory Check** | Compares `Counter(source_tokens)` and `Counter(target_tokens)` | **Passed** |
+| **Unexpected Placeholder Detection** | Flags tokens in target absent from source; no silent `N/A` | **Passed** |
+| **Strict Boolean Passthrough Metadata** | Rejects non-boolean types (`"false"`, `1`) with `TypeError` | **Passed** |
+| **Japanese Content Conflict Guard** | Setting `passthrough_expected=True` with Japanese raises `ValueError` | **Passed** |
+| **Annotation Target Hash Consistency** | Recomputed target hash must match stored `reviewed_target_hash` | **Passed** |
+| **Annotation Context Hash Consistency** | Recomputed context hash must match stored `reviewed_context_hash` | **Passed** |
+| **Legacy Incomplete Annotation Shield** | Missing context fields fail closed with `pending_review` | **Passed** |
+| **Frozen Snapshot File Integrity** | Full file SHA-256 `024cb0d7536f...` verified in tests | **Passed** |
+| **Offline Recompute Capability** | `recompute_benchmark_evaluation()` updates evaluation without live translation | **Passed** |
+
 

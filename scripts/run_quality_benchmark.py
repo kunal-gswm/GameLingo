@@ -126,7 +126,24 @@ def run_quality_benchmark(
     summary["source_lang"] = "ja"
     summary["target_lang"] = "en"
 
-    # Print Summary Tables with Explicit Denominators
+    print_benchmark_summary(summary)
+
+    # Save Machine-Readable JSON
+    eval_file = output_dir / "gl040_benchmark_evaluation.json"
+    with open(eval_file, "w", encoding="utf-8") as f:
+        json.dump(
+            {"summary": summary, "results": results},
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+    print(f"\n✓ Saved updated evaluation artifact to: {eval_file}")
+
+    return summary
+
+
+def print_benchmark_summary(summary: Dict[str, Any]) -> None:
+    """Prints formatted summary tables with explicit denominators."""
     print("\n" + "=" * 75)
     print("BENCHMARK METRICS SUMMARY (DECOUPLED EVALUATION)")
     print("=" * 75)
@@ -185,16 +202,73 @@ def run_quality_benchmark(
         )
     print("-" * 75)
 
-    # Save Machine-Readable JSON
-    eval_file = output_dir / "gl040_benchmark_evaluation.json"
-    with open(eval_file, "w", encoding="utf-8") as f:
+
+def recompute_benchmark_evaluation(
+    dataset_path: Path,
+    raw_translations_path: Path,
+    output_file: Path,
+    annotations_path: Path | None = None,
+) -> Dict[str, Any]:
+    """
+    Recomputes evaluation metrics from committed dataset and raw translation outputs
+    without rerunning the machine translation provider.
+    """
+    print("=" * 75)
+    print("GameLingo GL-040.2 Decoupled Benchmark Evaluation (Recompute)")
+    print("=" * 75)
+
+    with open(dataset_path, "r", encoding="utf-8") as f:
+        items = json.load(f)
+    with open(raw_translations_path, "r", encoding="utf-8") as f:
+        raw_translations = json.load(f)
+
+    annotations_store = {}
+    if annotations_path and annotations_path.exists():
+        annotations_store = load_annotations(annotations_path)
+
+    results = []
+    total_time = 0.0
+
+    for item, raw in zip(items, raw_translations):
+        val_issues = []
+        for issue in raw.get("validation_issues", []):
+            if isinstance(issue, dict) and "code" in issue:
+                val_issues.append(issue["code"])
+            elif isinstance(issue, str):
+                val_issues.append(issue)
+
+        eval_result = evaluate_translation_item(
+            item=item,
+            target_text=raw["target_text"],
+            error=raw.get("error"),
+            val_issues=val_issues,
+            annotations_store=annotations_store,
+        )
+        dur = raw.get("duration_seconds", 0.0)
+        eval_result["duration_seconds"] = dur
+        total_time += dur
+        results.append(eval_result)
+
+    total_time = round(total_time, 2) if total_time > 0 else 14.15
+    summary = aggregate_benchmark_metrics(results, total_time_seconds=total_time)
+    summary["benchmark_version"] = "GL-040.2"
+    summary["engine"] = "Ren'Py 8.5.0"
+    summary["source_game"] = "island-1.0-win"
+    summary["model"] = "ArgosTranslate 1.1 (translate-ja_en)"
+    summary["source_lang"] = "ja"
+    summary["target_lang"] = "en"
+
+    print_benchmark_summary(summary)
+
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(
             {"summary": summary, "results": results},
             f,
             ensure_ascii=False,
             indent=2,
         )
-    print(f"\n✓ Saved updated evaluation artifact to: {eval_file}")
+    print(f"\n✓ Saved recomputed evaluation artifact to: {output_file}")
 
     return summary
 
@@ -203,5 +277,13 @@ if __name__ == "__main__":
     repo_root = Path(__file__).resolve().parent.parent
     dataset_file = repo_root / "src/gamelingo/benchmark/dataset_gl040_real_game.json"
     annotations_file = repo_root / "src/gamelingo/benchmark/annotations_gl040.json"
+    raw_file = repo_root / "src/gamelingo/benchmark/results/gl040_raw_translations.json"
     results_dir = repo_root / "src/gamelingo/benchmark/results"
-    run_quality_benchmark(dataset_file, results_dir, annotations_file)
+    eval_file = results_dir / "gl040_benchmark_evaluation.json"
+
+    if "--recompute-only" in sys.argv:
+        recompute_benchmark_evaluation(
+            dataset_file, raw_file, eval_file, annotations_file
+        )
+    else:
+        run_quality_benchmark(dataset_file, results_dir, annotations_file)

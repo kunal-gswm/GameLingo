@@ -1,8 +1,8 @@
 {
   "summary": {
     "total_items": 100,
-    "total_time_seconds": 14.15,
-    "throughput_items_per_sec": 7.07,
+    "total_time_seconds": 17.25,
+    "throughput_items_per_sec": 5.8,
     "pipeline_execution": {
       "provider_calls_total": 100,
       "provider_calls_succeeded": 92,
@@ -28,8 +28,8 @@
     },
     "placeholder_formatting_integrity": {
       "strings_with_markup_count": 25,
-      "markup_intact_count": 17,
-      "markup_integrity_rate_pct": 68.0,
+      "markup_intact_count": 12,
+      "markup_integrity_rate_pct": 48.0,
       "denominator": "strings_with_markup_count"
     },
     "human_quality_evaluation": {
@@ -150,13 +150,13 @@
       "structural_status": "Untranslated",
       "failure_type": "Untranslated Fallback",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 0,
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese.",
-      "duration_seconds": 2.2766
+      "duration_seconds": 5.1604
     },
     {
       "id": "bench_002",
@@ -172,13 +172,13 @@
       "structural_status": "Truncated",
       "failure_type": "Content Loss",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 1,
       "terminology_status": "N/A",
       "evaluator_notes": "Dialogue text completely dropped, only ellipsis '......' returned.",
-      "duration_seconds": 0.0447
+      "duration_seconds": 0.0482
     },
     {
       "id": "bench_003",
@@ -194,13 +194,13 @@
       "structural_status": "Valid",
       "failure_type": "Semantic Distortion",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Distorted: '効かない。男にはまるで。' translated as 'Not effective. Like a man.' instead of 'Not at all on men.'",
-      "duration_seconds": 0.0411
+      "duration_seconds": 0.045
     },
     {
       "id": "bench_004",
@@ -216,13 +216,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Accurate and concise: 'Why?'",
-      "duration_seconds": 0.0236
+      "duration_seconds": 0.0242
     },
     {
       "id": "bench_005",
@@ -238,13 +238,13 @@
       "structural_status": "Untranslated",
       "failure_type": "Untranslated Fallback",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 0,
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese.",
-      "duration_seconds": 0.0322
+      "duration_seconds": 0.0333
     },
     {
       "id": "bench_006",
@@ -260,13 +260,13 @@
       "structural_status": "Valid",
       "failure_type": "Content Truncation",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Truncated to 'That's it!', omitting all reference to eating the strange fruit.",
-      "duration_seconds": 0.0843
+      "duration_seconds": 0.0863
     },
     {
       "id": "bench_007",
@@ -282,13 +282,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Understood: 'The body suddenly gets hot...', minor omission of conditional 'After eating'.",
-      "duration_seconds": 0.0744
+      "duration_seconds": 0.0691
     },
     {
       "id": "bench_008",
@@ -304,13 +304,13 @@
       "structural_status": "Valid",
       "failure_type": "Kanji Remnant",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 2,
       "terminology_status": "N/A",
       "evaluator_notes": "Unfinished translation containing untranslated kanji 'back muscles震ed'.",
-      "duration_seconds": 0.0924
+      "duration_seconds": 0.0805
     },
     {
       "id": "bench_009",
@@ -326,13 +326,13 @@
       "structural_status": "Valid",
       "failure_type": "Inverted Meaning",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Inverted question 'How many survivors are there?' into assertion 'There are many people who live.'",
-      "duration_seconds": 0.0513
+      "duration_seconds": 0.054
     },
     {
       "id": "bench_010",
@@ -348,13 +348,13 @@
       "structural_status": "Valid",
       "failure_type": "Content Loss",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Lost island setting and helplessness context, translated as 'I don't know where to help.'",
-      "duration_seconds": 0.0913
+      "duration_seconds": 0.0961
     },
     {
       "id": "bench_011",
@@ -370,13 +370,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Conveys core meaning despite repetitive phrasing: 'The more you think, the more you feel, the more your head is full.'",
-      "duration_seconds": 0.0926
+      "duration_seconds": 0.0972
     },
     {
       "id": "bench_012",
@@ -392,13 +392,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Clear and natural: 'First of all, you have to move.'",
-      "duration_seconds": 0.0482
+      "duration_seconds": 0.0502
     },
     {
       "id": "bench_013",
@@ -414,13 +414,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Odd spacing artifact: 'Walking in the d  forest with food.'",
-      "duration_seconds": 0.0758
+      "duration_seconds": 0.076
     },
     {
       "id": "bench_014",
@@ -436,13 +436,13 @@
       "structural_status": "Valid",
       "failure_type": "Severe Mistranslation",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Mistranslated crouching girl (しゃがみ込んでいた) as 'sneezed in the shade'.",
-      "duration_seconds": 0.0953
+      "duration_seconds": 0.0821
     },
     {
       "id": "bench_015",
@@ -458,13 +458,13 @@
       "structural_status": "Valid",
       "failure_type": "Hallucination",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 1,
       "terminology_status": "N/A",
       "evaluator_notes": "Hallucinated: Hungry girl's line 'うぅ……おなか、すいた……' translated as 'Home'.",
-      "duration_seconds": 0.0353
+      "duration_seconds": 0.029
     },
     {
       "id": "bench_016",
@@ -480,13 +480,13 @@
       "structural_status": "Valid",
       "failure_type": "Mistranslation",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 2,
       "terminology_status": "N/A",
       "evaluator_notes": "Mistranslated hoodie (パーカー) as 'sandals' and face (あどけない顔) as 'I can't face'.",
-      "duration_seconds": 0.0748
+      "duration_seconds": 0.0776
     },
     {
       "id": "bench_017",
@@ -502,13 +502,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Accurate greeting: 'Hello'.",
-      "duration_seconds": 0.0194
+      "duration_seconds": 0.0202
     },
     {
       "id": "bench_018",
@@ -524,13 +524,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Accurate greeting: 'Hello'.",
-      "duration_seconds": 0.022
+      "duration_seconds": 0.0227
     },
     {
       "id": "bench_019",
@@ -546,13 +546,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Understood: 'Do you have food?', lost polite hesitation.",
-      "duration_seconds": 0.0448
+      "duration_seconds": 0.0485
     },
     {
       "id": "bench_020",
@@ -568,13 +568,13 @@
       "structural_status": "Valid",
       "failure_type": "Corrupted Phrasing",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 2,
       "terminology_status": "N/A",
       "evaluator_notes": "Hallucinated 'Contact Us' from Japanese syntax.",
-      "duration_seconds": 0.07
+      "duration_seconds": 0.0682
     },
     {
       "id": "bench_021",
@@ -590,13 +590,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Faithful: 'But to survive. If this power is true, it becomes a good weapon.'",
-      "duration_seconds": 0.0843
+      "duration_seconds": 0.079
     },
     {
       "id": "bench_022",
@@ -612,13 +612,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Terse: 'I see the eyes.' lost 'hesitating' and 'gazed'.",
-      "duration_seconds": 0.0364
+      "duration_seconds": 0.0402
     },
     {
       "id": "bench_023",
@@ -634,13 +634,13 @@
       "structural_status": "Valid",
       "failure_type": "Inverted Meaning",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Inverted meaning: '何か食べないと' (must eat something) became 'Don't eat anything.'",
-      "duration_seconds": 0.0582
+      "duration_seconds": 0.0602
     },
     {
       "id": "bench_024",
@@ -656,13 +656,13 @@
       "structural_status": "Valid",
       "failure_type": "Mistranslation",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Mistranslated airplane meal and shore as 'sashiki box of fish flowing'.",
-      "duration_seconds": 0.1321
+      "duration_seconds": 0.1353
     },
     {
       "id": "bench_025",
@@ -678,13 +678,13 @@
       "structural_status": "Truncated",
       "failure_type": "Content Loss",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 1,
       "terminology_status": "N/A",
       "evaluator_notes": "'あった……っ' dropped to '......'.",
-      "duration_seconds": 0.0321
+      "duration_seconds": 0.0341
     },
     {
       "id": "bench_026",
@@ -700,13 +700,13 @@
       "structural_status": "Truncated",
       "failure_type": "Model Truncation",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 2,
       "terminology_status": "N/A",
       "evaluator_notes": "Output ends abruptly with space artifact: 'The box is  .'",
-      "duration_seconds": 0.0717
+      "duration_seconds": 0.0677
     },
     {
       "id": "bench_027",
@@ -722,13 +722,13 @@
       "structural_status": "Valid",
       "failure_type": "Hallucination",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 1,
       "terminology_status": "N/A",
       "evaluator_notes": "Colloquial dialogue 'わりぃな。俺の方が先だ' hallucinated as 'Home'.",
-      "duration_seconds": 0.0231
+      "duration_seconds": 0.0217
     },
     {
       "id": "bench_028",
@@ -744,13 +744,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Very natural: 'A man like a mass of muscle.'",
-      "duration_seconds": 0.0598
+      "duration_seconds": 0.0521
     },
     {
       "id": "bench_029",
@@ -766,13 +766,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Awkward translation of character departure.",
-      "duration_seconds": 0.1152
+      "duration_seconds": 0.1065
     },
     {
       "id": "bench_030",
@@ -788,13 +788,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Understood: 'That's it.', lost dismayed tone.",
-      "duration_seconds": 0.0288
+      "duration_seconds": 0.0421
     },
     {
       "id": "bench_031",
@@ -810,13 +810,13 @@
       "structural_status": "Valid",
       "failure_type": "Grammar Breakdown",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 2,
       "terminology_status": "N/A",
       "evaluator_notes": "Fragmented: 'I took away. No resistance or can be done.'",
-      "duration_seconds": 0.0613
+      "duration_seconds": 0.0723
     },
     {
       "id": "bench_032",
@@ -832,13 +832,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Awkward phrasing: 'However, it was just to stand out.'",
-      "duration_seconds": 0.0623
+      "duration_seconds": 0.0754
     },
     {
       "id": "bench_033",
@@ -854,13 +854,13 @@
       "structural_status": "Valid",
       "failure_type": "Hallucination",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 2,
       "terminology_status": "N/A",
       "evaluator_notes": "Hallucinated 'Dutch Comment' from '——いた。ちょっと、あんた'.",
-      "duration_seconds": 0.0251
+      "duration_seconds": 0.0281
     },
     {
       "id": "bench_034",
@@ -876,13 +876,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Distorted 'お嬢様' into 'lady of the plan'.",
-      "duration_seconds": 0.127
+      "duration_seconds": 0.1291
     },
     {
       "id": "bench_035",
@@ -898,13 +898,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Conveys gist: 'Not searched. It's a staff. Why are you looking for your food?'",
-      "duration_seconds": 0.107
+      "duration_seconds": 0.0987
     },
     {
       "id": "bench_036",
@@ -920,13 +920,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Settings'.",
-      "duration_seconds": 0.0191
+      "duration_seconds": 0.02
     },
     {
       "id": "bench_037",
@@ -942,13 +942,13 @@
       "structural_status": "Truncated",
       "failure_type": "Katakana Truncation",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 1,
       "terminology_status": "Fail",
       "evaluator_notes": "Truncated 'セーブ' to single kana 'ブ'.",
-      "duration_seconds": 0.023
+      "duration_seconds": 0.0241
     },
     {
       "id": "bench_038",
@@ -964,13 +964,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Load'.",
-      "duration_seconds": 0.0161
+      "duration_seconds": 0.016
     },
     {
       "id": "bench_039",
@@ -986,13 +986,13 @@
       "structural_status": "Untranslated",
       "failure_type": "Untranslated Fallback",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 0,
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese.",
-      "duration_seconds": 0.0182
+      "duration_seconds": 0.0212
     },
     {
       "id": "bench_040",
@@ -1008,13 +1008,13 @@
       "structural_status": "Untranslated",
       "failure_type": "Untranslated Fallback",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 0,
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "ArgosTranslate produced empty/whitespace; pipeline safely fell back to source Japanese.",
-      "duration_seconds": 0.0155
+      "duration_seconds": 0.0184
     },
     {
       "id": "bench_041",
@@ -1030,13 +1030,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Start'.",
-      "duration_seconds": 0.0186
+      "duration_seconds": 0.0168
     },
     {
       "id": "bench_042",
@@ -1052,13 +1052,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'History'.",
-      "duration_seconds": 0.0191
+      "duration_seconds": 0.0211
     },
     {
       "id": "bench_043",
@@ -1074,13 +1074,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Rewind'.",
-      "duration_seconds": 0.0211
+      "duration_seconds": 0.0224
     },
     {
       "id": "bench_044",
@@ -1096,13 +1096,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Q.Save'.",
-      "duration_seconds": 0.0305
+      "duration_seconds": 0.0312
     },
     {
       "id": "bench_045",
@@ -1118,13 +1118,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 4,
       "terminology_status": "Pass",
       "evaluator_notes": "Understood: 'Q. Loading'.",
-      "duration_seconds": 0.0213
+      "duration_seconds": 0.022
     },
     {
       "id": "bench_046",
@@ -1140,13 +1140,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Back to Title'.",
-      "duration_seconds": 0.0252
+      "duration_seconds": 0.027
     },
     {
       "id": "bench_047",
@@ -1162,13 +1162,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 4,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Replay End'.",
-      "duration_seconds": 0.026
+      "duration_seconds": 0.0274
     },
     {
       "id": "bench_048",
@@ -1184,13 +1184,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Understood: 'Is it good?'",
-      "duration_seconds": 0.0306
+      "duration_seconds": 0.0288
     },
     {
       "id": "bench_049",
@@ -1206,13 +1206,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Clean: 'End the game?'",
-      "duration_seconds": 0.0429
+      "duration_seconds": 0.0428
     },
     {
       "id": "bench_050",
@@ -1228,13 +1228,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Remove this save?'",
-      "duration_seconds": 0.0361
+      "duration_seconds": 0.0366
     },
     {
       "id": "bench_051",
@@ -1250,13 +1250,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Overwrite save?'",
-      "duration_seconds": 0.0386
+      "duration_seconds": 0.0408
     },
     {
       "id": "bench_052",
@@ -1272,13 +1272,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'End Replay?'",
-      "duration_seconds": 0.0423
+      "duration_seconds": 0.0406
     },
     {
       "id": "bench_053",
@@ -1294,13 +1294,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "Pass",
       "evaluator_notes": "Clean: 'Start skipping?'",
-      "duration_seconds": 0.0401
+      "duration_seconds": 0.0407
     },
     {
       "id": "bench_054",
@@ -1316,13 +1316,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "'Dogs' for 野犬.",
-      "duration_seconds": 0.0181
+      "duration_seconds": 0.0194
     },
     {
       "id": "bench_055",
@@ -1338,13 +1338,13 @@
       "structural_status": "Valid",
       "failure_type": "Content Loss",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Dropped swarm and rats, translated as 'Islands'.",
-      "duration_seconds": 0.0242
+      "duration_seconds": 0.0252
     },
     {
       "id": "bench_056",
@@ -1360,13 +1360,13 @@
       "structural_status": "Truncated",
       "failure_type": "Kanji Remnant",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 1,
       "terminology_status": "N/A",
       "evaluator_notes": "Single untranslated kanji '大'.",
-      "duration_seconds": 0.0231
+      "duration_seconds": 0.0215
     },
     {
       "id": "bench_057",
@@ -1382,13 +1382,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Clean: 'Poison Snake'.",
-      "duration_seconds": 0.0346
+      "duration_seconds": 0.0325
     },
     {
       "id": "bench_058",
@@ -1404,13 +1404,13 @@
       "structural_status": "Valid",
       "failure_type": "Severe Mistranslation",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Ruffian/rogue translated as 'Others'.",
-      "duration_seconds": 0.0161
+      "duration_seconds": 0.0194
     },
     {
       "id": "bench_059",
@@ -1426,13 +1426,13 @@
       "structural_status": "Truncated",
       "failure_type": "Kanji Remnant",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 1,
       "terminology_status": "N/A",
       "evaluator_notes": "Single untranslated kanji '大'.",
-      "duration_seconds": 0.0161
+      "duration_seconds": 0.019
     },
     {
       "id": "bench_060",
@@ -1448,13 +1448,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Understood: 'smart man'.",
-      "duration_seconds": 0.0311
+      "duration_seconds": 0.0303
     },
     {
       "id": "bench_061",
@@ -1470,13 +1470,13 @@
       "structural_status": "Valid",
       "failure_type": "State Ambiguity",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Both opposing battle conditions translated as identical 'This is pressed'.",
-      "duration_seconds": 0.0332
+      "duration_seconds": 0.0323
     },
     {
       "id": "bench_062",
@@ -1492,13 +1492,13 @@
       "structural_status": "Valid",
       "failure_type": "State Ambiguity",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Both opposing battle conditions translated as identical 'This is pressed'.",
-      "duration_seconds": 0.0307
+      "duration_seconds": 0.0332
     },
     {
       "id": "bench_063",
@@ -1514,13 +1514,13 @@
       "structural_status": "Valid",
       "failure_type": "Gibberish",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 2,
       "terminology_status": "N/A",
       "evaluator_notes": "Garbled output: 'Reciprocating Angle'.",
-      "duration_seconds": 0.0363
+      "duration_seconds": 0.036
     },
     {
       "id": "bench_064",
@@ -1536,13 +1536,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Understood: 'Resolve alertness'.",
-      "duration_seconds": 0.0293
+      "duration_seconds": 0.0321
     },
     {
       "id": "bench_065",
@@ -1558,13 +1558,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Distorted to corporate-style 'Trust Our Partners'.",
-      "duration_seconds": 0.0299
+      "duration_seconds": 0.0281
     },
     {
       "id": "bench_066",
@@ -1580,13 +1580,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Truncated to 'Shy'.",
-      "duration_seconds": 0.0211
+      "duration_seconds": 0.0245
     },
     {
       "id": "bench_067",
@@ -1602,13 +1602,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Truncated to 'skin'.",
-      "duration_seconds": 0.0256
+      "duration_seconds": 0.0272
     },
     {
       "id": "bench_068",
@@ -1624,13 +1624,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Understood: 'NEW Sign up for the book'.",
-      "duration_seconds": 0.0388
+      "duration_seconds": 0.0408
     },
     {
       "id": "bench_069",
@@ -1652,7 +1652,7 @@
       "grammar_score": 2,
       "terminology_status": "N/A",
       "evaluator_notes": "Variables preserved perfectly, but Japanese labels dropped.",
-      "duration_seconds": 0.1082
+      "duration_seconds": 0.1105
     },
     {
       "id": "bench_070",
@@ -1674,7 +1674,7 @@
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
-      "duration_seconds": 2.0293
+      "duration_seconds": 2.1548
     },
     {
       "id": "bench_071",
@@ -1696,7 +1696,7 @@
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN2XXX' is missing from the translation output.",
-      "duration_seconds": 0.2262
+      "duration_seconds": 0.2307
     },
     {
       "id": "bench_072",
@@ -1718,7 +1718,7 @@
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
-      "duration_seconds": 0.0932
+      "duration_seconds": 0.0887
     },
     {
       "id": "bench_073",
@@ -1740,7 +1740,7 @@
       "grammar_score": 2,
       "terminology_status": "N/A",
       "evaluator_notes": "Placeholder '%s' preserved, but entire verb dropped.",
-      "duration_seconds": 0.0429
+      "duration_seconds": 0.046
     },
     {
       "id": "bench_074",
@@ -1784,7 +1784,7 @@
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN0XXX' is missing from the translation output.",
-      "duration_seconds": 0.0447
+      "duration_seconds": 0.0456
     },
     {
       "id": "bench_076",
@@ -1806,7 +1806,7 @@
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Excellent: 'I couldn't run away! %d Damage', formatting specifier preserved.",
-      "duration_seconds": 0.0498
+      "duration_seconds": 0.0525
     },
     {
       "id": "bench_077",
@@ -1828,7 +1828,7 @@
       "grammar_score": 4,
       "terminology_status": "N/A",
       "evaluator_notes": "Good: '%s rejected. (Food + 2)', placeholder preserved.",
-      "duration_seconds": 0.0568
+      "duration_seconds": 0.0509
     },
     {
       "id": "bench_078",
@@ -1850,7 +1850,7 @@
       "grammar_score": 3,
       "terminology_status": "N/A",
       "evaluator_notes": "Placeholder preserved, but minor Japanese artifacts in parenthetical stats.",
-      "duration_seconds": 0.1051
+      "duration_seconds": 0.0895
     },
     {
       "id": "bench_079",
@@ -1872,7 +1872,7 @@
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
-      "duration_seconds": 0.056
+      "duration_seconds": 0.0549
     },
     {
       "id": "bench_080",
@@ -1894,7 +1894,7 @@
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Clean: 'Set trap (%d)', specifier preserved.",
-      "duration_seconds": 0.0654
+      "duration_seconds": 0.0646
     },
     {
       "id": "bench_081",
@@ -1916,7 +1916,7 @@
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Dotted variable expression preserved unchanged as expected.",
-      "duration_seconds": 0.0356
+      "duration_seconds": 0.0358
     },
     {
       "id": "bench_082",
@@ -1938,7 +1938,7 @@
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
-      "duration_seconds": 0.0592
+      "duration_seconds": 0.0606
     },
     {
       "id": "bench_083",
@@ -1960,7 +1960,7 @@
       "grammar_score": 0,
       "terminology_status": "N/A",
       "evaluator_notes": "Pipeline rejected translation: Placeholder error: Sentinel 'XXXTOKEN1XXX' is missing from the translation output.",
-      "duration_seconds": 0.0948
+      "duration_seconds": 0.1012
     },
     {
       "id": "bench_084",
@@ -1982,7 +1982,7 @@
       "grammar_score": 3,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines preserved. '昼に稼ぎ、夜に堕とす' translated as 'earn at lunch and fall at night'.",
-      "duration_seconds": 0.2822
+      "duration_seconds": 0.294
     },
     {
       "id": "bench_085",
@@ -2004,7 +2004,7 @@
       "grammar_score": 2,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines preserved. Untranslated kana remnants (罠, Fiを) and mistranslation of Explore/Fish.",
-      "duration_seconds": 0.713
+      "duration_seconds": 0.8571
     },
     {
       "id": "bench_086",
@@ -2019,14 +2019,14 @@
       "passthrough_status": "N/A",
       "structural_status": "Valid",
       "failure_type": null,
-      "placeholder_status": "Pass",
-      "placeholder_details": "All tokens and newlines preserved intact",
+      "placeholder_status": "Fail",
+      "placeholder_details": "Unexpected tokens in target: token '[Current life]' not in source, got 1",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 2,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines preserved. Game terms distorted (H events denied instead of unlocked).",
-      "duration_seconds": 0.3904
+      "duration_seconds": 0.3554
     },
     {
       "id": "bench_087",
@@ -2048,7 +2048,7 @@
       "grammar_score": 3,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines and bullet point (*) preserved. Awkward phrasing of co-sleeping rules.",
-      "duration_seconds": 0.9114
+      "duration_seconds": 0.8322
     },
     {
       "id": "bench_088",
@@ -2063,14 +2063,14 @@
       "passthrough_status": "N/A",
       "structural_status": "Valid",
       "failure_type": "Kanji Remnant",
-      "placeholder_status": "Pass",
-      "placeholder_details": "All tokens and newlines preserved intact",
+      "placeholder_status": "Fail",
+      "placeholder_details": "Unexpected tokens in target: token '[Monstering and Human Hands]' not in source, got 1",
       "review_status": "reviewed",
       "meaning_score": 2,
       "grammar_score": 2,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines preserved. Suspicion (バレ度) mistranslated as 'ballet', Japanese remnant '守り'.",
-      "duration_seconds": 0.7454
+      "duration_seconds": 0.8716
     },
     {
       "id": "bench_089",
@@ -2085,14 +2085,14 @@
       "passthrough_status": "N/A",
       "structural_status": "Valid",
       "failure_type": null,
-      "placeholder_status": "Pass",
-      "placeholder_details": "All tokens and newlines preserved intact",
+      "placeholder_status": "Fail",
+      "placeholder_details": "Unexpected tokens in target: token '[Sky]' not in source, got 2; Unexpected tokens in target: token '[Resis ]' not in source, got 1",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 3,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines preserved. 'セリフ' transliterated as 'serif' (font), '隙' translated as 'Sky'.",
-      "duration_seconds": 0.4115
+      "duration_seconds": 0.4134
     },
     {
       "id": "bench_090",
@@ -2114,7 +2114,7 @@
       "grammar_score": 2,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines preserved. Awakening risk terminology distorted.",
-      "duration_seconds": 0.5965
+      "duration_seconds": 0.4708
     },
     {
       "id": "bench_091",
@@ -2136,7 +2136,7 @@
       "grammar_score": 3,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines preserved. Multiplier (2x) and quotation structure preserved.",
-      "duration_seconds": 0.3269
+      "duration_seconds": 0.2489
     },
     {
       "id": "bench_092",
@@ -2151,14 +2151,14 @@
       "passthrough_status": "N/A",
       "structural_status": "Valid",
       "failure_type": null,
-      "placeholder_status": "Pass",
-      "placeholder_details": "All tokens and newlines preserved intact",
+      "placeholder_status": "Fail",
+      "placeholder_details": "Unexpected tokens in target: token '[degradation]' not in source, got 1; Unexpected tokens in target: token '[concentration]' not in source, got 1; Unexpected tokens in target: token '[fr ]' not in source, got 1",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 3,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines and arrows (→) preserved. Cyclical tutorial flow understandable.",
-      "duration_seconds": 0.591
+      "duration_seconds": 0.7069
     },
     {
       "id": "bench_093",
@@ -2173,14 +2173,14 @@
       "passthrough_status": "N/A",
       "structural_status": "Valid",
       "failure_type": null,
-      "placeholder_status": "Pass",
-      "placeholder_details": "All tokens and newlines preserved intact",
+      "placeholder_status": "Fail",
+      "placeholder_details": "Unexpected tokens in target: token '[Sky]' not in source, got 2; Unexpected tokens in target: token '[Resis ]' not in source, got 1",
       "review_status": "reviewed",
       "meaning_score": 3,
       "grammar_score": 3,
       "terminology_status": "Inconsistent",
       "evaluator_notes": "Newlines preserved. Mental states wavering between states translated awkwardly.",
-      "duration_seconds": 0.5752
+      "duration_seconds": 0.5732
     },
     {
       "id": "bench_094",
@@ -2196,13 +2196,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Technical identifier preserved unchanged as expected.",
-      "duration_seconds": 0.0216
+      "duration_seconds": 0.0214
     },
     {
       "id": "bench_095",
@@ -2218,13 +2218,13 @@
       "structural_status": "Valid",
       "failure_type": "Unexpected Passthrough Mutation",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Internal resource token capitalized by MT model.",
-      "duration_seconds": 0.0203
+      "duration_seconds": 0.0199
     },
     {
       "id": "bench_096",
@@ -2240,13 +2240,13 @@
       "structural_status": "Valid",
       "failure_type": "Unexpected Passthrough Mutation",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 4,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Internal resource code capitalized by MT model.",
-      "duration_seconds": 0.0203
+      "duration_seconds": 0.018
     },
     {
       "id": "bench_097",
@@ -2262,13 +2262,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Technical token preserved unchanged as expected.",
-      "duration_seconds": 0.0216
+      "duration_seconds": 0.0178
     },
     {
       "id": "bench_098",
@@ -2284,13 +2284,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Terminal state keyword preserved unchanged as expected.",
-      "duration_seconds": 0.0201
+      "duration_seconds": 0.018
     },
     {
       "id": "bench_099",
@@ -2306,13 +2306,13 @@
       "structural_status": "Valid",
       "failure_type": "Hallucination",
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 1,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Unexpected mutation: CONFIG translated as HOME.",
-      "duration_seconds": 0.0216
+      "duration_seconds": 0.0182
     },
     {
       "id": "bench_100",
@@ -2328,13 +2328,13 @@
       "structural_status": "Valid",
       "failure_type": null,
       "placeholder_status": "N/A",
-      "placeholder_details": "No markup in source",
+      "placeholder_details": "No markup in source or target",
       "review_status": "reviewed",
       "meaning_score": 5,
       "grammar_score": 5,
       "terminology_status": "N/A",
       "evaluator_notes": "Separator divider preserved unchanged as expected.",
-      "duration_seconds": 0.0251
+      "duration_seconds": 0.02
     }
   ]
 }

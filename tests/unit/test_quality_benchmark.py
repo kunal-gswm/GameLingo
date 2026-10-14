@@ -1,5 +1,8 @@
+import hashlib
 import json
 from pathlib import Path
+
+import pytest
 
 from gamelingo.benchmark.evaluator import (
     aggregate_benchmark_metrics,
@@ -10,6 +13,7 @@ from gamelingo.benchmark.evaluator import (
     hash_translation_target,
     is_passthrough_expected,
     load_annotations,
+    validate_benchmark_item,
 )
 
 
@@ -113,12 +117,20 @@ def test_changing_output_invalidates_annotation():
         "expected_behavior": "Preserve question and ellipsis.",
     }
     # Mock annotation reviewed for "Why?" (meaning=5, grammar=5)
-    reviewed_hash = hash_translation_target("Why?")
+    reviewed_target = "Why?"
+    reviewed_hash = hash_translation_target(reviewed_target)
+    context_hash = compute_annotation_context_hash(
+        "bench_004", "dialogue", "どうして……？", "Why...?", reviewed_target
+    )
     mock_annotations = {
         "bench_004": {
             "id": "bench_004",
-            "reviewed_target_text": "Why?",
+            "category": "dialogue",
+            "source_text": "どうして……？",
+            "reference": "Why...?",
+            "reviewed_target_text": reviewed_target,
             "reviewed_target_hash": reviewed_hash,
+            "reviewed_context_hash": context_hash,
             "meaning_score": 5,
             "grammar_score": 5,
             "terminology_status": "Pass",
@@ -223,11 +235,24 @@ def test_structurally_valid_but_semantically_wrong_not_quality_pass():
         "reference": "Ugh... I'm so hungry...",
         "expected_behavior": "Translate weak, hungry girl dialogue.",
     }
+    reviewed_target = "Home"
+    reviewed_hash = hash_translation_target(reviewed_target)
+    context_hash = compute_annotation_context_hash(
+        "bench_015",
+        "dialogue",
+        "うぅ……おなか、すいた……",
+        "Ugh... I'm so hungry...",
+        reviewed_target,
+    )
     mock_annotations = {
         "bench_015": {
             "id": "bench_015",
-            "reviewed_target_text": "Home",
-            "reviewed_target_hash": hash_translation_target("Home"),
+            "category": "dialogue",
+            "source_text": "うぅ……おなか、すいた……",
+            "reference": "Ugh... I'm so hungry...",
+            "reviewed_target_text": reviewed_target,
+            "reviewed_target_hash": reviewed_hash,
+            "reviewed_context_hash": context_hash,
             "meaning_score": 1,
             "grammar_score": 1,
             "failure_type": "Hallucination",
@@ -254,13 +279,21 @@ def test_structurally_valid_but_semantically_wrong_not_quality_pass():
 
 
 def test_historical_gl040_1_baseline_snapshot_preserved():
-    """Verifies that the frozen GL-040.1 baseline snapshot numbers remain completely preserved."""
+    """Verifies that the frozen GL-040.1 baseline snapshot numbers and exact SHA-256 remain completely preserved."""
     repo_root = Path(__file__).resolve().parent.parent.parent
     snapshot_file = (
         repo_root / "src/gamelingo/benchmark/results/gl040_1_baseline_snapshot.json"
     )
 
     assert snapshot_file.exists(), f"Snapshot missing at {snapshot_file}"
+
+    # Byte-for-byte SHA-256 file integrity check
+    content_bytes = snapshot_file.read_bytes()
+    expected_sha256 = "024cb0d7536f22aefd10b6522f35f8c13941a36d2ae37c1885c3780496b1a361"
+    actual_sha256 = hashlib.sha256(content_bytes).hexdigest()
+    assert actual_sha256 == expected_sha256, (
+        f"Frozen snapshot SHA-256 modified! Expected {expected_sha256}, got {actual_sha256}"
+    )
 
     with open(snapshot_file, "r", encoding="utf-8") as f:
         snapshot = json.load(f)
@@ -333,7 +366,9 @@ def test_metrics_use_correct_denominators_and_deterministic():
     assert m1["intentional_passthrough"]["passthrough_exact_match_count"] == 5
 
     assert m1["placeholder_formatting_integrity"]["strings_with_markup_count"] == 25
-    assert m1["placeholder_formatting_integrity"]["markup_intact_count"] == 17
+    # 12 intact: 7 variables_tags + 5 multiline (5 multiline fail due to unexpected bracket interpolation tokens)
+    assert m1["placeholder_formatting_integrity"]["markup_intact_count"] == 12
+    assert m1["placeholder_formatting_integrity"]["markup_integrity_rate_pct"] == 48.0
 
     assert m1["human_quality_evaluation"]["reviewed_items_count"] == 100
     assert m1["human_quality_evaluation"]["pending_review_count"] == 0
@@ -620,3 +655,221 @@ def test_stale_annotations_excluded_from_quality_aggregates():
     # Average should be 4.0 (4 / 1), NOT 2.0 (4 / 2)
     assert qual["avg_meaning_score"] == 4.0
     assert qual["avg_grammar_score"] == 4.0
+
+
+def test_unexpected_target_placeholders_and_token_inventories():
+    """Regression tests for complete placeholder inventory checks: missing, duplicated, unexpected tokens, and newlines."""
+    # 1. Source %d, target %d %s (unexpected %s in target)
+    res_unexp = evaluate_placeholder_integrity("Val: %d", "Val: %d %s")
+    assert res_unexp["status"] == "Fail"
+    assert "Unexpected tokens in target" in res_unexp["details"]
+    assert "token '%s' not in source, got 1" in res_unexp["details"]
+
+    # 2. Source with no placeholders, target containing %s
+    res_none_to_unexp = evaluate_placeholder_integrity(
+        "No placeholders here", "No placeholders here %s"
+    )
+    assert res_none_to_unexp["status"] == "Fail"
+    assert res_none_to_unexp["has_markup"] is True
+    assert "Unexpected tokens in target" in res_none_to_unexp["details"]
+    assert "token '%s' not in source, got 1" in res_none_to_unexp["details"]
+
+    # 3. Source %d/%d, target %d/ (dropped occurrence of %d)
+    res_dropped = evaluate_placeholder_integrity("%d/%d", "%d/")
+    assert res_dropped["status"] == "Fail"
+    assert "Missing tokens / dropped occurrence(s)" in res_dropped["details"]
+    assert "token '%d' expected 2, got 1" in res_dropped["details"]
+
+    # 4. Correctly preserved repeated placeholders
+    res_ok = evaluate_placeholder_integrity("Score: %d of %d", "Score: %d of %d")
+    assert res_ok["status"] == "Pass"
+    assert res_ok["details"] == "All tokens and newlines preserved intact"
+
+    # 5. Duplicated tokens and missing closing tags
+    res_dup = evaluate_placeholder_integrity("%d item", "%d %d items")
+    assert res_dup["status"] == "Fail"
+    assert "Duplicated tokens" in res_dup["details"]
+    assert "token '%d' expected 1, got 2" in res_dup["details"]
+
+    res_unclosed = evaluate_placeholder_integrity("{b}Warning{/b}", "{b}Warning")
+    assert res_unclosed["status"] == "Fail"
+    assert "Missing tokens / dropped occurrence(s)" in res_unclosed["details"]
+    assert "token '{/b}' expected 1, got 0" in res_unclosed["details"]
+
+    # 6. Newline mismatches
+    res_nl_lost = evaluate_placeholder_integrity("A\nB", "A B")
+    assert res_nl_lost["status"] == "Fail"
+    assert "Newline mismatch: expected 1, got 0" in res_nl_lost["details"]
+
+    res_nl_added = evaluate_placeholder_integrity("A B", "A\nB")
+    assert res_nl_added["status"] == "Fail"
+    assert "Newline mismatch: expected 0, got 1" in res_nl_added["details"]
+    assert res_nl_added["has_markup"] is True
+
+
+def test_passthrough_metadata_validation_and_japanese_conflict():
+    """Proves passthrough metadata is strictly validated and conflicts with Japanese text are rejected."""
+    # 1. passthrough_expected=True with Japanese dialogue raises ValueError
+    item_jp_conflict = {
+        "id": "bench_001",
+        "category": "dialogue",
+        "source_text": "あぁ？　なんだよ、お前",
+        "reference": "Huh? What do you want?",
+        "passthrough_expected": True,
+    }
+    with pytest.raises(ValueError, match="cannot be treated as expected passthrough"):
+        is_passthrough_expected(item_jp_conflict)
+
+    # 2. passthrough_expected=False with ASCII identifier returns False
+    item_ascii_false = {
+        "id": "bench_094",
+        "category": "technical",
+        "source_text": "SAVE",
+        "reference": "SAVE",
+        "passthrough_expected": False,
+    }
+    assert is_passthrough_expected(item_ascii_false) is False
+
+    # 3. Missing metadata with Japanese dialogue returns False
+    item_jp_no_meta = {
+        "id": "bench_002",
+        "source_text": "セーブ",
+        "reference": "セーブ",
+    }
+    assert is_passthrough_expected(item_jp_no_meta) is False
+
+    # 4. Missing metadata with ASCII matching returns True
+    item_ascii_no_meta_same = {
+        "id": "bench_095",
+        "source_text": "SAVE",
+        "reference": "SAVE",
+    }
+    assert is_passthrough_expected(item_ascii_no_meta_same) is True
+
+    # 5. Missing metadata with ASCII differing returns False
+    item_ascii_no_meta_diff = {
+        "id": "bench_096",
+        "source_text": "START",
+        "reference": "BEGIN",
+    }
+    assert is_passthrough_expected(item_ascii_no_meta_diff) is False
+
+    # 6. Malformed string value "false" raises TypeError
+    item_str_meta = {
+        "id": "bench_097",
+        "source_text": "SAVE",
+        "reference": "SAVE",
+        "passthrough_expected": "false",
+    }
+    with pytest.raises(TypeError, match="must be a strict boolean"):
+        is_passthrough_expected(item_str_meta)
+
+    # 7. Malformed integer value 1 raises TypeError
+    item_int_meta = {
+        "id": "bench_098",
+        "source_text": "SAVE",
+        "reference": "SAVE",
+        "passthrough_expected": 1,
+    }
+    with pytest.raises(TypeError, match="must be a strict boolean"):
+        is_passthrough_expected(item_int_meta)
+
+    # 8. Verify all 100 existing dataset records satisfy schema and passthrough rules
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    dataset_file = repo_root / "src/gamelingo/benchmark/dataset_gl040_real_game.json"
+    with open(dataset_file, "r", encoding="utf-8") as f:
+        items = json.load(f)
+    assert len(items) == 100
+    for it in items:
+        validate_benchmark_item(it)
+
+
+def test_corrupted_annotation_hashes_and_missing_context_fail_closed():
+    """Proves corrupted target hashes, corrupted context hashes, and incomplete legacy annotations fail closed."""
+    item = {
+        "id": "bench_001",
+        "category": "dialogue",
+        "source_text": "テスト",
+        "reference": "Test",
+        "expected_behavior": "Translate test.",
+        "passthrough_expected": False,
+    }
+    reviewed_target = "Test"
+    valid_target_h = hash_translation_target(reviewed_target)
+    valid_context_h = compute_annotation_context_hash(
+        "bench_001", "dialogue", "テスト", "Test", reviewed_target
+    )
+
+    # Case 1: Corrupted target hash in annotation
+    annot_corrupt_target = {
+        "bench_001": {
+            "id": "bench_001",
+            "category": "dialogue",
+            "source_text": "テスト",
+            "reference": "Test",
+            "reviewed_target_text": reviewed_target,
+            "reviewed_target_hash": "corrupted_target_hash_0000",
+            "reviewed_context_hash": valid_context_h,
+            "meaning_score": 5,
+            "grammar_score": 5,
+            "evaluator_notes": "Good",
+        }
+    }
+    res_corrupt_target = evaluate_translation_item(
+        item, reviewed_target, annotations_store=annot_corrupt_target
+    )
+    assert res_corrupt_target["review_status"] == "invalid"
+    assert res_corrupt_target["meaning_score"] is None
+    assert res_corrupt_target["grammar_score"] is None
+    assert "Corrupted annotation target hash" in res_corrupt_target["evaluator_notes"]
+
+    # Case 2: Corrupted context hash in annotation
+    annot_corrupt_context = {
+        "bench_001": {
+            "id": "bench_001",
+            "category": "dialogue",
+            "source_text": "テスト",
+            "reference": "Test",
+            "reviewed_target_text": reviewed_target,
+            "reviewed_target_hash": valid_target_h,
+            "reviewed_context_hash": "corrupted_context_hash_0000",
+            "meaning_score": 5,
+            "grammar_score": 5,
+            "evaluator_notes": "Good",
+        }
+    }
+    res_corrupt_context = evaluate_translation_item(
+        item, reviewed_target, annotations_store=annot_corrupt_context
+    )
+    assert res_corrupt_context["review_status"] == "invalid"
+    assert res_corrupt_context["meaning_score"] is None
+    assert res_corrupt_context["grammar_score"] is None
+    assert "Corrupted annotation context hash" in res_corrupt_context["evaluator_notes"]
+
+    # Case 3: Legacy annotation missing required context fields
+    annot_legacy_missing = {
+        "bench_001": {
+            "id": "bench_001",
+            "reviewed_target_text": reviewed_target,
+            "reviewed_target_hash": valid_target_h,
+            "meaning_score": 5,
+            "grammar_score": 5,
+        }
+    }
+    res_legacy = evaluate_translation_item(
+        item, reviewed_target, annotations_store=annot_legacy_missing
+    )
+    assert res_legacy["review_status"] == "pending_review"
+    assert res_legacy["meaning_score"] is None
+    assert res_legacy["grammar_score"] is None
+    assert "lacks required context fields" in res_legacy["evaluator_notes"]
+
+    # Case 4: Exclusion from aggregate metrics
+    metrics = aggregate_benchmark_metrics(
+        [res_corrupt_target, res_corrupt_context, res_legacy]
+    )
+    qual = metrics["human_quality_evaluation"]
+    assert qual["reviewed_items_count"] == 0
+    assert qual["pending_review_count"] == 3
+    assert qual["avg_meaning_score"] == 0.0
+    assert qual["avg_grammar_score"] == 0.0
