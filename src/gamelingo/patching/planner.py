@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from gamelingo.adapters.renpy import detect_renpy_runtime
 from gamelingo.domain.models import TranslationRecord, TranslationUnit
 from gamelingo.safety.backup import calculate_sha256, is_safe_path
+from gamelingo.translation.validation import validate_translation
 
 
 class PlannerError(Exception):
@@ -153,6 +154,25 @@ def create_plan(
                     "status": "rejected",
                     "reason": "unapproved",
                     "details": f"Unit status is '{unit.status}', requires 'approved'",
+                }
+            )
+            continue
+
+        # Strict acceptance gate: reject translations with safety or placeholder/tag errors
+        val_issues = validate_translation(unit.source_text, translated_text)
+        error_issues = [issue for issue in val_issues if issue.severity == "error"]
+        if error_issues:
+            plan["edits"].append(
+                {
+                    "unit_id": unit.id,
+                    "file_id": unit.file_id,
+                    "file_path": rel_path if not is_renpy else target_rel_path,
+                    "locator": unit.locator,
+                    "status": "rejected",
+                    "reason": "safety_validation_failed",
+                    "details": "; ".join(
+                        f"{iss.code}: {iss.message}" for iss in error_issues
+                    ),
                 }
             )
             continue
@@ -430,6 +450,21 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
         if target in seen_targets:
             raise PlanValidationError(f"Duplicate valid edit target: {target}")
         seen_targets.add(target)
+
+        # Fail-closed check: every valid translation edit must pass safety validation
+        if edit.get("action") != "create_activation_file":
+            orig = edit.get("original_text")
+            trans = edit.get("translated_text")
+            if orig is not None and trans is not None:
+                val_issues = validate_translation(orig, trans)
+                error_issues = [iss for iss in val_issues if iss.severity == "error"]
+                if error_issues:
+                    err_msg = "; ".join(
+                        f"{iss.code}: {iss.message}" for iss in error_issues
+                    )
+                    raise PlanValidationError(
+                        f"Safety validation failed for {target}: {err_msg}"
+                    )
 
         if ".." in file_path or file_path.startswith("/") or file_path.startswith("\\"):
             raise PlanValidationError(f"Invalid path in plan: {file_path}")

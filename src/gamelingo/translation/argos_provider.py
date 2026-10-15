@@ -1,3 +1,4 @@
+import re
 from typing import List
 
 from gamelingo.translation.placeholders import MaskingError, PlaceholderProtector
@@ -6,6 +7,8 @@ from gamelingo.translation.provider import (
     TranslationRequest,
     TranslationResult,
 )
+
+_JP_CHAR_REGEX = re.compile(r"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]")
 
 
 class ArgosTranslateProvider(TranslationProvider):
@@ -88,15 +91,33 @@ class ArgosTranslateProvider(TranslationProvider):
             try:
                 translator = self._get_translator(req.source_lang, req.target_lang)
 
-                # Protect placeholders
-                protector = PlaceholderProtector()
-                masked_text = protector.mask(req.source_text)
+                # Normalize Japanese lenticular brackets 【...】 to quotes to prevent
+                # NMT from producing unescaped Ren'Py variable interpolation brackets [...]
+                text_to_translate = (
+                    req.source_text.replace("\u3010", '"').replace("\u3011", '"')
+                    if req.source_lang == "ja"
+                    else req.source_text
+                )
 
-                # Translate
-                translated_masked = translator.translate(masked_text)
+                # Multi-stage sentinel protection:
+                # 1. Try canonical 'default' (XXXTOKEN0XXX) for max compatibility.
+                # 2. On NMT token splitting/mangling, fallback to 'bracket' ([T0]).
+                # 3. If needed, fallback to 'brace' ({T0}).
+                final_text = None
+                last_mask_err = None
+                for style in ("default", "bracket", "brace"):
+                    try:
+                        protector = PlaceholderProtector(sentinel_style=style)
+                        masked_text = protector.mask(text_to_translate)
+                        translated_masked = translator.translate(masked_text)
+                        final_text = protector.restore(translated_masked)
+                        last_mask_err = None
+                        break
+                    except MaskingError as me:
+                        last_mask_err = me
 
-                # Restore
-                final_text = protector.restore(translated_masked)
+                if last_mask_err is not None:
+                    raise last_mask_err
 
                 # Fallback to source text if translation is empty or whitespace
                 if not final_text or not final_text.strip():

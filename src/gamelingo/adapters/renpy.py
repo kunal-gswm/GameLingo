@@ -44,9 +44,9 @@ NON_DIALOGUE_KEYWORDS = {
     "language",
 }
 
-# Regex to safely extract _("...") or __("...") translatable strings
+# Regex to safely extract _("..."), __("..."), or _p("...") translatable strings
 MARKED_STRING_REGEX = re.compile(
-    r'\b__?\(\s*("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')\s*\)'
+    r'\b(?:__?|_p)\(\s*("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')\s*\)'
 )
 
 # Regex to match a string literal at the beginning or after a character tag
@@ -983,6 +983,10 @@ class RenPyAdapter(GameAdapter):
         multiline_buffer: List[str] = []
         multiline_start_line = 0
         multiline_context = ""
+        in_multiline_marked = False
+        multiline_marked_delimiter = ""
+        multiline_marked_buffer: List[str] = []
+        multiline_marked_start_line = 0
         open_definition_brackets = 0
 
         i = 0
@@ -991,7 +995,34 @@ class RenPyAdapter(GameAdapter):
             line = lines[i]
             stripped = line.strip()
 
-            # Handle multiline string continuation
+            # Handle multiline marked string continuation _p("""...""") or _("""...""")
+            if in_multiline_marked:
+                multiline_marked_buffer.append(line)
+                if multiline_marked_delimiter in line:
+                    full_str_raw = "\n".join(multiline_marked_buffer)
+                    end_idx = full_str_raw.find(multiline_marked_delimiter)
+                    text_inside = full_str_raw[:end_idx]
+                    unescaped = renpy_unescape_string(
+                        multiline_marked_delimiter
+                        + text_inside
+                        + multiline_marked_delimiter
+                    )
+                    if unescaped and unescaped.strip():
+                        unit = self._create_unit(
+                            file_id,
+                            f"line:{multiline_marked_start_line}:str:0",
+                            unescaped,
+                            "Marked Paragraph _p()",
+                            archive_name=archive_name,
+                        )
+                        if unit:
+                            yield unit
+                    in_multiline_marked = False
+                    multiline_marked_buffer = []
+                i += 1
+                continue
+
+            # Handle multiline dialogue / narration string continuation
             if in_multiline_string:
                 multiline_buffer.append(line)
                 if multiline_delimiter in line:
@@ -1026,6 +1057,19 @@ class RenPyAdapter(GameAdapter):
             if not stripped:
                 i += 1
                 continue
+
+            # Check for start of multiline marked paragraph _p("""...) or _("""...)
+            marked_multi_m = re.search(r'\b(?:__?|_p)\(\s*("""|\'\'\')', line)
+            if marked_multi_m:
+                delim = marked_multi_m.group(1)
+                after_open = line[marked_multi_m.end() :]
+                if delim not in after_open:
+                    in_multiline_marked = True
+                    multiline_marked_delimiter = delim
+                    multiline_marked_buffer = [after_open]
+                    multiline_marked_start_line = line_num
+                    i += 1
+                    continue
 
             # Track multi-line define / default data structure containers
             if open_definition_brackets > 0:
@@ -1250,7 +1294,7 @@ class RenPyAdapter(GameAdapter):
             # Check for Character Dialogue:
             # Format: <who> "Dialogue" or <who> <attributes> "Dialogue"
             char_match = re.match(
-                r"^([a-zA-Z0-9_]+(?:\s+[a-zA-Z0-9_]+)*)\s+("
+                r"^([a-zA-Z0-9_]+(?:\s+(?:[@\-]?[a-zA-Z0-9_]+|@))*)\s+("
                 r'"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\''
                 r")$",
                 clean_line,
@@ -1342,7 +1386,26 @@ class RenPyAdapter(GameAdapter):
         # 1. text statement (e.g., text "採取量" xpos ... or text "集中 [focus] / [focus_max]")
         if clean.startswith(("text ", "text\t")):
             rest = clean[4:].strip()
-            # 1a. String literal argument
+            # 1a. Ternary conditional text: text "A" if cond else "B" or text ("A" if cond else "B")
+            if " if " in rest and " else " in rest:
+                sub_idx = 0
+                for sm in STRING_LITERAL_REGEX.finditer(rest):
+                    val = renpy_unescape_string(sm.group(1))
+                    if val and not is_asset_or_code(val) and val not in seen_texts:
+                        unit = self._create_unit(
+                            file_id,
+                            f"line:{line_num}:screen:{screen_name}:text:{sub_idx}",
+                            val,
+                            f"Screen: {screen_name} (text)",
+                            archive_name=archive_name,
+                        )
+                        if unit:
+                            seen_texts.add(val)
+                            yield unit
+                            sub_idx += 1
+                return
+
+            # 1b. Single string literal argument
             m = STRING_LITERAL_REGEX.match(rest)
             if m:
                 val = renpy_unescape_string(m.group(1))
