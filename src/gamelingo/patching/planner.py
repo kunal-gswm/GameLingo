@@ -91,7 +91,7 @@ def create_plan(
     )
 
     plan = {
-        "version": "1.0",
+        "version": "1.1",
         "plan_id": str(uuid.uuid4()),
         "created_at": time.time(),
         "project_id": str(project_id).strip(),
@@ -177,31 +177,28 @@ def create_plan(
             if r.source_hash is not None and r.source_hash == unit.source_hash
         ]
 
-        if not matching_records:
-            if (
-                len(unit_records) == 1
-                and unit_records[0].source_hash is None
-                and not any(r.source_hash is not None for r in records)
-            ):
-                record = unit_records[0]
-            else:
-                plan["edits"].append(
-                    {
-                        "unit_id": unit.id,
-                        "file_id": unit.file_id,
-                        "file_path": rel_path if not is_renpy else target_rel_path,
-                        "locator": unit.locator,
-                        "status": "rejected",
-                        "reason": "missing_current_translation",
-                        "details": (
-                            f"No translation record matches current unit source_hash '{unit.source_hash}'. "
-                            f"Found {len(unit_records)} historical/legacy record(s)."
-                        ),
-                    }
-                )
-                continue
-        else:
+        if matching_records:
             record = matching_records[0]
+        elif len(unit_records) == 1 and unit_records[0].source_hash is None:
+            # Unambiguous legacy record: exactly one record exists for this unit and has no source_hash.
+            # Its eligibility is evaluated per-unit, independent of unrelated units.
+            record = unit_records[0]
+        else:
+            plan["edits"].append(
+                {
+                    "unit_id": unit.id,
+                    "file_id": unit.file_id,
+                    "file_path": rel_path if not is_renpy else target_rel_path,
+                    "locator": unit.locator,
+                    "status": "rejected",
+                    "reason": "missing_current_translation",
+                    "details": (
+                        f"No translation record matches current unit source_hash '{unit.source_hash}'. "
+                        f"Found {len(unit_records)} historical/legacy record(s)."
+                    ),
+                }
+            )
+            continue
 
         approval_errors = record.validate_for_approval()
         if approval_errors:

@@ -72,7 +72,7 @@ def test_create_valid_plan(plan_setup):
         __u.status = "approved"
     plan = create_plan(source_root, "proj1", units, records)
 
-    assert plan["version"] == "1.0"
+    assert plan["version"] == "1.1"
     assert len(plan["edits"]) == 2
     assert all(e["status"] == "valid" for e in plan["edits"])
 

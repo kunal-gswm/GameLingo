@@ -226,6 +226,7 @@ class ExportImportService:
                             "action": "update",
                             "new_text": translated_text,
                             "old_status": db_unit["status"],
+                            "source_hash": source_hash,
                         }
                     )
 
@@ -275,6 +276,26 @@ class ExportImportService:
                 if not unit:
                     raise ValueError(f"Unit {unit_id} not found during apply.")
 
+                # Validate the unit's project and current source hash immediately before writing
+                if (
+                    project_id
+                    and unit.get("project_id")
+                    and unit.get("project_id") != project_id
+                ):
+                    raise ValueError(
+                        f"Project mismatch during apply: unit belongs to '{unit.get('project_id')}', but expected '{project_id}'."
+                    )
+
+                row_source_hash = u.get("source_hash")
+                if (
+                    row_source_hash
+                    and unit.get("source_hash")
+                    and unit["source_hash"] != row_source_hash
+                ):
+                    raise ValueError(
+                        f"Stale source during apply for unit {unit_id}: database hash '{unit.get('source_hash')}' differs from imported hash '{row_source_hash}'."
+                    )
+
                 adapter_id = unit.get("adapter_id")
                 if not adapter_id:
                     if unit.get("file_id", "").endswith(".json"):
@@ -312,19 +333,44 @@ class ExportImportService:
                     (new_status, unit_id),
                 )
 
-                cur = conn.execute(
-                    "SELECT id FROM translation_records WHERE unit_id = ?", (unit_id,)
-                )
-                record = cur.fetchone()
+                # Update only the current-source translation record, or insert one with current source_hash
+                curr_hash = unit.get("source_hash")
+                record = None
+                if curr_hash is not None:
+                    cur = conn.execute(
+                        "SELECT rowid FROM translation_records WHERE unit_id = ? AND source_hash = ? ORDER BY updated_at DESC, created_at DESC, rowid DESC LIMIT 1",
+                        (unit_id, curr_hash),
+                    )
+                    record = cur.fetchone()
+                    if not record:
+                        # Check for single legacy record with NULL source_hash
+                        cur_legacy = conn.execute(
+                            "SELECT rowid FROM translation_records WHERE unit_id = ? AND source_hash IS NULL AND (SELECT COUNT(*) FROM translation_records WHERE unit_id = ?) = 1",
+                            (unit_id, unit_id),
+                        )
+                        record = cur_legacy.fetchone()
+                else:
+                    cur = conn.execute(
+                        "SELECT rowid FROM translation_records WHERE unit_id = ? AND source_hash IS NULL ORDER BY updated_at DESC, created_at DESC, rowid DESC LIMIT 1",
+                        (unit_id,),
+                    )
+                    record = cur.fetchone()
                 now = time.time()
-                if record:
+                if record and record["rowid"] is not None:
                     conn.execute(
-                        "UPDATE translation_records SET final_text = ?, quality_flags = ?, updated_at = ? WHERE unit_id = ?",
-                        (new_text, quality_flags, now, unit_id),
+                        "UPDATE translation_records SET draft_text = ?, final_text = ?, quality_flags = ?, source_hash = ?, updated_at = ? WHERE rowid = ?",
+                        (
+                            new_text,
+                            new_text,
+                            quality_flags,
+                            curr_hash,
+                            now,
+                            record["rowid"],
+                        ),
                     )
                 else:
                     conn.execute(
-                        "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, source_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         (
                             str(uuid.uuid4()),
                             unit_id,
@@ -333,6 +379,7 @@ class ExportImportService:
                             new_text,
                             new_text,
                             quality_flags,
+                            curr_hash,
                             now,
                             now,
                         ),

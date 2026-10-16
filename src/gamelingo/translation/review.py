@@ -16,13 +16,27 @@ class ReviewService:
     ) -> List[Dict[str, Any]]:
         """Returns translation units with their latest record, filtered by status."""
         query = """
-            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.tokens_json, u.status, 
+            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.tokens_json, u.status, u.source_hash, u.project_id,
                    p.adapter_id,
-                   r.final_text as translated_text, r.quality_flags
+                   r.id as record_id, r.rowid as record_rowid, r.final_text as translated_text, r.quality_flags
             FROM translation_units u
             LEFT JOIN game_files gf ON gf.id = u.file_id
             LEFT JOIN projects p ON p.id = gf.project_id
-            LEFT JOIN translation_records r ON r.unit_id = u.id AND (r.source_hash IS NULL OR r.source_hash = u.source_hash)
+            LEFT JOIN translation_records r ON r.rowid = (
+                SELECT r2.rowid FROM translation_records r2
+                WHERE r2.unit_id = u.id
+                  AND (
+                      (u.source_hash IS NOT NULL AND r2.source_hash = u.source_hash)
+                      OR (u.source_hash IS NULL AND r2.source_hash IS NULL)
+                      OR (
+                          r2.source_hash IS NULL
+                          AND (SELECT COUNT(*) FROM translation_records r3 WHERE r3.unit_id = u.id) = 1
+                      )
+                  )
+                ORDER BY (CASE WHEN r2.source_hash = u.source_hash THEN 0 WHEN r2.source_hash IS NULL THEN 1 ELSE 2 END) ASC,
+                         r2.updated_at DESC, r2.created_at DESC, r2.rowid DESC
+                LIMIT 1
+            )
         """
         conditions = []
         params = []
@@ -54,11 +68,25 @@ class ReviewService:
         query = """
             SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.tokens_json, u.status, u.source_hash, u.project_id,
                    p.adapter_id,
-                   r.draft_text, r.final_text as translated_text, r.quality_flags, r.provider, r.model
+                   r.id as record_id, r.rowid as record_rowid, r.draft_text, r.final_text as translated_text, r.quality_flags, r.provider, r.model, r.source_hash as record_source_hash
             FROM translation_units u
             LEFT JOIN game_files gf ON gf.id = u.file_id
             LEFT JOIN projects p ON p.id = gf.project_id
-            LEFT JOIN translation_records r ON r.unit_id = u.id AND (r.source_hash IS NULL OR r.source_hash = u.source_hash)
+            LEFT JOIN translation_records r ON r.rowid = (
+                SELECT r2.rowid FROM translation_records r2
+                WHERE r2.unit_id = u.id
+                  AND (
+                      (u.source_hash IS NOT NULL AND r2.source_hash = u.source_hash)
+                      OR (u.source_hash IS NULL AND r2.source_hash IS NULL)
+                      OR (
+                          r2.source_hash IS NULL
+                          AND (SELECT COUNT(*) FROM translation_records r3 WHERE r3.unit_id = u.id) = 1
+                      )
+                  )
+                ORDER BY (CASE WHEN r2.source_hash = u.source_hash THEN 0 WHEN r2.source_hash IS NULL THEN 1 ELSE 2 END) ASC,
+                         r2.updated_at DESC, r2.created_at DESC, r2.rowid DESC
+                LIMIT 1
+            )
             WHERE u.id = ?
         """
         cur = conn.execute(query, (unit_id,))
@@ -135,23 +163,40 @@ class ReviewService:
                 (new_status, unit_id),
             )
 
-            # Update record
-            # If no record exists for this unit and source_hash, insert a new one.
-            cur = conn.execute(
-                "SELECT id FROM translation_records WHERE unit_id = ? AND (source_hash IS NULL OR source_hash = ?)",
-                (unit_id, unit["source_hash"]),
-            )
-            record = cur.fetchone()
-            now = time.time()
-            if record and record["id"] is not None:
-                conn.execute(
-                    "UPDATE translation_records SET final_text = ?, quality_flags = ?, source_hash = ?, updated_at = ? WHERE id = ?",
-                    (new_text, quality_flags, unit["source_hash"], now, record["id"]),
+            # Update record for the current source_hash or insert a new record with this source_hash
+            curr_hash = unit.get("source_hash")
+            record = None
+            if curr_hash is not None:
+                cur = conn.execute(
+                    "SELECT rowid FROM translation_records WHERE unit_id = ? AND source_hash = ? ORDER BY updated_at DESC, created_at DESC, rowid DESC LIMIT 1",
+                    (unit_id, curr_hash),
                 )
-            elif record:
+                record = cur.fetchone()
+                if not record:
+                    # Check for single legacy record with NULL source_hash
+                    cur_legacy = conn.execute(
+                        "SELECT rowid FROM translation_records WHERE unit_id = ? AND source_hash IS NULL AND (SELECT COUNT(*) FROM translation_records WHERE unit_id = ?) = 1",
+                        (unit_id, unit_id),
+                    )
+                    record = cur_legacy.fetchone()
+            else:
+                cur = conn.execute(
+                    "SELECT rowid FROM translation_records WHERE unit_id = ? AND source_hash IS NULL ORDER BY updated_at DESC, created_at DESC, rowid DESC LIMIT 1",
+                    (unit_id,),
+                )
+                record = cur.fetchone()
+            now = time.time()
+            if record and record["rowid"] is not None:
                 conn.execute(
-                    "UPDATE translation_records SET final_text = ?, quality_flags = ?, source_hash = ?, updated_at = ? WHERE unit_id = ?",
-                    (new_text, quality_flags, unit["source_hash"], now, unit_id),
+                    "UPDATE translation_records SET draft_text = ?, final_text = ?, quality_flags = ?, source_hash = ?, updated_at = ? WHERE rowid = ?",
+                    (
+                        new_text,
+                        new_text,
+                        quality_flags,
+                        curr_hash,
+                        now,
+                        record["rowid"],
+                    ),
                 )
             else:
                 import uuid
@@ -166,7 +211,7 @@ class ReviewService:
                         new_text,
                         new_text,
                         quality_flags,
-                        unit["source_hash"],
+                        curr_hash,
                         now,
                         now,
                     ),
@@ -178,7 +223,11 @@ class ReviewService:
         if not unit:
             raise ValueError(f"Unit {unit_id} not found")
 
-        text = unit.get("translated_text") or ""
+        text = (unit.get("translated_text") or "").strip()
+        if not text:
+            raise ValueError(
+                f"Cannot approve unit {unit_id}: translation cannot be empty or missing for current source."
+            )
         record = TranslationRecord(
             id=unit.get("record_id") or unit["id"],
             unit_id=unit["id"],
@@ -286,24 +335,25 @@ class ReviewService:
                 (unit_id,),
             )
             if reason:
-                # Store reason in quality_flags or audit log
-                # For minimal extension, append to quality_flags
-                cur = conn.execute(
-                    "SELECT quality_flags FROM translation_records WHERE unit_id = ?",
-                    (unit_id,),
-                )
-                row = cur.fetchone()
-                if row:
-                    flags = []
-                    if row["quality_flags"]:
-                        try:
-                            flags = json.loads(row["quality_flags"])
-                        except json.JSONDecodeError:
-                            pass
-                    flags.append(
-                        {"code": "REJECTED", "severity": "error", "message": reason}
+                unit = self.get_unit(unit_id)
+                rec_rowid = unit.get("record_rowid") if unit else None
+                if rec_rowid is not None:
+                    cur = conn.execute(
+                        "SELECT quality_flags FROM translation_records WHERE rowid = ?",
+                        (rec_rowid,),
                     )
-                    conn.execute(
-                        "UPDATE translation_records SET quality_flags = ? WHERE unit_id = ?",
-                        (json.dumps(flags), unit_id),
-                    )
+                    row = cur.fetchone()
+                    if row:
+                        flags = []
+                        if row["quality_flags"]:
+                            try:
+                                flags = json.loads(row["quality_flags"])
+                            except json.JSONDecodeError:
+                                pass
+                        flags.append(
+                            {"code": "REJECTED", "severity": "error", "message": reason}
+                        )
+                        conn.execute(
+                            "UPDATE translation_records SET quality_flags = ? WHERE rowid = ?",
+                            (json.dumps(flags), rec_rowid),
+                        )

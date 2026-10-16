@@ -10,6 +10,7 @@ from gamelingo.translation.provider import (
     TranslationProvider,
     TranslationRequest,
 )
+from gamelingo.translation.validation import validate_translation
 
 
 def _hash_text(text: str) -> str:
@@ -110,13 +111,41 @@ class TranslationPipeline:
                 unit.source_text, source_lang, target_lang, unit.context
             )
             if cached:
-                # already cached, save a TranslationRecord immediately
+                # Resolve exact current source_hash from translation_units for provenance consistency
+                cur = conn.execute(
+                    "SELECT source_hash FROM translation_units WHERE id = ?",
+                    (unit.id,),
+                )
+                row = cur.fetchone()
+                s_hash = (
+                    row["source_hash"]
+                    if row and row["source_hash"]
+                    else unit.source_hash
+                )
+
+                issues = validate_translation(unit.source_text, cached)
+                quality_flags = json.dumps(
+                    [
+                        {
+                            "code": i.code,
+                            "severity": i.severity,
+                            "message": i.message,
+                        }
+                        for i in issues
+                    ]
+                )
+                has_errors = any(i.severity == "error" for i in issues)
+                new_status = (
+                    "failed" if has_errors else ("needs_review" if issues else "draft")
+                )
+
+                # already cached, save a TranslationRecord immediately and update unit status
                 with conn:
                     conn.execute(
                         """
-                        INSERT OR IGNORE INTO translation_records 
-                        (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO translation_records 
+                        (id, unit_id, provider, model, draft_text, final_text, quality_flags, source_hash, created_at, updated_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             str(uuid.uuid4()),
@@ -125,10 +154,15 @@ class TranslationPipeline:
                             "cache",
                             cached,
                             cached,
-                            "",
+                            quality_flags,
+                            s_hash,
                             time.time(),
                             time.time(),
                         ),
+                    )
+                    conn.execute(
+                        "UPDATE translation_units SET status = ? WHERE id = ?",
+                        (new_status, unit.id),
                     )
                 continue
 
@@ -323,13 +357,24 @@ class TranslationPipeline:
                                 f"{res.provider}/{res.model}",
                             )
 
-                            # 2. write translation records for all dup units
+                            # 2. write translation records for all dup units, resolving individual provenance
                             for unit_id in req_data["unit_ids"]:
+                                cur = conn.execute(
+                                    "SELECT source_hash FROM translation_units WHERE id = ?",
+                                    (unit_id,),
+                                )
+                                row = cur.fetchone()
+                                s_hash = (
+                                    row["source_hash"]
+                                    if row and row["source_hash"]
+                                    else None
+                                )
+
                                 conn.execute(
                                     """
-                                    INSERT OR REPLACE INTO translation_records 
-                                    (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) 
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                    INSERT INTO translation_records 
+                                    (id, unit_id, provider, model, draft_text, final_text, quality_flags, source_hash, created_at, updated_at) 
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                     """,
                                     (
                                         str(uuid.uuid4()),
@@ -348,6 +393,7 @@ class TranslationPipeline:
                                                 for i in issues
                                             ]
                                         ),
+                                        s_hash,
                                         time.time(),
                                         time.time(),
                                     ),
