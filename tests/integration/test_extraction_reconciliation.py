@@ -3,20 +3,29 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from PySide6.QtWidgets import QApplication, QLabel
 
 from gamelingo.app import cmd_extract
 from gamelingo.domain.models import TranslationRecord, TranslationUnit
-from gamelingo.gui.pages.extraction_page import ExtractionPage, ExtractionWorker
-from gamelingo.gui.state import AppState
 from gamelingo.patching.planner import create_plan
 from gamelingo.services.extraction import ExtractionService
 from gamelingo.storage.database import Database
 from gamelingo.translation.review import ReviewService
 
+try:
+    from PySide6.QtWidgets import QApplication, QLabel
+
+    from gamelingo.gui.pages.extraction_page import ExtractionPage, ExtractionWorker
+    from gamelingo.gui.state import AppState
+
+    HAS_PYSIDE6 = True
+except ImportError:
+    HAS_PYSIDE6 = False
+
 
 @pytest.fixture
 def qapp():
+    if not HAS_PYSIDE6:
+        pytest.skip("PySide6 not installed")
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
@@ -426,6 +435,7 @@ def test_database_publication_failure_rolls_back_all_changes(tmp_path: Path):
     assert cur.fetchone()["c"] == res1.active_units
 
 
+@pytest.mark.skipif(not HAS_PYSIDE6, reason="PySide6 not installed")
 def test_gui_and_cli_parity(tmp_path: Path, qapp):
     game_dir = tmp_path / "game"
     create_synthetic_rpgmaker_game(game_dir, ["Parity Line 1", "Parity Line 2"])
@@ -474,6 +484,7 @@ def test_gui_and_cli_parity(tmp_path: Path, qapp):
     assert cli_dict == gui_dict
 
 
+@pytest.mark.skipif(not HAS_PYSIDE6, reason="PySide6 not installed")
 def test_ui_file_and_unit_count_semantics(tmp_path: Path, qapp):
     game_dir = tmp_path / "game"
     create_synthetic_rpgmaker_game(game_dir, ["Count 1", "Count 2"])
