@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from gamelingo.adapters.renpy import detect_renpy_runtime
 from gamelingo.adapters.renpy_strings import (
@@ -85,6 +85,7 @@ def apply_plan(
     backup_root: Path,
     execute: bool = False,
     overwrite: bool = False,
+    expected_project_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Applies or previews a patch plan.
@@ -109,6 +110,27 @@ def apply_plan(
     except Exception as e:
         report["status"] = "failed"
         report["errors"].append(f"Source root does not exist: {str(e)}")
+        return report
+
+    plan_root_str = plan.get("target_root")
+    if plan_root_str:
+        plan_root = Path(plan_root_str).resolve()
+        if plan_root != source_root_resolved:
+            report["status"] = "failed"
+            report["errors"].append(
+                f"Plan target root mismatch: plan was created for '{plan_root}', but target is '{source_root_resolved}'."
+            )
+            return report
+
+    if (
+        expected_project_id
+        and plan.get("project_id")
+        and plan.get("project_id") != expected_project_id
+    ):
+        report["status"] = "failed"
+        report["errors"].append(
+            f"Plan project ID mismatch: plan belongs to project '{plan.get('project_id')}', but expected '{expected_project_id}'."
+        )
         return report
 
     is_renpy = plan.get("adapter_id") == "renpy"
@@ -178,7 +200,7 @@ def apply_plan(
 
     # Preflight Validation
     try:
-        validate_plan(source_root, plan)
+        validate_plan(source_root, plan, expected_project_id=expected_project_id)
     except Exception as e:
         report["status"] = "failed"
         report["errors"].append(f"Plan validation failed: {str(e)}")

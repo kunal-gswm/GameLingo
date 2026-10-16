@@ -273,13 +273,21 @@ class ExtractionPage(QWidget):
         if self.state.db:
             try:
                 conn = self.state.db.connect()
-                cur = conn.execute(
-                    "SELECT COUNT(*) as c FROM translation_units WHERE is_active = 1"
-                )
-                c = cur.fetchone()["c"]
+                project_id = self.state.get_project_id()
+                c = 0
+                if project_id and self.state.game_path:
+                    cur = conn.execute(
+                        "SELECT COUNT(*) as c FROM translation_units WHERE is_active = 1 AND project_id = ?",
+                        (project_id,),
+                    )
+                    c = cur.fetchone()["c"]
                 val_active = self.box_active.findChild(QLabel, "val_label")
                 if val_active:
                     val_active.setText(str(c))
+
+                val_extracted = self.box_count.findChild(QLabel, "val_label")
+                if val_extracted and self.worker is None:
+                    val_extracted.setText("0")
 
                 db_lbl = self.box_db.findChild(QLabel, "val_label")
                 if db_lbl:
@@ -361,6 +369,9 @@ class ExtractionPage(QWidget):
         self.btn_cancel.setEnabled(False)
         self.lbl_status.setText("Extraction was cancelled by user.")
         self._set_pill("Cancelled", "warning")
+        val_extracted = self.box_count.findChild(QLabel, "val_label")
+        if val_extracted:
+            val_extracted.setText("0")
         self.refresh()
 
     def on_finished(self, count):
@@ -370,20 +381,23 @@ class ExtractionPage(QWidget):
         self.btn_extract.setEnabled(True)
         self.btn_cancel.setEnabled(False)
 
+        project_id = res.project_id if res else self.state.get_project_id()
         active_count = count
         obsolete_count = 0
         if res:
             active_count = res.active_units
             obsolete_count = res.obsolete_units
-        elif self.state.db:
+        elif self.state.db and project_id:
             try:
                 conn = self.state.db.connect()
                 cur = conn.execute(
-                    "SELECT COUNT(*) as c FROM translation_units WHERE is_active = 1"
+                    "SELECT COUNT(*) as c FROM translation_units WHERE is_active = 1 AND project_id = ?",
+                    (project_id,),
                 )
                 active_count = cur.fetchone()["c"]
                 cur_obs = conn.execute(
-                    "SELECT COUNT(*) as c FROM translation_units WHERE is_active = 0"
+                    "SELECT COUNT(*) as c FROM translation_units WHERE is_active = 0 AND project_id = ?",
+                    (project_id,),
                 )
                 obsolete_count = cur_obs.fetchone()["c"]
             except Exception:
@@ -425,5 +439,8 @@ class ExtractionPage(QWidget):
         self.btn_cancel.setEnabled(False)
         self.lbl_status.setText(f"Extraction failed: {err_msg}")
         self._set_pill("Failed", "danger")
+        val_extracted = self.box_count.findChild(QLabel, "val_label")
+        if val_extracted:
+            val_extracted.setText("0")
         self.refresh()
         QMessageBox.critical(self, "Error", f"Extraction failed:\n{err_msg}")

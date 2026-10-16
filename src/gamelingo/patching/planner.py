@@ -87,6 +87,7 @@ def create_plan(
         "plan_id": str(uuid.uuid4()),
         "created_at": time.time(),
         "project_id": project_id,
+        "target_root": str(source_root_resolved),
         "adapter_id": "renpy" if is_renpy else "rpgmaker_mv_mz",
         "edits": [],
         "validation_errors": [],
@@ -459,7 +460,11 @@ def create_plan(
     return plan
 
 
-def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
+def validate_plan(
+    source_root: Path,
+    plan: Dict[str, Any],
+    expected_project_id: Optional[str] = None,
+) -> bool:
     """
     Validates a plan against the filesystem without modifying anything.
     Throws PlanValidationError if malformed or unsafe.
@@ -471,6 +476,23 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
         source_root_resolved = source_root.resolve(strict=True)
     except OSError:
         raise PlanValidationError("Source root does not exist.")
+
+    plan_root_str = plan.get("target_root")
+    if plan_root_str:
+        plan_root = Path(plan_root_str).resolve()
+        if plan_root != source_root_resolved:
+            raise PlanValidationError(
+                f"Plan target root mismatch: plan was created for '{plan_root}', but target is '{source_root_resolved}'."
+            )
+
+    if (
+        expected_project_id
+        and plan.get("project_id")
+        and plan.get("project_id") != expected_project_id
+    ):
+        raise PlanValidationError(
+            f"Plan project ID mismatch: plan belongs to project '{plan.get('project_id')}', but expected '{expected_project_id}'."
+        )
 
     is_renpy = plan.get("adapter_id") == "renpy"
     edits = plan.get("edits", [])

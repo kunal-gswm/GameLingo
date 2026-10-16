@@ -17,6 +17,7 @@ class ExtractionResult:
     obsolete_units: int
     updated_units: int
     retained_units: int
+    added_units: int = 0
     warnings: List[str] = field(default_factory=list)
 
 
@@ -144,31 +145,6 @@ class ExtractionService:
         conn = self.db.connect()
         resolved_proj_id = self.resolve_project_id(conn, game_path, project_id)
 
-        # Upsert project metadata
-        proj_title = title or (game_path.name if game_path.name else "Game Project")
-        adapter_id = getattr(adapter, "adapter_id", "rpgmaker_mv_mz")
-        with conn:
-            cur = conn.execute(
-                "SELECT id FROM projects WHERE id = ?", (resolved_proj_id,)
-            )
-            if not cur.fetchone():
-                conn.execute(
-                    "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                    (
-                        resolved_proj_id,
-                        proj_title,
-                        str(game_path.resolve()),
-                        adapter_id,
-                        "1.0",
-                        time.time(),
-                    ),
-                )
-            else:
-                conn.execute(
-                    "UPDATE projects SET install_path = ?, adapter_id = ? WHERE id = ?",
-                    (str(game_path.resolve()), adapter_id, resolved_proj_id),
-                )
-
         self._create_staging_tables(conn)
 
         try:
@@ -217,7 +193,12 @@ class ExtractionService:
 
             # Atomic publication & reconciliation
             result = self._publish_and_reconcile(
-                conn, resolved_proj_id, adapter, extracted_count
+                conn,
+                resolved_proj_id,
+                adapter,
+                extracted_count,
+                game_path,
+                title=title,
             )
             return result
 
@@ -266,9 +247,37 @@ class ExtractionService:
                 )
 
     def _publish_and_reconcile(
-        self, conn, project_id: str, adapter, staging_count: int
+        self,
+        conn,
+        project_id: str,
+        adapter,
+        staging_count: int,
+        game_path: Path,
+        title: Optional[str] = None,
     ) -> ExtractionResult:
         with conn:
+            # 0. Upsert project metadata atomically inside the publication transaction
+            proj_title = title or (game_path.name if game_path.name else "Game Project")
+            adapter_id = getattr(adapter, "adapter_id", "rpgmaker_mv_mz")
+            cur = conn.execute("SELECT id FROM projects WHERE id = ?", (project_id,))
+            if not cur.fetchone():
+                conn.execute(
+                    "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        project_id,
+                        proj_title,
+                        str(game_path.resolve()),
+                        adapter_id,
+                        "1.0",
+                        time.time(),
+                    ),
+                )
+            else:
+                conn.execute(
+                    "UPDATE projects SET install_path = ?, adapter_id = ? WHERE id = ?",
+                    (str(game_path.resolve()), adapter_id, project_id),
+                )
+
             # 1. Identify obsolete units (active units for this project missing from staging)
             cur = conn.execute(
                 """
@@ -288,7 +297,17 @@ class ExtractionService:
                     tuple(obsolete_ids),
                 )
 
-            # 2. Identify modified source units (units in staging whose source_hash differs from existing)
+            # 2. Identify newly added units (in staging, but not previously in translation_units for this project)
+            cur = conn.execute(
+                """
+                SELECT COUNT(*) as c FROM staging_translation_units s
+                WHERE s.id NOT IN (SELECT id FROM translation_units WHERE project_id = ?)
+                """,
+                (project_id,),
+            )
+            added_count = cur.fetchone()["c"]
+
+            # 3. Identify modified source units (units in staging whose source_hash differs from existing)
             cur = conn.execute(
                 """
                 SELECT s.id, s.source_hash as new_hash, u.source_hash as old_hash
@@ -305,13 +324,23 @@ class ExtractionService:
             for ch in changed_rows:
                 u_id = ch["id"]
                 old_h = ch["old_hash"]
-                # Backfill source_hash on old translation_records if not set
                 conn.execute(
-                    "UPDATE translation_records SET source_hash = ? WHERE unit_id = ? AND source_hash IS NULL",
+                    "UPDATE translation_records SET source_hash = ? WHERE unit_id = ? AND (source_hash IS NULL OR source_hash = '')",
                     (old_h, u_id),
                 )
 
-            # 3. Publish staging_game_files
+            # 4. Identify retained units (staged units that already exist in translation_units with unchanged source_hash)
+            cur = conn.execute(
+                """
+                SELECT COUNT(*) as c FROM staging_translation_units s
+                JOIN translation_units u ON u.id = s.id
+                WHERE u.source_hash = s.source_hash AND u.project_id = ?
+                """,
+                (project_id,),
+            )
+            retained_count = cur.fetchone()["c"]
+
+            # 5. Publish staging_game_files
             conn.execute("""
                 INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at)
                 SELECT id, project_id, relative_path, format, source_hash, size, detected_at FROM staging_game_files
@@ -322,7 +351,7 @@ class ExtractionService:
                     detected_at = excluded.detected_at
             """)
 
-            # 4. Publish staging_translation_units
+            # 6. Publish staging_translation_units
             conn.execute("""
                 INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status, project_id, is_active)
                 SELECT id, file_id, locator, source_text, context, tokens_json, source_hash, status, project_id, 1
@@ -343,19 +372,15 @@ class ExtractionService:
                     source_hash = excluded.source_hash
             """)
 
-            # 5. Clean staging tables
+            # 7. Clean staging tables
             self._clean_staging_tables(conn)
 
-            # 6. Count active units in DB for this project
+            # 8. Count active units in DB for this project
             cur = conn.execute(
                 "SELECT COUNT(*) as c FROM translation_units WHERE project_id = ? AND is_active = 1",
                 (project_id,),
             )
             active_count = cur.fetchone()["c"]
-
-            # Retained units = staging_count - updated_count - new_count
-            # More simply: retained = active_count - updated_count - newly_added
-            retained_count = staging_count - updated_count
 
             return ExtractionResult(
                 project_id=project_id,
@@ -364,5 +389,6 @@ class ExtractionService:
                 obsolete_units=obsolete_count,
                 updated_units=updated_count,
                 retained_units=retained_count,
+                added_units=added_count,
                 warnings=list(getattr(adapter, "warnings", [])),
             )

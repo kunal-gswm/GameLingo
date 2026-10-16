@@ -1,4 +1,3 @@
-import time
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
@@ -611,30 +610,20 @@ class DashboardPage(QWidget):
         if self.state.db:
             try:
                 conn = self.state.db.connect()
-                proj_clause = ""
-                params = []
-                if self.state.game_path:
-                    p_cur = conn.execute(
-                        "SELECT id FROM projects WHERE install_path = ?",
-                        (str(self.state.game_path.resolve()),),
-                    )
-                    p_row = p_cur.fetchone()
-                    if p_row:
-                        proj_clause = "AND (project_id = ? OR ? = 'default')"
-                        params = [p_row["id"], p_row["id"]]
-
-                query = f"SELECT status, COUNT(*) as c FROM translation_units WHERE is_active = 1 {proj_clause} GROUP BY status"
-                cur = conn.execute(query, tuple(params))
-                for r in cur.fetchall():
-                    st = r["status"]
-                    c = r["c"]
-                    total_units += c
-                    if st == "untranslated":
-                        untranslated_units += c
-                    elif st in ("draft", "needs_review", "rejected", "failed"):
-                        draft_units += c
-                    elif st == "approved":
-                        approved_units += c
+                project_id = self.state.get_project_id()
+                if project_id and self.state.game_path:
+                    query = "SELECT status, COUNT(*) as c FROM translation_units WHERE is_active = 1 AND project_id = ? GROUP BY status"
+                    cur = conn.execute(query, (project_id,))
+                    for r in cur.fetchall():
+                        st = r["status"]
+                        c = r["c"]
+                        total_units += c
+                        if st == "untranslated":
+                            untranslated_units += c
+                        elif st in ("draft", "needs_review", "rejected", "failed"):
+                            draft_units += c
+                        elif st == "approved":
+                            approved_units += c
             except Exception:
                 pass
 
@@ -736,29 +725,21 @@ class DashboardPage(QWidget):
             adapter, version, conf = detect_adapter(path)
             if adapter and conf > 0.0:
                 self.selected_invalid_game_path = None
-                self.state.game_path = path
+                self.state.set_game_path(path)
 
-                # Update DB
-                conn = self.state.db.connect()
-                with conn:
-                    cur = conn.execute("SELECT id FROM projects WHERE id = 'default'")
-                    if not cur.fetchone():
-                        conn.execute(
-                            "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                            (
-                                "default",
-                                "Default Project",
-                                str(path),
-                                adapter.adapter_id,
-                                "1.0",
-                                time.time(),
-                            ),
-                        )
-                    else:
-                        conn.execute(
-                            "UPDATE projects SET install_path = ?, adapter_id = ? WHERE id = 'default'",
-                            (str(path), adapter.adapter_id),
-                        )
+                # Bind default project only if default exists and has no install_path
+                if self.state.db:
+                    conn = self.state.db.connect()
+                    cur = conn.execute(
+                        "SELECT id, install_path FROM projects WHERE id = 'default'"
+                    )
+                    def_row = cur.fetchone()
+                    if def_row and not def_row["install_path"]:
+                        with conn:
+                            conn.execute(
+                                "UPDATE projects SET install_path = ?, adapter_id = ? WHERE id = 'default'",
+                                (str(path.resolve()), adapter.adapter_id),
+                            )
 
                 self.refresh()
                 self.game_selected.emit()

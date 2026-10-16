@@ -370,9 +370,11 @@ class TranslationPage(QWidget):
     def load_jobs(self):
         if not self.state.db:
             return
+        project_id = self.state.get_project_id()
         conn = self.state.db.connect()
         cur = conn.execute(
-            "SELECT id, status, counts, updated_at FROM jobs ORDER BY updated_at DESC"
+            "SELECT id, status, counts, updated_at FROM jobs WHERE project_id = ? ORDER BY updated_at DESC",
+            (project_id,),
         )
         rows = cur.fetchall()
 
@@ -427,9 +429,11 @@ class TranslationPage(QWidget):
             QMessageBox.critical(self, "Error", "Argos provider not available.")
             return
 
+        project_id = self.state.get_project_id()
         conn = self.state.db.connect()
         cur = conn.execute(
-            "SELECT * FROM translation_units WHERE status = 'untranslated'"
+            "SELECT * FROM translation_units WHERE status = 'untranslated' AND (is_active = 1 OR is_active IS NULL) AND project_id = ?",
+            (project_id,),
         )
         rows = cur.fetchall()
 
@@ -465,7 +469,7 @@ class TranslationPage(QWidget):
             return
 
         pipeline = TranslationPipeline(self.state.db, provider)
-        job_id = pipeline.create_job("default", units, "ja", "en", chunk_size=100)
+        job_id = pipeline.create_job(project_id, units, "ja", "en", chunk_size=100)
 
         self.start_worker(job_id)
 

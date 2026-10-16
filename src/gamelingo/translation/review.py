@@ -52,7 +52,7 @@ class ReviewService:
     def get_unit(self, unit_id: str) -> Optional[Dict[str, Any]]:
         conn = self.db.connect()
         query = """
-            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.tokens_json, u.status, u.source_hash,
+            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.tokens_json, u.status, u.source_hash, u.project_id,
                    p.adapter_id,
                    r.draft_text, r.final_text as translated_text, r.quality_flags, r.provider, r.model
             FROM translation_units u
@@ -69,6 +69,17 @@ class ReviewService:
         aid = unit.get("adapter_id")
         if aid:
             return aid
+        proj_id = unit.get("project_id")
+        if proj_id:
+            try:
+                cur = self.db.connect().execute(
+                    "SELECT adapter_id FROM projects WHERE id = ?", (proj_id,)
+                )
+                r = cur.fetchone()
+                if r and r["adapter_id"]:
+                    return r["adapter_id"]
+            except Exception:
+                pass
         fid = unit.get("file_id", "")
         if fid.endswith(".json"):
             return "rpgmaker_mv_mz"

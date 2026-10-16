@@ -270,8 +270,9 @@ class ReviewPage(QWidget):
             return
 
         self.list_widget.clear()
+        project_id = self.state.get_project_id()
         statuses = self._get_status_filter_list()
-        units = self.service.list_units_for_review("default", statuses)
+        units = self.service.list_units_for_review(project_id, statuses)
 
         search_query = self.txt_search.text().strip().lower()
         count = 0
@@ -587,7 +588,9 @@ class ReviewPage(QWidget):
             self.list_widget.item(i).data(Qt.UserRole)
             for i in range(self.list_widget.count())
         ]
-        result = self.service.approve_all("default", unit_ids=visible_ids)
+        result = self.service.approve_all(
+            self.state.get_project_id(), unit_ids=visible_ids
+        )
         self.load_units()
         msg = f"Successfully approved {result['approved']} units."
         if result["skipped"] > 0:
@@ -621,7 +624,7 @@ class ReviewPage(QWidget):
         )
         if file_path:
             service = ExportImportService(self.state.db)
-            service.export_csv(Path(file_path), "default")
+            service.export_csv(Path(file_path), self.state.get_project_id())
             QMessageBox.information(self, "Export Complete", f"Exported to {file_path}")
 
     def on_import(self):
@@ -633,7 +636,9 @@ class ReviewPage(QWidget):
         if file_path:
             try:
                 service = ExportImportService(self.state.db)
-                report = service.import_csv(Path(file_path), "default")
+                report = service.import_csv(
+                    Path(file_path), self.state.get_project_id()
+                )
                 self.load_units()
                 QMessageBox.information(
                     self,

@@ -43,7 +43,13 @@ class ExportImportService:
 
         # Fetch extra file path info
         conn = self.db.connect()
-        cur = conn.execute("SELECT id, relative_path, project_id FROM game_files")
+        if project_id:
+            cur = conn.execute(
+                "SELECT id, relative_path, project_id FROM game_files WHERE project_id = ?",
+                (project_id,),
+            )
+        else:
+            cur = conn.execute("SELECT id, relative_path, project_id FROM game_files")
         file_map = {row["id"]: row for row in cur.fetchall()}
 
         # Re-fetch units with full fields
@@ -86,7 +92,9 @@ class ExportImportService:
         temp_path.replace(output_path)
         return count
 
-    def import_csv_preview(self, input_path: Path) -> Dict[str, Any]:
+    def import_csv_preview(
+        self, input_path: Path, project_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         result = {
             "total_rows": 0,
             "valid_editable": 0,
@@ -126,7 +134,11 @@ class ExportImportService:
                         raise ValueError("Duplicate unit_id in CSV.")
                     seen_units.add(unit_id)
 
-                    _ = unescape_cell(row["project_id"])
+                    row_proj = unescape_cell(row["project_id"])
+                    if project_id and row_proj and row_proj != project_id:
+                        raise ValueError(
+                            f"Project mismatch: row belongs to project '{row_proj}', but expected '{project_id}'."
+                        )
                     _ = unescape_cell(row["file_path"])
                     locator = unescape_cell(row["locator"])
                     source_text = unescape_cell(row["source_text"])
@@ -136,6 +148,15 @@ class ExportImportService:
                     db_unit = self.review_service.get_unit(unit_id)
                     if not db_unit:
                         raise ValueError(f"Unit {unit_id} not found in database.")
+
+                    if (
+                        project_id
+                        and db_unit.get("project_id")
+                        and db_unit.get("project_id") != project_id
+                    ):
+                        raise ValueError(
+                            f"Project mismatch: unit belongs to project '{db_unit.get('project_id')}', but expected '{project_id}'."
+                        )
 
                     if (
                         db_unit["source_text"] != source_text
@@ -221,8 +242,10 @@ class ExportImportService:
 
         return result
 
-    def import_csv_apply(self, input_path: Path) -> int:
-        preview = self.import_csv_preview(input_path)
+    def import_csv_apply(
+        self, input_path: Path, project_id: Optional[str] = None
+    ) -> int:
+        preview = self.import_csv_preview(input_path, project_id=project_id)
         if preview["invalid"] > 0:
             raise ValueError(
                 f"Cannot apply import: found {preview['invalid']} invalid rows. Resolve conflicts first."
@@ -326,7 +349,7 @@ class ExportImportService:
         self, input_path: Path, project_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Convenience method that previews and applies a CSV import atomically."""
-        preview = self.import_csv_preview(input_path)
+        preview = self.import_csv_preview(input_path, project_id=project_id)
         if preview["invalid"] > 0:
             err_details = []
             for r in preview["rows"]:
@@ -336,7 +359,7 @@ class ExportImportService:
             raise ValueError(
                 f"Cannot import CSV: found {preview['invalid']} invalid row(s). {err_msg}"
             )
-        count = self.import_csv_apply(input_path)
+        count = self.import_csv_apply(input_path, project_id=project_id)
         return {
             "updated_count": count,
             "skipped_count": preview.get("unchanged", 0),

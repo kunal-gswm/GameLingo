@@ -112,6 +112,7 @@ def cmd_extract(args):
 
 def cmd_translate(args):
     db = get_db(args.workspace)
+    project_id = getattr(args, "project_id", "default")
     from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
 
     status = ArgosSetupService.check_status("ja", "en")
@@ -126,11 +127,14 @@ def cmd_translate(args):
     pipeline = TranslationPipeline(db, provider)
 
     conn = db.connect()
-    cur = conn.execute("SELECT * FROM translation_units WHERE status = 'untranslated'")
+    cur = conn.execute(
+        "SELECT * FROM translation_units WHERE status = 'untranslated' AND (is_active = 1 OR is_active IS NULL) AND project_id = ?",
+        (project_id,),
+    )
     rows = cur.fetchall()
 
     if not rows:
-        print("No untranslated units found.")
+        print(f"No untranslated units found for project '{project_id}'.")
         sys.exit(0)
 
     units = []
@@ -148,8 +152,10 @@ def cmd_translate(args):
             )
         )
 
-    print(f"Starting translation job for {len(units)} units (JA -> EN)...")
-    job_id = pipeline.create_job("default", units, "ja", "en", chunk_size=100)
+    print(
+        f"Starting translation job for {len(units)} units in project '{project_id}' (JA -> EN)..."
+    )
+    job_id = pipeline.create_job(project_id, units, "ja", "en", chunk_size=100)
     print(f"Created job {job_id}. Resuming execution...")
 
     while True:
@@ -163,8 +169,12 @@ def cmd_translate(args):
 
 def cmd_jobs_list(args):
     db = get_db(args.workspace)
+    project_id = getattr(args, "project_id", "default")
     conn = db.connect()
-    cur = conn.execute("SELECT id, status, updated_at FROM jobs")
+    cur = conn.execute(
+        "SELECT id, status, updated_at FROM jobs WHERE project_id = ? ORDER BY updated_at DESC",
+        (project_id,),
+    )
     jobs = cur.fetchall()
     for j in jobs:
         print(f"ID: {j['id']} | Status: {j['status']}")
@@ -205,8 +215,9 @@ def cmd_jobs_resume(args):
 # --- Review Commands ---
 def cmd_review_list(args):
     service = ReviewService(get_db(args.workspace))
+    project_id = getattr(args, "project_id", "default")
     statuses = args.status.split(",") if args.status else None
-    units = service.list_units_for_review("default", statuses)
+    units = service.list_units_for_review(project_id, statuses)
     print(f"Found {len(units)} units:")
     for u in units:
         print(
@@ -270,23 +281,24 @@ def cmd_review_reject(args):
 
 def cmd_plan_create(args):
     db = get_db(args.workspace)
+    project_id = getattr(args, "project_id", "default")
     conn = db.connect()
 
-    cur = conn.execute("SELECT install_path FROM projects WHERE id = 'default'")
+    cur = conn.execute("SELECT install_path FROM projects WHERE id = ?", (project_id,))
     row = cur.fetchone()
     if not row or not row["install_path"]:
-        print("Project install path not found.")
+        print(f"Project '{project_id}' install path not found.")
         sys.exit(1)
     install_path = Path(row["install_path"])
 
-    # We only fetch approved units. But wait, planner expects all units and filters them inside.
-    # However, to be efficient, let's fetch units that have records.
-    # The planner takes `units` and `records`.
-    cur = conn.execute("SELECT * FROM translation_units WHERE status = 'approved'")
+    cur = conn.execute(
+        "SELECT * FROM translation_units WHERE status = 'approved' AND (is_active = 1 OR is_active IS NULL) AND (project_id = ? OR (project_id IS NULL AND file_id IN (SELECT id FROM game_files WHERE project_id = ?)))",
+        (project_id, project_id),
+    )
     unit_rows = cur.fetchall()
 
     if not unit_rows:
-        print("No approved translations found to plan.")
+        print(f"No approved translations found to plan for project '{project_id}'.")
         sys.exit(0)
 
     units = []
@@ -329,15 +341,17 @@ def cmd_plan_create(args):
             )
         )
 
-    # we need file_path_map
-    cur = conn.execute("SELECT id, relative_path FROM game_files")
+    cur = conn.execute(
+        "SELECT id, relative_path FROM game_files WHERE (project_id = ? OR (project_id IS NULL AND ? = 'default'))",
+        (project_id, project_id),
+    )
     file_path_map = {r["id"]: r["relative_path"] for r in cur.fetchall()}
 
     activate_lang = getattr(args, "activate_language", False)
     print("Creating patch plan...")
     plan = create_plan(
         install_path,
-        "default",
+        project_id,
         units,
         records,
         file_path_map,
@@ -368,10 +382,10 @@ def cmd_import_preview(args):
     from gamelingo.translation.export_import import ExportImportService
 
     svc = ExportImportService(db)
-
+    project_id = getattr(args, "project_id", "default")
     in_path = Path(args.input)
     try:
-        preview = svc.import_csv_preview(in_path)
+        preview = svc.import_csv_preview(in_path, project_id=project_id)
     except Exception as e:
         print(f"Import preview failed: {e}")
         sys.exit(1)
@@ -399,14 +413,14 @@ def cmd_import_apply(args):
     from gamelingo.translation.export_import import ExportImportService
 
     svc = ExportImportService(db)
-
+    project_id = getattr(args, "project_id", "default")
     in_path = Path(args.input)
     if not args.yes:
         print("Use --yes to confirm import.")
         sys.exit(1)
 
     try:
-        count = svc.import_csv_apply(in_path)
+        count = svc.import_csv_apply(in_path, project_id=project_id)
         print(f"Successfully imported {count} translations.")
     except Exception as e:
         print(f"Import failed: {e}")
@@ -421,14 +435,18 @@ def cmd_plan_validate(args):
     with open(plan_file, "r", encoding="utf-8") as f:
         plan = json.load(f)
 
+    project_id = getattr(args, "project_id", "default")
     db = get_db(args.workspace)
     conn = db.connect()
-    cur = conn.execute("SELECT install_path FROM projects WHERE id = 'default'")
+    cur = conn.execute("SELECT install_path FROM projects WHERE id = ?", (project_id,))
     row = cur.fetchone()
+    if not row or not row["install_path"]:
+        print(f"Project '{project_id}' install path not found.")
+        sys.exit(1)
     install_path = Path(row["install_path"])
 
     try:
-        validate_plan(install_path, plan)
+        validate_plan(install_path, plan, expected_project_id=project_id)
         print("Plan is valid and safe to apply.")
     except Exception as e:
         print(f"Plan validation failed: {e}")
@@ -447,10 +465,14 @@ def cmd_apply(args):
     with open(plan_file, "r", encoding="utf-8") as f:
         plan = json.load(f)
 
+    project_id = getattr(args, "project_id", "default")
     db = get_db(args.workspace)
     conn = db.connect()
-    cur = conn.execute("SELECT install_path FROM projects WHERE id = 'default'")
+    cur = conn.execute("SELECT install_path FROM projects WHERE id = ?", (project_id,))
     row = cur.fetchone()
+    if not row or not row["install_path"]:
+        print(f"Project '{project_id}' install path not found.")
+        sys.exit(1)
     install_path = Path(row["install_path"])
 
     backup_root = Path(args.workspace) / "backups"
@@ -461,7 +483,12 @@ def cmd_apply(args):
 
     try:
         report = apply_plan(
-            install_path, plan, backup_root, execute=execute, overwrite=args.yes
+            install_path,
+            plan,
+            backup_root,
+            execute=execute,
+            overwrite=args.yes,
+            expected_project_id=project_id,
         )
         print(f"Apply status: {report['status']}")
         if execute:
@@ -529,6 +556,7 @@ def main() -> int:
 
     # Translate
     p_trans = subparsers.add_parser("translate", help="Translate texts")
+    p_trans.add_argument("--project-id", default="default", help="Project identifier")
     p_trans.set_defaults(func=cmd_translate)
 
     # Jobs
@@ -536,6 +564,7 @@ def main() -> int:
     jobs_sub = p_jobs.add_subparsers(dest="jobs_cmd", required=True)
 
     c_jl = jobs_sub.add_parser("list", help="List jobs")
+    c_jl.add_argument("--project-id", default="default", help="Project identifier")
     c_jl.set_defaults(func=cmd_jobs_list)
 
     c_js = jobs_sub.add_parser("show", help="Show job")
@@ -551,6 +580,7 @@ def main() -> int:
     rev_sub = p_rev.add_subparsers(dest="rev_cmd", required=True)
 
     c_rl = rev_sub.add_parser("list", help="List units")
+    c_rl.add_argument("--project-id", default="default", help="Project identifier")
     c_rl.add_argument("--status", help="Filter by status")
     c_rl.set_defaults(func=cmd_review_list)
 
@@ -592,14 +622,17 @@ def main() -> int:
 
     c_ip = imp_sub.add_parser("preview", help="Preview import")
     c_ip.add_argument("input", help="CSV file path")
+    c_ip.add_argument("--project-id", default="default", help="Project identifier")
     c_ip.set_defaults(func=cmd_import_preview)
 
     c_ia = imp_sub.add_parser("apply", help="Apply import")
     c_ia.add_argument("input", help="CSV file path")
+    c_ia.add_argument("--project-id", default="default", help="Project identifier")
     c_ia.add_argument("--yes", action="store_true")
     c_ia.set_defaults(func=cmd_import_apply)
 
     c_pc = plan_sub.add_parser("create", help="Create patch plan")
+    c_pc.add_argument("--project-id", default="default", help="Project identifier")
     c_pc.add_argument("--plan-file", default="patch_plan.json")
     c_pc.add_argument(
         "--activate-language",
@@ -610,6 +643,7 @@ def main() -> int:
 
     c_pv = plan_sub.add_parser("validate", help="Validate plan")
     c_pv.add_argument("plan_file")
+    c_pv.add_argument("--project-id", default="default", help="Project identifier")
     c_pv.set_defaults(func=cmd_plan_validate)
 
     c_ps = plan_sub.add_parser("show", help="Show plan")
@@ -619,6 +653,7 @@ def main() -> int:
     # Apply
     p_apply = subparsers.add_parser("apply", help="Apply patch")
     p_apply.add_argument("plan_file")
+    p_apply.add_argument("--project-id", default="default", help="Project identifier")
     p_apply.add_argument(
         "--execute", action="store_true", help="Execute the patch instead of preview"
     )

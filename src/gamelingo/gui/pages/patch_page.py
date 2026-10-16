@@ -195,6 +195,10 @@ class PatchPage(QWidget):
                 "No game selected. Select a game in Dashboard first."
             )
 
+        self.current_plan = None
+        self.btn_apply.setEnabled(False)
+        self._set_plan_pill("No Plan", "warning")
+        self.txt_preview.clear()
         self.load_backups()
 
     def _set_plan_pill(self, text: str, status_type: str):
@@ -222,15 +226,17 @@ class PatchPage(QWidget):
 
         conn = self.state.db.connect()
 
+        project_id = self.state.get_project_id()
         cur = conn.execute(
             "SELECT id FROM projects WHERE install_path = ?",
             (str(self.state.game_path.resolve()),),
         )
         p_row = cur.fetchone()
-        project_id = p_row["id"] if p_row else "default"
+        if p_row:
+            project_id = p_row["id"]
 
         cur = conn.execute(
-            "SELECT * FROM translation_units WHERE status = 'approved' AND (is_active = 1 OR is_active IS NULL) AND (project_id = ? OR ? = 'default')",
+            "SELECT * FROM translation_units WHERE status = 'approved' AND (is_active = 1 OR is_active IS NULL) AND (project_id = ? OR (project_id IS NULL AND file_id IN (SELECT id FROM game_files WHERE project_id = ?)))",
             (project_id, project_id),
         )
         unit_rows = cur.fetchall()
@@ -285,7 +291,10 @@ class PatchPage(QWidget):
                 )
             )
 
-        cur = conn.execute("SELECT id, relative_path FROM game_files")
+        cur = conn.execute(
+            "SELECT id, relative_path FROM game_files WHERE (project_id = ? OR (project_id IS NULL AND ? = 'default'))",
+            (project_id, project_id),
+        )
         file_path_map = {r["id"]: r["relative_path"] for r in cur.fetchall()}
 
         include_act = self.chk_activate_lang.isChecked()
@@ -299,7 +308,7 @@ class PatchPage(QWidget):
         )
 
         try:
-            validate_plan(self.state.game_path, plan)
+            validate_plan(self.state.game_path, plan, expected_project_id=project_id)
             preview_txt = preview_plan(plan)
             self.txt_preview.setPlainText(
                 f"{preview_txt}\n\n[SUCCESS] Plan is VALID and safe to apply."
@@ -318,6 +327,31 @@ class PatchPage(QWidget):
 
     def on_apply_plan(self):
         if not self.current_plan:
+            return
+
+        expected_project_id = self.state.get_project_id()
+        current_target_root = str(self.state.game_path.resolve())
+        plan_project_id = self.current_plan.get("project_id")
+        plan_target_root = self.current_plan.get("target_root")
+
+        if plan_project_id and plan_project_id != expected_project_id:
+            QMessageBox.critical(
+                self,
+                "Project Mismatch",
+                f"Patch plan was created for project '{plan_project_id}', but the currently active project is '{expected_project_id}'.\n\n"
+                "Patch application has been blocked for safety. Please generate a new patch plan.",
+            )
+            return
+
+        if plan_target_root and plan_target_root != current_target_root:
+            QMessageBox.critical(
+                self,
+                "Target Directory Mismatch",
+                f"Patch plan target directory does not match the active game directory:\n"
+                f"Plan target: {plan_target_root}\n"
+                f"Active target: {current_target_root}\n\n"
+                "Patch application has been blocked for safety. Please generate a new patch plan.",
+            )
             return
 
         target_str = str(self.state.game_path.absolute())
@@ -368,6 +402,7 @@ class PatchPage(QWidget):
                     backup_root,
                     execute=True,
                     overwrite=True,
+                    expected_project_id=expected_project_id,
                 )
 
                 msg = f"Patch applied with status: {report['status']}\n\n"
