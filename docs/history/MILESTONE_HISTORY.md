@@ -181,6 +181,16 @@ All verified distributable Windows x64 package builds (`dist\GameLingo-Windows-x
 - **Harness:** `scripts/gl_rpgm_pilot_4_mz.py`
 - **Quality Gate:** 371 passed, 0 skipped.
 
-
-
-
+### GL-RPGM-PILOT-5: MZ Foreign-Language Localization Acceptance
+- **Summary:** Investigation of genuine non-English (Japanese) RPG Maker MZ localization acceptance against local projects, concluding with an authoritative blocker finding due to lack of local Japanese MZ game assets, and the creation of an exhaustive synthetic bilingual MZ regression test suite.
+- **Key Deliverables:**
+  - Exhaustive local game audit across `C:\`, `D:\`, and `E:\`: evaluated all candidate projects (*Playful Parcels*, *Waifu Trap House*, *Do Disciplinary Committee Members Dream of Succubi*, *RJ01731048*). Determined that all local MZ titles are English-source, while all local Japanese titles run on the RPG Maker MV runtime.
+  - Strict compliance with milestone rules: halted live runtime capture rather than fabricating results, downloading external commercial assets, or substituting English text with diagnostic markers. Calibrated status as **BLOCKED** on real-game native runtime acceptance.
+  - Created synthetic bilingual RPG Maker MZ integration test suite ([`tests/integration/test_rpgmaker_mz_foreign_language.py`](../../tests/integration/test_rpgmaker_mz_foreign_language.py)):
+    - Modeled authentic MZ architecture (root `data/`, `rmmz_core.js`, `effects/`).
+    - Verified extraction, locator resolution, token safety validation, fail-closed dry run, live atomic patching, and byte-exact SHA-256 rollback across Japanese titles, terms, messages, items with escape codes (`\V[5]`), skills with `%1` placeholders, and event dialogue with MZ-specific Command 101 parameter 4 speaker names (`タカヤマ店長`) and choice branch synchronization.
+  - Test suite expansion: 4 new integration tests added, bringing full test suite to 375 passed tests.
+  - Status: **BLOCKED** (Real-Game Native Runtime Foreign-Language Acceptance) / **VERIFIED** (Synthetic Bilingual Adapter Regression Pipeline).
+- **Report:** [`docs/releases/GL_RPGM_Pilot_5_Report.md`](../releases/GL_RPGM_Pilot_5_Report.md)
+- **Test Suite:** `tests/integration/test_rpgmaker_mz_foreign_language.py`
+- **Quality Gate:** 375 passed, 0 skipped; 0 ruff errors.
