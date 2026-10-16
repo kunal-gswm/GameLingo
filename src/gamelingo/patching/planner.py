@@ -584,6 +584,16 @@ def preview_plan(plan: Dict[str, Any]) -> str:
             f"Engine: Ren'Py Visual Novel (Target: {plan.get('target_lang', 'english')})"
         )
 
+    # Breakdown by affected target file
+    files_summary: Dict[str, int] = {}
+    for e in valid:
+        fp = e.get("file_path", e.get("file_id", "unknown"))
+        files_summary[fp] = files_summary.get(fp, 0) + 1
+
+    lines.append(f"Affected Files ({len(files_summary)}):")
+    for fp, cnt in sorted(files_summary.items()):
+        lines.append(f"  • {fp}: {cnt} translatable string(s) to modify")
+
     lines.append(f"Valid Edits: {len(valid)}")
     for e in valid:
         if e.get("action") == "create_activation_file":

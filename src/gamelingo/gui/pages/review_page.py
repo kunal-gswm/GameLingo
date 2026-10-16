@@ -26,6 +26,7 @@ from gamelingo.gui.theme import (
     BORDER_SUBTLE,
     TEXT_MUTED,
     TEXT_PRIMARY,
+    TEXT_SECONDARY,
     WARNING_TEXT,
     style_danger_button,
     style_primary_button,
@@ -33,6 +34,7 @@ from gamelingo.gui.theme import (
 )
 from gamelingo.translation.export_import import ExportImportService
 from gamelingo.translation.review import ReviewService
+from gamelingo.translation.validation import validate_translation
 
 
 class ReviewPage(QWidget):
@@ -152,6 +154,20 @@ class ReviewPage(QWidget):
         self.lbl_locator.setStyleSheet(f"color: {TEXT_MUTED};")
         self.lbl_locator.setTextInteractionFlags(Qt.TextSelectableByMouse)
         meta_layout.addWidget(self.lbl_locator)
+
+        self.lbl_context = QLabel("Context: -")
+        self.lbl_context.setFont(QFont("Segoe UI", 10))
+        self.lbl_context.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_context.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_context.setWordWrap(True)
+        meta_layout.addWidget(self.lbl_context)
+
+        self.lbl_tokens = QLabel("Required Tokens: None")
+        self.lbl_tokens.setFont(QFont("Segoe UI", 10))
+        self.lbl_tokens.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_tokens.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_tokens.setWordWrap(True)
+        meta_layout.addWidget(self.lbl_tokens)
 
         right_layout.addWidget(meta_group)
 
@@ -312,13 +328,75 @@ class ReviewPage(QWidget):
                 return False
         return True
 
+    def _describe_command(self, locator: str, context: str) -> str:
+        if ".choices[" in locator:
+            return "Show Choices Option [Code 102]"
+        elif ".when" in locator:
+            return "When Choice Branch [Code 402]"
+        elif ".speaker" in locator:
+            return "Show Text Speaker Name [Code 101]"
+        elif ".list[" in locator:
+            return "Show Text / Message [Code 401]"
+        elif "displayName" in locator:
+            return "Map Display Name"
+        elif "terms." in locator:
+            return "System Term"
+        elif ".name" in locator:
+            return "Database Name"
+        elif ".description" in locator:
+            return "Database Description"
+        return "Game Text"
+
     def on_target_text_changed(self):
         if self._is_switching_selection:
             return
-        if self.current_unit_id:
+        if self.current_unit_id and self.service:
             curr_text = self.txt_target.toPlainText()
             is_changed = curr_text != self._original_text
             self.lbl_unsaved.setVisible(is_changed)
+
+            # Real-time token validation feedback
+            unit = self.service.get_unit(self.current_unit_id)
+            if unit:
+                adapter_id = self.service._resolve_adapter_id(unit)
+                expected_tokens = None
+                if unit.get("tokens_json"):
+                    try:
+                        expected_tokens = json.loads(unit["tokens_json"])
+                    except Exception:
+                        expected_tokens = None
+                issues = validate_translation(
+                    unit["source_text"],
+                    curr_text,
+                    adapter_id=adapter_id,
+                    expected_tokens=expected_tokens,
+                )
+                errors = [i for i in issues if i.severity == "error"]
+                warnings = [i for i in issues if i.severity == "warning"]
+                if errors or warnings:
+                    lines = []
+                    for e in errors:
+                        lines.append(f"[BLOCKING ERROR] {e.message}")
+                    for w in warnings:
+                        lines.append(f"[WARNING] {w.message}")
+                    self.lbl_validation.setText("\n".join(lines))
+                    if errors:
+                        self.lbl_validation.setStyleSheet("color: #f87171;")
+                        self.btn_approve.setEnabled(False)
+                        self.btn_approve.setToolTip(
+                            "Cannot approve: translation has blocking validation errors."
+                        )
+                    else:
+                        self.lbl_validation.setStyleSheet("color: #fbbf24;")
+                        self.btn_approve.setEnabled(True)
+                        self.btn_approve.setToolTip("")
+                else:
+                    self.lbl_validation.setText(
+                        "Validation: OK (All required tokens present)"
+                    )
+                    self.lbl_validation.setStyleSheet("color: #81c784;")
+                    self.btn_approve.setEnabled(True)
+                    self.btn_approve.setToolTip("")
 
     def on_selection_changed(self):
         items = self.list_widget.selectedItems()
@@ -363,6 +441,28 @@ class ReviewPage(QWidget):
             self.lbl_locator.setText(
                 f"File: {unit.get('file_id', '')}   Locator: {unit.get('locator', '')}"
             )
+
+            ctx = unit.get("context", "")
+            cmd_type = self._describe_command(unit.get("locator", ""), ctx)
+            ctx_display = (
+                f"Context: {ctx} ({cmd_type})" if ctx else f"Command: {cmd_type}"
+            )
+            self.lbl_context.setText(ctx_display)
+
+            tokens_json = unit.get("tokens_json", "[]")
+            try:
+                tokens = json.loads(tokens_json) if tokens_json else []
+            except Exception:
+                tokens = []
+            if tokens:
+                self.lbl_tokens.setText(
+                    f"Required Tokens ({len(tokens)}): " + ", ".join(tokens)
+                )
+                self.lbl_tokens.setStyleSheet("color: #90caf9;")
+            else:
+                self.lbl_tokens.setText("Required Tokens: None")
+                self.lbl_tokens.setStyleSheet(f"color: {TEXT_MUTED};")
+
             self.txt_source.setPlainText(unit.get("source_text", ""))
 
             tgt_text = unit.get("translated_text") or ""
@@ -397,6 +497,9 @@ class ReviewPage(QWidget):
             self.lbl_id.setText("ID: None")
             self.lbl_status.setText("Status: None")
             self.lbl_locator.setText("File / Locator: -")
+            self.lbl_context.setText("Context: -")
+            self.lbl_tokens.setText("Required Tokens: None")
+            self.lbl_tokens.setStyleSheet(f"color: {TEXT_MUTED};")
             self.txt_source.clear()
             self.txt_target.clear()
             self.lbl_validation.setText("")

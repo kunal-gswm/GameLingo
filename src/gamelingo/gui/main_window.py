@@ -253,6 +253,10 @@ class MainWindow(QMainWindow):
         self.update_header()
 
     def closeEvent(self, event):
+        e_page = self.pages[1]
+        if hasattr(e_page, "worker") and e_page.worker:
+            e_page.worker.cancel()
+            e_page.worker.wait()
         t_page = self.pages[2]
         if hasattr(t_page, "worker") and t_page.worker:
             t_page.worker.cancel()

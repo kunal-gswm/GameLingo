@@ -317,7 +317,19 @@ def execute_restore(
                 recovery_dir=recovery_dir,
             )
 
-    finally:
+        # 4. Post-restore SHA-256 verification
+        verified_hashes = {}
+        for item in staged_files:
+            if item.get("action") == "replace":
+                target = item["target"]
+                meta = item["meta"]
+                actual_sha = calculate_sha256(target)
+                if actual_sha != meta["original_hash"]:
+                    raise RestoreError(
+                        f"Post-restore checksum verification failed for {item['rel_path']}: expected {meta['original_hash']}, found {actual_sha}"
+                    )
+                verified_hashes[item["rel_path"]] = actual_sha
+
         # Cleanup uncommitted staged files
         for item in to_restore:
             stage_path = item.get("stage_path")
@@ -328,11 +340,23 @@ def execute_restore(
                     pass
 
         # If complete success, we can optionally clear recovery_dir
-        # Actually, let's clear recovery_dir if everything succeeded
         if len(restored_paths) == len(to_restore):
             try:
                 shutil.rmtree(recovery_dir)
             except OSError:
                 pass
 
-    return {"status": "success", "restored": restored_paths}
+        return {
+            "status": "success",
+            "restored": restored_paths,
+            "verified_hashes": verified_hashes,
+        }
+    finally:
+        # Guarantee removal of any temporary stage files if an exception happened
+        for item in to_restore:
+            stage_path = item.get("stage_path")
+            if stage_path and stage_path.exists() and not item.get("committed"):
+                try:
+                    stage_path.unlink()
+                except OSError:
+                    pass

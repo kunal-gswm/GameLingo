@@ -31,14 +31,52 @@ from gamelingo.gui.theme import (
 class ExtractionWorker(QThread):
     progress = Signal(int)
     finished = Signal(int)
+    cancelled = Signal()
     error = Signal(str)
 
     def __init__(self, state: AppState):
         super().__init__()
         self.state = state
+        self.is_cancelled = False
+
+    def cancel(self):
+        self.is_cancelled = True
+
+    def _write_batch(self, conn, game_path, adapter, batch):
+        with conn:
+            for u in batch:
+                if hasattr(adapter, "get_relative_path"):
+                    rel = adapter.get_relative_path(game_path, u.file_id)
+                else:
+                    rel = (
+                        f"data/{u.file_id}"
+                        if (game_path / "data" / u.file_id).exists()
+                        else f"www/data/{u.file_id}"
+                    )
+                fmt = "rpy" if getattr(adapter, "adapter_id", "") == "renpy" else "json"
+                conn.execute(
+                    "INSERT OR IGNORE INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (u.file_id, "default", rel, fmt, "", 0, time.time()),
+                )
+
+                conn.execute(
+                    "INSERT OR IGNORE INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        u.id,
+                        u.file_id,
+                        u.locator,
+                        u.source_text,
+                        u.context,
+                        u.tokens_json,
+                        u.source_hash,
+                        u.status,
+                    ),
+                )
 
     def run(self):
         try:
+            import json as _json
+
             from gamelingo.adapters.rpgmaker_mv_mz import (
                 RPGMakerMVMZAdapter as _OrigRPG,
             )
@@ -68,43 +106,43 @@ class ExtractionWorker(QThread):
                         f"No supported game engine adapter detected at '{game_path}'."
                     )
 
-            units = list(adapter.extract(game_path))
+            extracted_count = 0
+            batch = []
+            for u in adapter.extract(game_path):
+                if self.is_cancelled:
+                    self.cancelled.emit()
+                    return
+                batch.append(u)
+                extracted_count += 1
+                if len(batch) >= 50:
+                    self._write_batch(conn, game_path, adapter, batch)
+                    batch = []
+                    self.progress.emit(extracted_count)
 
-            with conn:
-                for u in units:
-                    if hasattr(adapter, "get_relative_path"):
-                        rel = adapter.get_relative_path(game_path, u.file_id)
-                    else:
-                        rel = (
-                            f"data/{u.file_id}"
-                            if (game_path / "data" / u.file_id).exists()
-                            else f"www/data/{u.file_id}"
-                        )
-                    fmt = (
-                        "rpy"
-                        if getattr(adapter, "adapter_id", "") == "renpy"
-                        else "json"
-                    )
-                    conn.execute(
-                        "INSERT OR IGNORE INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        (u.file_id, "default", rel, fmt, "", 0, time.time()),
-                    )
+            if self.is_cancelled:
+                self.cancelled.emit()
+                return
 
-                    conn.execute(
-                        "INSERT OR IGNORE INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                        (
-                            u.id,
-                            u.file_id,
-                            u.locator,
-                            u.source_text,
-                            u.context,
-                            u.tokens_json,
-                            u.source_hash,
-                            u.status,
-                        ),
-                    )
+            if batch:
+                self._write_batch(conn, game_path, adapter, batch)
+                self.progress.emit(extracted_count)
 
-            self.finished.emit(len(units))
+            if hasattr(adapter, "warnings") and adapter.warnings:
+                warn_msg = "\n".join(adapter.warnings)
+                self.error.emit(
+                    f"Malformed JSON in game data:\n{warn_msg}\nVerify game data integrity."
+                )
+                return
+
+            self.finished.emit(extracted_count)
+        except _json.JSONDecodeError as e:
+            self.error.emit(
+                f"Malformed JSON in game data: {e.msg} at line {e.lineno}, col {e.colno}. Verify game data integrity."
+            )
+        except PermissionError as e:
+            self.error.emit(
+                f"Permission denied accessing game files: {e.filename or e}. Ensure files are not locked or read-restricted."
+            )
         except Exception as e:
             self.error.emit(str(e))
 
@@ -151,6 +189,11 @@ class ExtractionPage(QWidget):
         style_primary_button(self.btn_extract)
         self.btn_extract.clicked.connect(self.on_extract)
         btn_row.addWidget(self.btn_extract)
+
+        self.btn_cancel = QPushButton("Cancel")
+        self.btn_cancel.setEnabled(False)
+        self.btn_cancel.clicked.connect(self.on_cancel)
+        btn_row.addWidget(self.btn_cancel)
 
         self.pill_state = create_status_pill("Idle", "info")
         btn_row.addWidget(self.pill_state)
@@ -343,19 +386,42 @@ class ExtractionPage(QWidget):
                 return
 
         self.btn_extract.setEnabled(False)
+        self.btn_cancel.setEnabled(True)
         self.progress_bar.setVisible(True)
         self.lbl_status.setText("Extracting translatable strings from game files...")
         self._set_pill("Extracting", "info")
 
         self.worker = ExtractionWorker(self.state)
+        self.worker.progress.connect(self.on_progress)
         self.worker.finished.connect(self.on_finished)
+        self.worker.cancelled.connect(self.on_cancelled)
         self.worker.error.connect(self.on_error)
         self.worker.start()
+
+    def on_progress(self, count: int):
+        self.lbl_status.setText(f"Extracting strings... ({count} units processed)")
+
+    def on_cancel(self):
+        if self.worker and self.worker.isRunning():
+            self.worker.cancel()
+            self.btn_cancel.setEnabled(False)
+            self.lbl_status.setText("Cancelling extraction...")
+            self._set_pill("Cancelling", "warning")
+
+    def on_cancelled(self):
+        self.worker = None
+        self.progress_bar.setVisible(False)
+        self.btn_extract.setEnabled(True)
+        self.btn_cancel.setEnabled(False)
+        self.lbl_status.setText("Extraction was cancelled by user.")
+        self._set_pill("Cancelled", "warning")
+        self.refresh()
 
     def on_finished(self, count):
         self.worker = None
         self.progress_bar.setVisible(False)
         self.btn_extract.setEnabled(True)
+        self.btn_cancel.setEnabled(False)
         self.lbl_status.setText(
             f"Extraction completed successfully. {count} units imported into project database."
         )
@@ -375,6 +441,7 @@ class ExtractionPage(QWidget):
         self.worker = None
         self.progress_bar.setVisible(False)
         self.btn_extract.setEnabled(True)
+        self.btn_cancel.setEnabled(False)
         self.lbl_status.setText(f"Extraction failed: {err_msg}")
         self._set_pill("Failed", "danger")
         QMessageBox.critical(self, "Error", f"Extraction failed:\n{err_msg}")

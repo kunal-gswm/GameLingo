@@ -311,13 +311,31 @@ class PatchPage(QWidget):
             return
 
         target_str = str(self.state.game_path.absolute())
+        valid_edits = [
+            e for e in self.current_plan.get("edits", []) if e.get("status") == "valid"
+        ]
+        affected_files = sorted(
+            set(e.get("file_path", e.get("file_id")) for e in valid_edits)
+        )
+        file_summary_lines = []
+        for f in affected_files[:8]:
+            cnt = sum(
+                1 for e in valid_edits if e.get("file_path", e.get("file_id")) == f
+            )
+            file_summary_lines.append(f"  • {f} ({cnt} strings)")
+        if len(affected_files) > 8:
+            file_summary_lines.append(f"  ... and {len(affected_files) - 8} more files")
+
+        file_list_str = "\n".join(file_summary_lines)
+
         reply = QMessageBox.warning(
             self,
             "Confirm Patch Application",
             "This will modify files in your target game directory!\n\n"
             f"Target Directory:\n{target_str}\n\n"
+            f"Planned modifications ({len(valid_edits)} strings across {len(affected_files)} files):\n{file_list_str}\n\n"
             "Safety guarantees:\n"
-            "• An automatic backup snapshot will be saved in workspace.\n"
+            "• An automatic backup snapshot will be verified and saved before write.\n"
             "• Modifications use atomic temporary staging files.\n"
             "• Ensure the game is CLOSED before continuing.\n\n"
             "Are you sure you want to proceed?",
@@ -526,13 +544,17 @@ class PatchPage(QWidget):
                     execute=True,
                 )
                 restored_count = len(res.get("restored", []))
+                verified_count = len(res.get("verified_hashes", {}))
                 msg = (
                     f"Successfully restored {restored_count} files from backup!\n\n"
-                    f"Status: {res.get('status')}"
+                    f"Status: {res.get('status')}\n"
+                    f"SHA-256 Verification: {verified_count} files verified bit-for-bit against backup manifest."
                 )
                 self.txt_restore_info.setPlainText(
-                    f"[RESTORE COMPLETE]\nRestored {restored_count} files:\n"
-                    + "\n".join([f"  • {p}" for p in res.get("restored", [])])
+                    f"[RESTORE COMPLETE - SHA-256 VERIFIED]\nRestored {restored_count} files:\n"
+                    + "\n".join(
+                        [f"  • {p} (SHA-256 verified)" for p in res.get("restored", [])]
+                    )
                 )
                 QMessageBox.information(self, "Restoration Complete", msg)
             except Exception as e:

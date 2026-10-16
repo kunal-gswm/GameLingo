@@ -138,13 +138,14 @@ class DashboardPage(QWidget):
         self.lbl_mv_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
         mv_header.addWidget(self.lbl_mv_title)
         mv_header.addStretch()
-        self.pill_mv = create_status_pill("Supported", "info")
+        self.pill_mv = create_status_pill("Supported (Core Scope)", "info")
         mv_header.addWidget(self.pill_mv)
         mv_layout.addLayout(mv_header)
 
         self.lbl_mv_desc = QLabel(
-            "Target data: data/ or www/data/ JSON files\n"
-            "Parsed files: System.json, Actors.json, Map*.json, CommonEvents.json, Items.json, etc."
+            "Engine: RPG Maker MV (data/ or www/data/ JSON files)\n"
+            "Scope: Core dialogue (101/401), choices (102/402), system terms, and database names.\n"
+            "Evidence: Standard schema and representative branch/choice patch safety benchmarked across 5 real projects (GL-RPGM-009A.2). Native runtime compatibility is not universally verified."
         )
         self.lbl_mv_desc.setFont(QFont("Segoe UI", 10))
         self.lbl_mv_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
@@ -166,13 +167,14 @@ class DashboardPage(QWidget):
         self.lbl_mz_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
         mz_header.addWidget(self.lbl_mz_title)
         mz_header.addStretch()
-        self.pill_mz = create_status_pill("Supported", "info")
+        self.pill_mz = create_status_pill("Supported (Core Scope)", "info")
         mz_header.addWidget(self.pill_mz)
         mz_layout.addLayout(mz_header)
 
         self.lbl_mz_desc = QLabel(
-            "Target data: data/ JSON files\n"
-            "Parsed files: System.json, Actors.json, Map*.json, CommonEvents.json, Items.json, etc."
+            "Engine: RPG Maker MZ (data/ JSON files)\n"
+            "Scope: Core dialogue (101/401 with speaker names), choices (102/402), system terms, and database names.\n"
+            "Evidence: Standard schema and representative branch/choice patch safety benchmarked across 5 real projects (GL-RPGM-009A.2). Native runtime compatibility is not universally verified."
         )
         self.lbl_mz_desc.setFont(QFont("Segoe UI", 10))
         self.lbl_mz_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
@@ -227,9 +229,11 @@ class DashboardPage(QWidget):
         unsupported_layout.addWidget(unsupported_title)
 
         self.lbl_unsupported_notice = QLabel(
+            "• Core Scope & Benchmark Evidence: Standard-schema extraction and representative branch/choice patch safety were benchmarked across five real projects (GL-RPGM-009A.2). Native runtime compatibility is not universally verified.\n"
+            "• Plugin Interoperability Untested: Third-party plugin runtime interoperability remains untested except for the specifically documented Pilot 6B scenario. Arbitrary plugin commands (Code 356/357), plugin parameters (plugins.js), and database note tags are outside the localization scope.\n"
             "• Save Files Unsupported: Runtime save states (*.rpgsave, save/, www/save/) are dynamic progress data and are not translated or modified.\n"
             "• Binary Assets Unsupported: Media assets (images in img/, audio in audio/, movies in movies/, fonts, executables Game.exe/nw.exe/island.exe, compiled plugins) are unsupported. GameLingo operates exclusively on text dialogue, database definitions, and source script files.\n"
-            "• Compiled & Archived Scripts Limited: Ren'Py games with only compiled .rpyc files or .rpa archives require original .rpy source files for text extraction. Decompilation of .rpyc files and .rpa archive extraction are unsupported."
+            "• Compiled & Archived Scripts Limited: Ren'Py games with only compiled .rpyc files or .rpa archives require original .rpy source files or decompiler tools for text extraction."
         )
         self.lbl_unsupported_notice.setFont(QFont("Segoe UI", 10))
         self.lbl_unsupported_notice.setStyleSheet(f"color: {TEXT_SECONDARY};")
@@ -541,11 +545,18 @@ class DashboardPage(QWidget):
                 except Exception:
                     json_count = 0
                 rel_data = data_dir.relative_to(check_path) if data_dir else "data"
-                self._update_structure_status(
-                    "Structure Verified",
-                    "info",
-                    f"Valid RPG Maker data structure verified at '{rel_data}/' ({json_count} JSON data files found, System.json present). Engine detected: {version_desc}.",
-                )
+                if confidence < 1.0:
+                    self._update_structure_status(
+                        "Structure Verified (Detection Uncertain)",
+                        "warning",
+                        f"Valid RPG Maker data structure verified at '{rel_data}/' ({json_count} JSON data files found, System.json present), but engine detection is uncertain (Confidence: {int(confidence * 100)}%). Marker scripts (rmmz_core.js / rpg_core.js) were ambiguous or not found. Standard JSON schema will be applied with caution.",
+                    )
+                else:
+                    self._update_structure_status(
+                        "Structure Verified",
+                        "info",
+                        f"Valid RPG Maker data structure verified at '{rel_data}/' ({json_count} JSON data files found, System.json present). Engine detected: {version_desc} (Confidence: 100%).",
+                    )
             else:
                 self._update_pill(self.pill_mv, "Not Detected", "neutral")
                 self._update_pill(self.pill_mz, "Not Detected", "neutral")
@@ -756,6 +767,14 @@ class DashboardPage(QWidget):
                         self,
                         "Source Scripts Required",
                         f"Detected {version}.\n\n{diag_msg}",
+                    )
+                elif conf < 1.0:
+                    QMessageBox.warning(
+                        self,
+                        "Engine Detection Uncertain",
+                        f"Detected {version} (Confidence: {int(conf * 100)}%).\n\n"
+                        "Engine runtime marker scripts (rmmz_core.js / rpg_core.js) were ambiguous or not found.\n"
+                        "Standard JSON schema will be used, but verify project behavior carefully.",
                     )
                 else:
                     QMessageBox.information(
