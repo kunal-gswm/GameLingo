@@ -24,57 +24,59 @@ To reach a production-ready verdict, GameLingo must satisfy four non-negotiable 
 4. **Encoding & Byte-Exact Integrity:** UTF-8 byte order marks (`\xef\xbb\xbf`), raw Unicode, and Japanese CJK scripts must remain bit-exact through extraction, patching, and rollback.
 
 ### Evidence Classification Standard
-This audit strictly categorizes findings across three verification tiers:
-- **Tier 1 (Real In-Game Verification):** Verified directly against authentic commercial game files, NW.js runtime, and interactive save states (*Playful Parcels* with 8,223 units; *Escape from the Nothing-Happens Village* with 1,143 units).
-- **Tier 2 (Automated Test Suite):** 378 unit and integration tests passing in CI/CD verifying domain services, background workers, and UI widgets.
-- **Tier 3 (Injected Edge-Case & Failure Audits):** Synthetic fault injection executed through [`scripts/gl_rpgm_pilot_7_audit.py`](file:///e:/GameLingo/scripts/gl_rpgm_pilot_7_audit.py) verifying error interception and automatic atomic rollback.
+This audit rigorously differentiates verification levels across four distinct tiers:
+- **Tier 1 (Direct Native-Runtime Rendering & Interaction):** Confirmed live inside the running native NW.js/Win32 game window, captured in pixel screenshots and interactive branch resolutions (e.g. `gameTitle` window title, title screen commands, load screen messages, dialogue prompts, choice selections, and choice-driven branch resolution via switches).
+- **Tier 2 (Real Game File Structural Extraction & Patching):** Verified by schema-aware extraction, locator resolution, dry-run safety, and patch staging/restoration against authentic commercial project files (*Playful Parcels* with 8,223 units; *Escape from the Nothing-Happens Village* with 1,143 units), without individual in-game visual screenshots.
+- **Tier 3 (Automated Unit & Integration Test Suite):** Guarded continuously by GameLingo's 378 unit and integration tests (`tests/unit/test_rpgmaker_*.py`, `tests/integration/test_rpgmaker_*.py`).
+- **Tier 4 (Synthetic Fault-Injection & Recovery Harness):** Evaluated against 9 targeted error injection scenarios in [`scripts/gl_rpgm_pilot_7_audit.py`](file:///e:/GameLingo/scripts/gl_rpgm_pilot_7_audit.py) to guarantee fail-closed safety and automatic rollback.
 
-**Verdict: FULL PASS — PRODUCTION-READY FOR RPG MAKER MV/MZ STANDARD WORKFLOWS.**
+**Calibrated Verdict: PASS — PRODUCTION-READY FOR STANDARD RPG MAKER MV/MZ CORE WORKFLOWS.**  
+*(Certified for core engine database records, map dialogue, choices, and branches. Custom plugin commands, plugin script code, binary assets, and save files are explicitly excluded by design.)*
 
 ---
 
 ## 2. Comprehensive RPG Maker MV/MZ Coverage Matrix
 
-GameLingo's RPG Maker adapter (`src/gamelingo/adapters/rpgmaker.py`), patch planner (`src/gamelingo/patching/planner.py`), applier (`src/gamelingo/patching/apply.py`), and safety validator (`src/gamelingo/translation/validation.py`) were audited against 48 distinct capability areas.
+GameLingo's RPG Maker adapter (`src/gamelingo/adapters/rpgmaker_mv_mz.py`), patch planner (`src/gamelingo/patching/planner.py`), applier (`src/gamelingo/patching/apply.py`), and safety validator (`src/gamelingo/translation/validation.py`) were audited against 48 distinct capability areas.
 
 ### A. System Terms (`data/System.json`)
 | Capability / Field | Status | Verification Tier | Notes |
 |:---|:---:|:---:|:---|
-| `gameTitle` | **Supported** | Tier 1 (Live Runtime) | Extracted, translated, patched, and rendered in NW.js window title |
-| `currencyUnit` | **Supported** | Tier 1 (Live Game) | Extracted from `System.json::currencyUnit` |
-| `terms.basic` | **Supported** | Tier 1 (Live Runtime) | Level, HP, MP, TP, EXP, etc. |
-| `terms.params` | **Supported** | Tier 1 (Live Game) | MaxHP, MaxMP, ATK, DEF, MAT, MDF, AGI, LUK |
-| `terms.commands` | **Supported** | Tier 1 (Live Runtime) | Fight, Escape, Attack, Guard, Item, Skill, Equip, Status, Formation, Save, Game End, New Game, Continue, Options |
-| `terms.messages` | **Supported** | Tier 1 (Live Runtime) | Battle messages, item acquisition, level up, shop prompts |
+| `gameTitle` | **Supported** | Tier 1 (Direct Native-Runtime) | Extracted, patched, and rendered in NW.js window title bar |
+| `currencyUnit` | **Supported** | Tier 2 (Real Game File Structural) | Extracted and patched in `System.json::currencyUnit` |
+| `terms.basic` | **Supported** | Tier 2 (Real Game File Structural) | Extracted and patched in `System.json`; `terms.basic[0..2]` tested in MZ pilots |
+| `terms.params` | **Supported** | Tier 2 (Real Game File Structural) | MaxHP, MaxMP, ATK, DEF, MAT, MDF, AGI, LUK extracted from real game files |
+| `terms.commands` | **Supported** | Tier 1 (Direct Native-Runtime) | Rendered in NW.js Title Menu: `New Game`, `Continue`, `Options` |
+| `terms.messages` | **Supported** | Tier 1 (Direct Native-Runtime) | Rendered in NW.js Load Screen: `Select a file to load:` (`loadMessage`) |
 
 ### B. Database Records
-| Database File | Translatable Fields Extracted | Status | Verification Tier |
-|:---|:---|:---:|:---:|
-| `Actors.json` | `name`, `nickname`, `profile` | **Supported** | Tier 1 (Live Game) |
-| `Classes.json` | `name` | **Supported** | Tier 1 (Live Game) |
-| `Skills.json` | `name`, `description`, `message1`, `message2` | **Supported** | Tier 1 (Live Game) |
-| `Items.json` | `name`, `description` | **Supported** | Tier 1 (Live Game) |
-| `Weapons.json` | `name`, `description` | **Supported** | Tier 1 (Live Game) |
-| `Armors.json` | `name`, `description` | **Supported** | Tier 1 (Live Game) |
-| `Enemies.json` | `name` | **Supported** | Tier 1 (Live Game) |
-| `States.json` | `name`, `description`, `message1`..`message4` | **Supported** | Tier 1 (Live Game) |
-| `Troops.json` | `name`, battle event pages (`code=401`, `102`, etc.) | **Supported** | Tier 1 (Live Game) |
-| `MapInfos.json` | `name` (editor hierarchy names) | **Supported** | Tier 1 (Live Game) |
+| Database File | Translatable Fields Extracted | Status | Verification Tier | Verification Context |
+|:---|:---|:---:|:---:|:---|
+| `Actors.json` | `name`, `nickname`, `profile` | **Supported** | Tier 2 (Real Game File Structural) | Extracted across 8,223-unit project & 100% locator audit |
+| `Classes.json` | `name` | **Supported** | Tier 2 (Real Game File Structural) | Extracted & patched in real project files |
+| `Skills.json` | `name`, `description`, `message1`, `message2` | **Supported** | Tier 2 (Real Game File Structural) | Extracted & verified in 50-locator audit sample |
+| `Items.json` | `name`, `description` | **Supported** | Tier 2 (Real Game File Structural) | Extracted & verified in 50-locator audit sample (MV items menu rendered in Pilot 2) |
+| `Weapons.json` | `name`, `description` | **Supported** | Tier 2 (Real Game File Structural) | Extracted & patched in real project files |
+| `Armors.json` | `name`, `description` | **Supported** | Tier 2 (Real Game File Structural) | Extracted & patched in real project files |
+| `Enemies.json` | `name` | **Supported** | Tier 2 (Real Game File Structural) | Extracted & patched in real project files |
+| `States.json` | `name`, `description`, `message1`..`message4` | **Supported** | Tier 2 (Real Game File Structural) | Extracted & patched in real project files |
+| `Troops.json` | `name`, battle event pages (`code=401`, `102`, etc.) | **Supported** | Tier 2 (Real Game File Structural) | Extracted & patched in real project files |
+| `MapInfos.json` | `name` (editor hierarchy names) | **Supported** | Tier 2 (Real Game File Structural) | Extracted & patched in real project files |
 
 ### C. Map and Event Commands (`data/MapXXX.json` & `CommonEvents.json`)
 | Event Command Code | Description | Status | Verification Tier | Collision / Isolation Guarantee |
 |:---|:---|:---:|:---:|:---|
-| Map `displayName` | In-game area popup name | **Supported** | Tier 1 (Live Game) | Keyed to `MapXXX.json::displayName` |
-| **Code 101** | Show Text (Speaker Name - MZ) | **Supported** | Tier 1 (Live Runtime) | Parameter index 4 extracted and patched for MZ; safely omitted in MV |
-| **Code 401** | Show Text (Dialogue line) | **Supported** | Tier 1 (Live Runtime) | Multi-line dialogue strings extracted per line with exact event page index |
-| **Code 102** | Show Choices (Array of choices) | **Supported** | Tier 1 (Live Runtime) | Parameter index 0 contains array of choice strings |
-| **Code 402** | When Choice (Branch header) | **Supported** | Tier 1 (Live Runtime) | Parameter index 1 contains branch label matching choice array |
-| **Code 405** | Show Scrolling Text | **Supported** | Tier 1 (Live Game) | Extracted with page locator |
-| **Code 320** | Change Actor Name | **Supported** | Tier 1 (Live Game) | Parameter index 1 extracted |
-| **Code 324** | Change Actor Nickname | **Supported** | Tier 1 (Live Game) | Parameter index 1 extracted |
-| **Code 325** | Change Actor Profile | **Supported** | Tier 1 (Live Game) | Parameter index 1 extracted |
-| **Code 111** | Conditional Branch | **Supported** | Tier 1 (Live Runtime) | Event commands inside nested branches indexed deterministically via `list[idx]` |
-| `CommonEvents.json` | Global common event commands | **Supported** | Tier 1 (Live Game) | Indexed via `common_events[id].list[idx]` |
+| Map `displayName` | In-game area popup name | **Supported** | Tier 2 (Real Game File Structural) | Keyed to `MapXXX.json::displayName` (banner rendered in Pilot 4) |
+| **Code 101** | Show Text (Speaker Name - MZ) | **Supported** | Tier 1 (Direct Native-Runtime) | Parameter 4 extracted and patched for MZ; safely omitted in MV |
+| **Code 401** | Show Text (Dialogue line) | **Supported** | Tier 1 (Direct Native-Runtime) | Multi-line dialogue rendered in NW.js Map 7 torch chamber (Pilot 6B) |
+| **Code 102** | Show Choices (Array of choices) | **Supported** | Tier 1 (Direct Native-Runtime) | Parameter 0 choices rendered in NW.js choice box (Pilot 6B) |
+| **Code 402** | When Choice (Branch header) | **Supported** | Tier 1 (Direct Native-Runtime) | Parameter 1 branch header rendered in choice selection (Pilot 6B) |
+| **Code 405** | Show Scrolling Text | **Supported** | Tier 2 (Real Game File Structural) | Extracted with page locator |
+| **Code 320** | Change Actor Name | **Supported** | Tier 2 (Real Game File Structural) | Parameter index 1 extracted |
+| **Code 324** | Change Actor Nickname | **Supported** | Tier 2 (Real Game File Structural) | Parameter index 1 extracted |
+| **Code 325** | Change Actor Profile | **Supported** | Tier 2 (Real Game File Structural) | Parameter index 1 extracted |
+| **Code 111** | Conditional Branch | **Unverified for Nested Content** | Unverified (Limitation) | Linear event list parsing visits commands nested in Command 111 blocks via list[idx] during extraction (3,489 matching nested units extracted in Playful Parcels), and direct locator patching leaves condition parameters intact. However, because no existing automated tests in the repository assert Command 111 branching, and no runtime session evaluated it, Command 111 support is classified as unverified for nested content rather than verified real-game structural coverage. |
+| `CommonEvents.json` | Global common event commands | **Supported** | Tier 2 (Real Game File Structural) | Indexed via `common_events[id].list[idx]` |
 
 ### D. Escape Codes & Placeholders
 RPG Maker uses rich escape formatting codes in dialogue and system messages. GameLingo protects these during machine translation via sentinel token masking and validates their preservation during review and patch planning:
@@ -121,9 +123,9 @@ Total Units: 8,223 | Total Source Size: 28 Files (~2.5 MB JSON)
 ```
 
 ### Analysis & Throughput Findings
-- **Sub-100ms Extraction:** The single-pass extraction engine processes over 90,000 units per second, parsing all 28 project data files in **88.15 ms**.
-- **Interactive CSV Round-Trip:** Exporting and validating an 8,200-row translation workbook takes approximately **620 ms**, ensuring that UI operations on large games never freeze the user interface.
-- **Instantaneous Patch Planning:** Planning and dry-run validation take less than **100 ms** combined, permitting responsive pre-patch validation in the GUI.
+- **Backend Performance Measurement:** The recorded benchmark measures backend extraction, database ingestion, CSV processing, and patch-planning performance (88.15 ms extraction for 8,223 units across 28 files, 45.55 ms SQLite ingestion, 620.72 ms CSV export, 620.17 ms import preview/validation, and 31.47 ms patch planning).
+- **Asynchronous Worker Integration:** Extraction uses an asynchronous worker (`ExtractionWorker`) where verified by the application code and tests.
+- **UI Responsiveness Boundary:** General UI responsiveness under sustained large-project workloads has not been established unless specific UI-level evidence exists. Sub-second backend service throughput indicates computational efficiency, but does not prove general UI responsiveness.
 
 ---
 
@@ -245,4 +247,4 @@ All automated verification gates passed cleanly:
 - **Execution Log:** [`evidence/gl_rpgm_pilot/gl_rpgm_pilot_7_log.txt`](file:///e:/GameLingo/evidence/gl_rpgm_pilot/gl_rpgm_pilot_7_log.txt)
 - **Baseline Integrity:** `E:\gamelingo_mz_sample_candidate\sample_game` (100.0% untouched, SHA-256 verified)
 
-**Conclusion:** GameLingo's RPG Maker MV/MZ localization subsystem is thoroughly audited, resilient against systemic failure modes, highly performant on large titles, and **production-ready**.
+**Conclusion:** GameLingo's RPG Maker MV/MZ localization subsystem is thoroughly audited, resilient against systemic failure modes, highly performant on large titles, and **production-ready for standard core schema workflows** (with plugins, custom plugin commands, and save files explicitly excluded by design).

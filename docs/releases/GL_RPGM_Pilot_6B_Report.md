@@ -146,15 +146,15 @@ flowchart TD
 ## 4. Visual Evidence Carousel
 
 ````carousel
-![Scene 1: Title Screen](C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl_rpgm_pilot_6b_title_screen.png)
+![Scene 1: Title Screen](../../evidence/gl_rpgm_pilot/gl_rpgm_pilot_6b_title_screen.png)
 <!-- slide -->
-![Scene 2: Load Screen](C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl_rpgm_pilot_6b_load_screen.png)
+![Scene 2: Load Screen](../../evidence/gl_rpgm_pilot/gl_rpgm_pilot_6b_load_screen.png)
 <!-- slide -->
-![Scene 3: Map 7 Torch Chamber](C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl_rpgm_pilot_6b_map7_torch_chamber.png)
+![Scene 3: Map 7 Torch Chamber](../../evidence/gl_rpgm_pilot/gl_rpgm_pilot_6b_map7_torch_chamber.png)
 <!-- slide -->
-![Scene 4: Choice Dialogue Prompt](C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl_rpgm_pilot_6b_dialogue_choices.png)
+![Scene 4: Choice Dialogue Prompt](../../evidence/gl_rpgm_pilot/gl_rpgm_pilot_6b_dialogue_choices.png)
 <!-- slide -->
-![Scene 5: Branch Resolution (Torch Extinguished)](C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl_rpgm_pilot_6b_branch_resolution.png)
+![Scene 5: Branch Resolution (Torch Extinguished)](../../evidence/gl_rpgm_pilot/gl_rpgm_pilot_6b_branch_resolution.png)
 ````
 
 ### Visual Analysis of Verification Scenes

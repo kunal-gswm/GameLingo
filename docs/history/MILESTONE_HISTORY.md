@@ -182,30 +182,28 @@ All verified distributable Windows x64 package builds (`dist\GameLingo-Windows-x
 - **Quality Gate:** 371 passed, 0 skipped.
 
 ### GL-RPGM-PILOT-5: MZ Foreign-Language Localization Acceptance
-- **Summary:** Full real-game localization acceptance verification on official RPG Maker MZ sample game `なんにも起きない村からの脱出` (*Escape from the Nothing-Happens Village*), validating genuine Japanese-to-English extraction, token safety validation, atomic live patching, interactive choice navigation and branch execution in native NW.js runtime, and byte-exact rollback.
+### GL-RPGM-PILOT-5 / 5A: MZ Foreign-Language Localization Acceptance
+- **Summary:** Localization acceptance verification on official RPG Maker MZ sample game `なんにも起きない村からの脱出` (*Escape from the Nothing-Happens Village*), validating genuine Japanese-to-English extraction, token safety validation, atomic live patching, NW.js runtime execution with localized window title, and byte-exact rollback.
 - **Key Deliverables:**
-  - Qualified candidate game from official RPG Maker MZ portal (`https://rpgmakerofficial.com/product/mz/download/dlc/dl_04.html`) under license terms permitting user modification and free distribution. Preserved baseline fixture completely untouched at `E:\gamelingo_mz_sample_candidate\sample_game`.
+  - Qualified candidate game from official RPG Maker MZ portal under license terms permitting user modification and free distribution. Preserved baseline fixture completely untouched at `E:\gamelingo_mz_sample_candidate\sample_game`.
   - Executed in dedicated disposable directory (`E:\gamelingo_rpgm_pilot\run_20261016_153332_sample_mz\game`) protected by fail-closed ownership marker (`.gl_pilot_owned.json`) and equipped with native NW.js v1.8.0 binaries.
   - Schema-aware extraction audit: extracted 1,143 units across 11 files with confidence 1.0; stratified 50-unit sample locator audit yielded 50/50 exact matches against raw JSON (100.0%).
   - Selected, human-reviewed, and safety-validated 23 authentic Japanese units across `System.json`, `Map001.json`, `Map002.json`, and `Map007.json` with 0 errors and 0 warnings.
   - Patch planning, dry-run safety verification (status `preview`, 0 mutations detected), and live atomic patch execution (backup `8c632a1a-0fb4-4a5a-96e3-be78832f84c3`), verifying 100% locator resolution on disk.
-  - Native runtime interactive gameplay verification: launched `Game.exe` (PID 27256) and captured 4 distinct in-game scenes:
-    1. Title Screen (`gl_rpgm_pilot_5_title_screen.png`): localized title `Escape from the Nothing-Happens Village` and commands `New Game`, `Continue`, `Options`.
-    2. Load Screen (`gl_rpgm_pilot_5_load_screen.png`): localized prompt `Select a file to load:`.
-    3. Choice Dialogue Prompt (`gl_rpgm_pilot_5_dialogue_choices.png`): Map 7 torch chamber rendered prompt `Will you extinguish the fire?` with choice options `Yes` / `No`.
-    4. Branch Resolution Execution (`gl_rpgm_pilot_5_branch_resolution.png`): selected `Yes` in choice box, live MZ engine executed branch 0 condition, and extinguished the torch flame.
+  - Native runtime execution in NW.js (PID 27256): verified localized window title `Escape from the Nothing-Happens Village` and splash screen boot.
+  - Historical Evidence Note: Keystroke automation opened the Options menu from the title screen rather than navigating into Save File 3 (Map 7 Torch Chamber). Map 7 torch chamber choice interaction and extinguished flame branch execution were subsequently achieved and evidenced in GL-RPGM-PILOT-6B.
   - Rollback verification: restored all affected files via `execute_restore`; verified 100.0% byte-for-byte SHA-256 match against baseline for `System.json`, `Map001.json`, `Map002.json`, and `Map007.json`.
   - Preserved synthetic bilingual regression test suite ([`tests/integration/test_rpgmaker_mz_foreign_language.py`](../../tests/integration/test_rpgmaker_mz_foreign_language.py)) as permanent regression defense.
-  - Status: **PASSED** (all RPG Maker MZ foreign-language gameplay acceptance gates achieved).
+  - Status: **PARTIAL** (Official Sample Qualification, Extraction, Patching, Window Localization, and Rollback Passed; Map 7 In-Game Puzzle Verification Deferred to GL-RPGM-PILOT-6B).
 - **Report:** [`docs/releases/GL_RPGM_Pilot_5_Report.md`](../releases/GL_RPGM_Pilot_5_Report.md)
 - **Evidence:** `evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_evidence.json`, `gl_rpgm_pilot_5_log.txt`, `gl_rpgm_pilot_5_title_screen.png`, `gl_rpgm_pilot_5_load_screen.png`, `gl_rpgm_pilot_5_dialogue_choices.png`, `gl_rpgm_pilot_5_branch_resolution.png`.
 - **Harness:** `scripts/gl_rpgm_pilot_5_sample_mz.py`
 - **Quality Gate:** 375 passed, 0 skipped; 0 ruff errors.
 
 ### GL-RPGM-PILOT-6: RPG Maker MZ Application-Level Acceptance
-- **Summary:** Complete end-to-end application workflow acceptance verification connecting user-facing UI pages, background workers, translation/review services, safety validation, atomic patch planning, and rollback recovery against official RPG Maker MZ candidate `なんにも起きない村からの脱出` (*Escape from the Nothing-Happens Village*).
+- **Summary:** End-to-end application workflow integration verification connecting user-facing UI pages, background workers, translation/review services, safety validation, atomic patch planning, and rollback recovery against official RPG Maker MZ candidate `なんにも起きない村からの脱出` (*Escape from the Nothing-Happens Village*).
 - **Key Deliverables:**
-  - Validated all 9 stages through actual application boundaries (`AppState`, `DashboardPage`, `ExtractionWorker`, `ReviewPage`, `ExportImportService`, `ReviewService`, `PatchPage`, `execute_restore`).
+  - Connected all 9 stages through actual application boundaries (`AppState`, `DashboardPage`, `ExtractionWorker`, `ReviewPage`, `ExportImportService`, `ReviewService`, `PatchPage`, `execute_restore`).
   - Identified and fixed 3 architectural defect areas: implemented missing `ExportImportService.import_csv` preview+apply method; fixed adapter resolution and escape token preservation during CSV import (allowing legitimate brackets and blocking missing tokens); added live quality feedback and untranslated filtering in `ReviewPage`; improved structural MZ engine detection on `DashboardPage`.
   - Added 3 targeted unit and integration regression tests (`tests/unit/test_export_import.py`, `tests/integration/test_review.py`, `tests/integration/test_gui.py`).
   - Extracted 1,143 units across 18 project files in <0.2s via `ExtractionWorker`.
@@ -213,13 +211,10 @@ All verified distributable Windows x64 package builds (`dist\GameLingo-Windows-x
   - Safety validation: intentionally tested sentinel leak (`XXXTOKEN1XXX`), confirming status `needs_review`, `SENTINEL_LEAK` error flag, and approval blocking.
   - Review & Approval: batch approved all 23 target units via `ReviewService.approve_all`, clearing the review queue to 0 units.
   - Patch planning, dry-run safety (status `preview`), and atomic apply via `PatchPage` (backup `65d78291-8bad-413e-9c82-72403b9fce98`), verifying all 23 disk locators with 100% fidelity.
-  - Native runtime interactive gameplay verification in NW.js v1.8.0 `Game.exe` (PID 29496), capturing 4 gameplay scenes:
-    1. Title Screen (`gl_rpgm_pilot_6_title_screen.png`): localized title `Escape from the Nothing-Happens Village` and commands `New Game`, `Continue`, `Options`.
-    2. Load Screen (`gl_rpgm_pilot_6_load_screen.png`): localized prompt `Select a file to load:`.
-    3. Choice Dialogue Prompt (`gl_rpgm_pilot_6_dialogue_choices.png`): Map 7 prompt `Will you extinguish the fire?` with choices `Yes` / `No`.
-    4. Branch Resolution Execution (`gl_rpgm_pilot_6_branch_resolution.png`): selected `Yes`, live MZ engine executed branch condition 0, visibly extinguishing torch flame.
+  - Native runtime execution in NW.js (PID 29496): verified in-game Title screen commands and Load screen header prompt.
+  - Historical Audit Note: As audited in GL-RPGM-PILOT-6A, stages 3, 4, 5, 6 (apply), and 9 called service methods directly rather than GUI widget events, and keystroke timing captured the load list rather than Map 7. 100% GUI widget automation and authentic Map 7 torch chamber interaction were closed in GL-RPGM-PILOT-6B.
   - Rollback verification: restored all affected files via `execute_restore`; verified 100.0% byte-for-byte SHA-256 match against baseline for `System.json`, `Map001.json`, `Map002.json`, and `Map007.json`. Verified baseline candidate remained 100% untouched.
-  - Status: **PASSED** (all application-level acceptance gates achieved).
+  - Status: **PARTIAL** (Application Architecture & Services Verified; Full GUI Widget Event Chain & Map 7 Runtime Evidence Closed in Pilot 6B).
 - **Report:** [`docs/releases/GL_RPGM_Pilot_6_Report.md`](../releases/GL_RPGM_Pilot_6_Report.md)
 - **Evidence:** `evidence/gl_rpgm_pilot/gl_rpgm_pilot_6_evidence.json`, `gl_rpgm_pilot_6_log.txt`, `gl_rpgm_pilot_6_title_screen.png`, `gl_rpgm_pilot_6_load_screen.png`, `gl_rpgm_pilot_6_dialogue_choices.png`, `gl_rpgm_pilot_6_branch_resolution.png`.
 - **Harness:** `scripts/gl_rpgm_pilot_6_app_workflow.py`
@@ -256,7 +251,8 @@ All verified distributable Windows x64 package builds (`dist\GameLingo-Windows-x
 - **Summary:** Production-readiness audit evaluating GameLingo's RPG Maker MV/MZ localization workflow across 48 schema areas, high-throughput commercial scale (8,223 units on *Playful Parcels*), 9 deep failure injection and recovery scenarios, translation review safety, and strict encoding/locator collision isolation.
 - **Key Deliverables:**
   - Audited 48 capability areas across system terms, database records, map/common event commands (101, 401, 102, 402, 405, 320, 324, 325, 111), escape codes (`\V`, `\N`, `\P`, `\C`, `\I`, `\FS`, `\PX`, `\PY`, `\G`, format specifiers), UTF-8 BOM preservation, and explicit boundary handling.
-  - Scale Benchmark (*Playful Parcels*, 8,223 units, 28 data files): sub-second performance across all pipeline stages (extraction in 88.15 ms at 93,286 units/sec; SQLite ingestion in 45.55 ms; CSV export in 620.72 ms; CSV preview in 620.17 ms; patch planning in 31.47 ms; validation in 65.21 ms).
+  - Differentiated verification tiers: Tier 1 (Direct Native-Runtime), Tier 2 (Real Game File Structural), Tier 3 (Automated Unit/Integration Test Suite), and Tier 4 (Synthetic Fault-Injection Harness).
+  - Scale Benchmark (*Playful Parcels*, 8,223 units, 28 data files): The recorded benchmark measures backend extraction (88.15 ms at 93,286 units/sec), database ingestion (45.55 ms SQLite ingestion), CSV processing (620.72 ms export, 620.17 ms preview), and patch-planning performance (31.47 ms). Extraction uses an asynchronous worker where verified by the application code and tests; general UI responsiveness under sustained large-project workloads has not been established unless specific UI-level evidence exists.
   - Executed 9 failure injection and recovery audits with 100% pass rate:
     1. Stale source rejection (`stale_source`).
     2. Invalid locator rejection (`locator_not_found`).
@@ -269,10 +265,23 @@ All verified distributable Windows x64 package builds (`dist\GameLingo-Windows-x
     9. Duplicate CSV row conflict abortion (atomic rollback, 0 rows modified).
   - Translation Review Safety: verified automatic status demotion (`approved` -> `draft` upon CSV edit) and quality heuristic warnings (`EMPTY_OUTPUT`, `IDENTICAL_TO_SOURCE`, `LENGTH_MISMATCH`).
   - Baseline candidate at `E:\gamelingo_mz_sample_candidate\sample_game` verified 100.0% untouched.
-  - Status: **PASSED** (production-readiness audit complete; workflow certified for RPG Maker MV/MZ standard schema projects).
+  - Status: **PASSED (Production-Ready for Standard RPG Maker MV/MZ Core Schema Workflows)**.
 - **Report:** [`docs/releases/GL_RPGM_Pilot_7_Report.md`](../releases/GL_RPGM_Pilot_7_Report.md)
 - **Evidence:** `evidence/gl_rpgm_pilot/gl_rpgm_pilot_7_evidence.json`, `gl_rpgm_pilot_7_log.txt`.
 - **Harness:** `scripts/gl_rpgm_pilot_7_audit.py`
+- **Quality Gate:** 378 passed, 0 skipped; 0 ruff errors; 100% format compliance.
+
+### GL-RPGM-PILOT-7A: Historical Evidence Reconciliation and Production-Readiness Claim Audit
+- **Summary:** Comprehensive documentation reconciliation and evidence audit across milestones 5/5A, 6, 6A, 6B, and 7. Rectified historical scene misattributions, established a clear 4-tier verification taxonomy, replaced machine-specific local paths with repository-relative paths, calibrated backend service throughput claims, and verified pristine baseline integrity and zero repository leakage.
+- **Key Deliverables:**
+  - Reconciled Pilot 5/5A: Disclosed that while engine qualification, 1,143-unit extraction, patching, window title localization, and byte-exact rollback passed, runtime keystroke automation opened the Options menu (`常時ダッシュ`) rather than Save File 3 (Map 7 Torch Chamber). Appropriately calibrated status to **PARTIAL**.
+  - Reconciled Pilot 6: Clarified that while application service integration and SQLite persistence succeeded, stages 3, 4, 5, 6 (apply), and 9 called service functions directly and keystrokes captured the load list rather than Map 7. Appropriately calibrated status to **PARTIAL**.
+  - Attributed genuine in-game Map 7 torch chamber choice interaction, prompt rendering, and flame extinguishing branch resolution to **GL-RPGM-PILOT-6B**, which verified File 3 (`file3.rmmzsave`) and drove 100% of application stages through PySide6 Qt GUI widgets.
+  - Re-classified Pilot 7 coverage matrix into a rigorous 4-tier verification taxonomy (Tier 1 Direct Native-Runtime, Tier 2 Real Game File Structural, Tier 3 Automated Test Suite, Tier 4 Synthetic Fault Injection). Corrected database tables to Tier 2, and classified Event Command 111 (Conditional Branch) as **unverified for nested content**, recognizing that linear command-list iteration without dedicated test assertions or runtime proof does not constitute verified structural coverage.
+  - Calibrated Performance Claims: Replaced overbroad responsiveness claims with a precise distinction: the recorded benchmark measures backend extraction, database ingestion, CSV processing, and patch-planning performance; extraction uses an asynchronous worker where verified by the application code and tests; general UI responsiveness under sustained large-project workloads has not been established unless specific UI-level evidence exists.
+  - Repository Hygiene: Replaced machine-specific absolute paths (`file:///C:/Users/...`) across reports with repository-relative paths. Verified 0 game binaries, 0 save files, and 0 copyrighted assets are tracked in Git.
+  - Status: **AUDIT COMPLETED & RECONCILED**.
+- **Report:** [`docs/releases/GL_RPGM_Pilot_7A_Documentation_Audit.md`](../releases/GL_RPGM_Pilot_7A_Documentation_Audit.md)
 - **Quality Gate:** 378 passed, 0 skipped; 0 ruff errors; 100% format compliance.
 
 
