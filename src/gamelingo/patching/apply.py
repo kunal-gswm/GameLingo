@@ -113,23 +113,40 @@ def apply_plan(
         return report
 
     plan_root_str = plan.get("target_root")
-    if plan_root_str:
-        plan_root = Path(plan_root_str).resolve()
-        if plan_root != source_root_resolved:
-            report["status"] = "failed"
-            report["errors"].append(
-                f"Plan target root mismatch: plan was created for '{plan_root}', but target is '{source_root_resolved}'."
-            )
-            return report
-
-    if (
-        expected_project_id
-        and plan.get("project_id")
-        and plan.get("project_id") != expected_project_id
-    ):
+    if not plan_root_str or not str(plan_root_str).strip():
         report["status"] = "failed"
         report["errors"].append(
-            f"Plan project ID mismatch: plan belongs to project '{plan.get('project_id')}', but expected '{expected_project_id}'."
+            "Plan is missing required 'target_root' identity metadata. Please regenerate the plan."
+        )
+        return report
+
+    try:
+        plan_root = Path(plan_root_str).resolve()
+    except Exception as e:
+        report["status"] = "failed"
+        report["errors"].append(f"Invalid target_root in plan: {e}")
+        return report
+
+    if plan_root != source_root_resolved:
+        report["status"] = "failed"
+        report["errors"].append(
+            f"Plan target root mismatch: plan was created for '{plan_root}', but target is '{source_root_resolved}'."
+        )
+        return report
+
+    plan_project_id = plan.get("project_id")
+    if not plan_project_id or not str(plan_project_id).strip():
+        report["status"] = "failed"
+        report["errors"].append(
+            "Plan is missing required 'project_id' identity metadata. Please regenerate the plan."
+        )
+        return report
+
+    plan_project_id = str(plan_project_id).strip()
+    if expected_project_id and plan_project_id != expected_project_id:
+        report["status"] = "failed"
+        report["errors"].append(
+            f"Plan project ID mismatch: plan belongs to project '{plan_project_id}', but expected '{expected_project_id}'."
         )
         return report
 
@@ -279,6 +296,18 @@ def apply_plan(
 
     if not affected_files:
         # Nothing to backup or write
+        return report
+
+    # Re-validate plan immediately before taking backups and modifying files
+    try:
+        validate_plan(
+            source_root_resolved, plan, expected_project_id=expected_project_id
+        )
+    except Exception as e:
+        report["status"] = "failed"
+        report["errors"].append(
+            f"Plan validation failed immediately before apply: {str(e)}"
+        )
         return report
 
     # 1. Backup

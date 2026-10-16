@@ -320,7 +320,7 @@ def cmd_plan_create(args):
 
     placeholders = ",".join("?" * len(unit_ids))
     cur = conn.execute(
-        f"SELECT * FROM translation_records WHERE unit_id IN ({placeholders})",
+        f"SELECT * FROM translation_records WHERE unit_id IN ({placeholders}) ORDER BY updated_at DESC, created_at DESC, id DESC",
         tuple(unit_ids),
     )
     rec_rows = cur.fetchall()
@@ -338,6 +338,7 @@ def cmd_plan_create(args):
                 quality_flags=r["quality_flags"],
                 created_at=r["created_at"],
                 updated_at=r["updated_at"],
+                source_hash=r["source_hash"] if "source_hash" in r.keys() else None,
             )
         )
 
@@ -491,6 +492,11 @@ def cmd_apply(args):
             expected_project_id=project_id,
         )
         print(f"Apply status: {report['status']}")
+        if report.get("errors"):
+            for err in report["errors"]:
+                print(f"Error: {err}")
+        if report["status"] == "failed":
+            sys.exit(1)
         if execute:
             if report.get("backup_id"):
                 print(f"Backup created: {report['backup_id']}")

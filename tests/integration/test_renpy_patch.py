@@ -272,6 +272,7 @@ def test_renpy_path_traversal_rejection(renpy_env):
         "version": "1.0",
         "plan_id": "malicious",
         "project_id": "test",
+        "target_root": str(source_dir.resolve()),
         "adapter_id": "renpy",
         "edits": [
             {

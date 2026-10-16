@@ -63,6 +63,9 @@ def _resolve_rpgmaker_locator(data: Any, locator: str) -> Any:
         raise ValueError(f"Could not resolve locator: {locator}")
 
 
+SUPPORTED_PLAN_VERSIONS = ("1.0", "1.1")
+
+
 def create_plan(
     source_root: Path,
     project_id: str,
@@ -73,6 +76,11 @@ def create_plan(
     target_lang: str = "en",
     include_activation: bool = False,
 ) -> Dict[str, Any]:
+    if not project_id or not str(project_id).strip():
+        raise PlannerError(
+            "Valid, non-empty project_id is required to create a patch plan."
+        )
+
     try:
         source_root_resolved = source_root.resolve(strict=True)
     except OSError:
@@ -86,7 +94,7 @@ def create_plan(
         "version": "1.0",
         "plan_id": str(uuid.uuid4()),
         "created_at": time.time(),
-        "project_id": project_id,
+        "project_id": str(project_id).strip(),
         "target_root": str(source_root_resolved),
         "adapter_id": "renpy" if is_renpy else "rpgmaker_mv_mz",
         "edits": [],
@@ -120,8 +128,17 @@ def create_plan(
         else:
             target_rel_path = f"tl/{tl_name}/strings.rpy"
 
-    # Map units to records
-    record_map = {r.unit_id: r for r in records}
+    # Map units to records deterministically: group by unit_id and sort by (updated_at, created_at, id) DESC
+    records_by_unit: Dict[str, List[TranslationRecord]] = {}
+    for r in records:
+        records_by_unit.setdefault(r.unit_id, []).append(r)
+
+    for uid in records_by_unit:
+        records_by_unit[uid].sort(
+            key=lambda rec: (rec.updated_at, rec.created_at, rec.id),
+            reverse=True,
+        )
+
     file_cache = {}
     hash_cache = {}
 
@@ -139,8 +156,8 @@ def create_plan(
                         rel_path = candidate
                         break
 
-        record = record_map.get(unit.id)
-        if not record:
+        unit_records = records_by_unit.get(unit.id, [])
+        if not unit_records:
             plan["edits"].append(
                 {
                     "unit_id": unit.id,
@@ -152,6 +169,39 @@ def create_plan(
                 }
             )
             continue
+
+        # Match record matching the unit's current source_hash.
+        matching_records = [
+            r
+            for r in unit_records
+            if r.source_hash is not None and r.source_hash == unit.source_hash
+        ]
+
+        if not matching_records:
+            if (
+                len(unit_records) == 1
+                and unit_records[0].source_hash is None
+                and not any(r.source_hash is not None for r in records)
+            ):
+                record = unit_records[0]
+            else:
+                plan["edits"].append(
+                    {
+                        "unit_id": unit.id,
+                        "file_id": unit.file_id,
+                        "file_path": rel_path if not is_renpy else target_rel_path,
+                        "locator": unit.locator,
+                        "status": "rejected",
+                        "reason": "missing_current_translation",
+                        "details": (
+                            f"No translation record matches current unit source_hash '{unit.source_hash}'. "
+                            f"Found {len(unit_records)} historical/legacy record(s)."
+                        ),
+                    }
+                )
+                continue
+        else:
+            record = matching_records[0]
 
         approval_errors = record.validate_for_approval()
         if approval_errors:
@@ -469,8 +519,11 @@ def validate_plan(
     Validates a plan against the filesystem without modifying anything.
     Throws PlanValidationError if malformed or unsafe.
     """
-    if plan.get("version") != "1.0":
-        raise PlanValidationError("Unsupported plan version.")
+    version = plan.get("version")
+    if version not in SUPPORTED_PLAN_VERSIONS:
+        raise PlanValidationError(
+            f"Unsupported plan version '{version}'. Supported versions: {list(SUPPORTED_PLAN_VERSIONS)}. Please regenerate the plan."
+        )
 
     try:
         source_root_resolved = source_root.resolve(strict=True)
@@ -478,20 +531,31 @@ def validate_plan(
         raise PlanValidationError("Source root does not exist.")
 
     plan_root_str = plan.get("target_root")
-    if plan_root_str:
-        plan_root = Path(plan_root_str).resolve()
-        if plan_root != source_root_resolved:
-            raise PlanValidationError(
-                f"Plan target root mismatch: plan was created for '{plan_root}', but target is '{source_root_resolved}'."
-            )
-
-    if (
-        expected_project_id
-        and plan.get("project_id")
-        and plan.get("project_id") != expected_project_id
-    ):
+    if not plan_root_str or not str(plan_root_str).strip():
         raise PlanValidationError(
-            f"Plan project ID mismatch: plan belongs to project '{plan.get('project_id')}', but expected '{expected_project_id}'."
+            "Plan is missing required 'target_root' identity metadata. Please regenerate the plan."
+        )
+
+    try:
+        plan_root = Path(plan_root_str).resolve()
+    except Exception as e:
+        raise PlanValidationError(f"Invalid target_root in plan: {e}")
+
+    if plan_root != source_root_resolved:
+        raise PlanValidationError(
+            f"Plan target root mismatch: plan was created for '{plan_root}', but target is '{source_root_resolved}'."
+        )
+
+    plan_project_id = plan.get("project_id")
+    if not plan_project_id or not str(plan_project_id).strip():
+        raise PlanValidationError(
+            "Plan is missing required 'project_id' identity metadata. Please regenerate the plan."
+        )
+
+    plan_project_id = str(plan_project_id).strip()
+    if expected_project_id and plan_project_id != expected_project_id:
+        raise PlanValidationError(
+            f"Plan project ID mismatch: plan belongs to project '{plan_project_id}', but expected '{expected_project_id}'."
         )
 
     is_renpy = plan.get("adapter_id") == "renpy"

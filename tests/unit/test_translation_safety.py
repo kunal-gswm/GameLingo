@@ -181,6 +181,7 @@ def test_planner_validate_plan_fails_closed_on_unsafe_edit(tmp_path: Path):
         "version": "1.0",
         "plan_id": "test_plan",
         "project_id": "proj_test",
+        "target_root": str(tmp_path.resolve()),
         "adapter_id": "renpy",
         "edits": [
             {

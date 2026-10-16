@@ -1,6 +1,6 @@
 import time
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 
 @dataclass
@@ -37,6 +37,7 @@ class TranslationRecord:
     quality_flags: str = "[]"
     created_at: float = 0.0
     updated_at: float = 0.0
+    source_hash: Optional[str] = None
 
     def __post_init__(self):
         if not self.id or not str(self.id).strip():

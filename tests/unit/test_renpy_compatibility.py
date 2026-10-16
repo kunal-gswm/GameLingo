@@ -543,6 +543,8 @@ def test_diagnostics_reported_in_apply_plan(tmp_path: Path):
     plan = {
         "version": "1.0",
         "plan_id": "test-plan-diag",
+        "project_id": "test_renpy",
+        "target_root": str(tmp_path.resolve()),
         "adapter_id": "renpy",
         "target_lang": "english",
         "edits": [
@@ -591,6 +593,8 @@ def test_unsupported_renpy_version_aborts_patch(tmp_path: Path):
     plan = {
         "version": "1.0",
         "plan_id": "test-plan-unsupported",
+        "project_id": "test_renpy",
+        "target_root": str(tmp_path.resolve()),
         "adapter_id": "renpy",
         "target_lang": "english",
         "edits": [
@@ -627,6 +631,8 @@ def test_diagnostics_for_unverified_known_version_in_apply_plan(tmp_path: Path):
     plan = {
         "version": "1.0",
         "plan_id": "test-plan-851",
+        "project_id": "test_renpy",
+        "target_root": str(tmp_path.resolve()),
         "adapter_id": "renpy",
         "target_lang": "english",
         "edits": [
@@ -667,6 +673,8 @@ def test_diagnostics_for_incomplete_version_in_apply_plan(tmp_path: Path):
     plan = {
         "version": "1.0",
         "plan_id": "test-plan-76",
+        "project_id": "test_renpy",
+        "target_root": str(tmp_path.resolve()),
         "adapter_id": "renpy",
         "target_lang": "english",
         "edits": [
@@ -789,6 +797,8 @@ def test_diagnostics_for_malformed_version_in_apply_plan(tmp_path: Path):
     plan = {
         "version": "1.0",
         "plan_id": "test-plan-malformed",
+        "project_id": "test_renpy",
+        "target_root": str(tmp_path.resolve()),
         "adapter_id": "renpy",
         "target_lang": "english",
         "edits": [

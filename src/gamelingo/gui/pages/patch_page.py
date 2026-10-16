@@ -1,5 +1,6 @@
 import json
 import time
+from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -270,7 +271,7 @@ class PatchPage(QWidget):
 
         placeholders = ",".join("?" * len(unit_ids))
         cur = conn.execute(
-            f"SELECT r.* FROM translation_records r JOIN translation_units u ON u.id = r.unit_id WHERE r.unit_id IN ({placeholders}) AND (r.source_hash IS NULL OR r.source_hash = u.source_hash)",
+            f"SELECT * FROM translation_records WHERE unit_id IN ({placeholders}) ORDER BY updated_at DESC, created_at DESC, id DESC",
             tuple(unit_ids),
         )
         rec_rows = cur.fetchall()
@@ -288,6 +289,7 @@ class PatchPage(QWidget):
                     quality_flags=r["quality_flags"],
                     created_at=r["created_at"],
                     updated_at=r["updated_at"],
+                    source_hash=r["source_hash"] if "source_hash" in r.keys() else None,
                 )
             )
 
@@ -334,16 +336,30 @@ class PatchPage(QWidget):
         plan_project_id = self.current_plan.get("project_id")
         plan_target_root = self.current_plan.get("target_root")
 
-        if plan_project_id and plan_project_id != expected_project_id:
+        if not plan_project_id or str(plan_project_id).strip() != expected_project_id:
             QMessageBox.critical(
                 self,
                 "Project Mismatch",
-                f"Patch plan was created for project '{plan_project_id}', but the currently active project is '{expected_project_id}'.\n\n"
+                f"Patch plan was created for project '{plan_project_id or 'UNKNOWN'}', but the currently active project is '{expected_project_id}'.\n\n"
                 "Patch application has been blocked for safety. Please generate a new patch plan.",
             )
             return
 
-        if plan_target_root and plan_target_root != current_target_root:
+        if not plan_target_root or not str(plan_target_root).strip():
+            QMessageBox.critical(
+                self,
+                "Missing Target Directory",
+                "Patch plan is missing target directory metadata.\n\n"
+                "Patch application has been blocked for safety. Please generate a new patch plan.",
+            )
+            return
+
+        try:
+            resolved_plan_root = str(Path(plan_target_root).resolve())
+        except Exception:
+            resolved_plan_root = plan_target_root
+
+        if resolved_plan_root != current_target_root:
             QMessageBox.critical(
                 self,
                 "Target Directory Mismatch",
