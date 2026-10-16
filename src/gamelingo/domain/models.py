@@ -28,10 +28,10 @@ class TranslationUnit:
 class TranslationRecord:
     id: str
     unit_id: str
-    provider: str
-    model: str
-    draft_text: str
-    final_text: str
-    quality_flags: str
-    created_at: float
-    updated_at: float
+    provider: str = ""
+    model: str = ""
+    draft_text: str = ""
+    final_text: str = ""
+    quality_flags: str = "[]"
+    created_at: float = 0.0
+    updated_at: float = 0.0

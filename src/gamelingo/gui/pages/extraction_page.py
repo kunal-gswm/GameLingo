@@ -75,6 +75,10 @@ class ExtractionWorker(QThread):
 
     def run(self):
         try:
+            if self.is_cancelled:
+                self.cancelled.emit()
+                return
+
             import json as _json
 
             from gamelingo.adapters.rpgmaker_mv_mz import (
@@ -105,6 +109,9 @@ class ExtractionWorker(QThread):
                     raise RuntimeError(
                         f"No supported game engine adapter detected at '{game_path}'."
                     )
+
+            if hasattr(adapter, "warnings"):
+                adapter.warnings = []
 
             extracted_count = 0
             batch = []

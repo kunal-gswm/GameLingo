@@ -92,6 +92,7 @@ class RPGMakerMVMZAdapter(GameAdapter):
         return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     def extract(self, install_path: Path) -> Iterator[TranslationUnit]:
+        self.warnings = []
         data_dir = self._get_data_dir(install_path)
         if not data_dir:
             return

@@ -255,10 +255,13 @@ def test_review_page_metadata_command_type_and_realtime_token_validation(
     """
     # First extract units into DB
     worker = ExtractionWorker(onboarding_app_state)
+    errors = []
     loop = QEventLoop()
     worker.finished.connect(lambda c: loop.quit())
+    worker.error.connect(lambda err: (errors.append(err), loop.quit()))
     worker.start()
     loop.exec()
+    assert not errors, f"Unexpected extraction error: {errors}"
 
     # Update units to draft so they appear in review queue
     conn = onboarding_app_state.db.connect()
@@ -322,10 +325,13 @@ def test_review_page_approve_all_skips_invalid_translations(qapp, onboarding_app
     and only approves units that are free of blocking errors.
     """
     worker = ExtractionWorker(onboarding_app_state)
+    errors = []
     loop = QEventLoop()
     worker.finished.connect(lambda c: loop.quit())
+    worker.error.connect(lambda err: (errors.append(err), loop.quit()))
     worker.start()
     loop.exec()
+    assert not errors, f"Unexpected extraction error: {errors}"
 
     conn = onboarding_app_state.db.connect()
     cur = conn.execute("SELECT id, source_text, tokens_json FROM translation_units")

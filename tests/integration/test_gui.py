@@ -867,6 +867,8 @@ def test_directory_switching_and_engine_detection_consistency(qapp, tmp_path):
     rpg_dir = tmp_path / "rpg_switch"
     rpg_dir.mkdir()
     (rpg_dir / "data").mkdir()
+    (rpg_dir / "js").mkdir()
+    (rpg_dir / "js" / "rmmz_core.js").write_text("// core", encoding="utf-8")
     with open(rpg_dir / "data" / "System.json", "w", encoding="utf-8") as f:
         json.dump({"gameTitle": "RPG Switch", "versionId": 99}, f)
 
@@ -1109,6 +1111,8 @@ def test_gui_rpgmaker_selection_unchanged(qapp, tmp_path):
     rpg_dir = tmp_path / "rpg_game"
     rpg_dir.mkdir()
     (rpg_dir / "data").mkdir()
+    (rpg_dir / "js").mkdir()
+    (rpg_dir / "js" / "rmmz_core.js").write_text("// core", encoding="utf-8")
     with open(rpg_dir / "data" / "System.json", "w", encoding="utf-8") as f:
         json.dump({"gameTitle": "RPG Test", "versionId": 1}, f)
 
