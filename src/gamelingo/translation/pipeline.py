@@ -17,6 +17,19 @@ def _hash_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+_PROJECT_IDENTITY_SQL = """(
+    CASE 
+        WHEN (project_id IS NOT NULL AND project_id != '' AND project_id != 'default')
+        THEN project_id
+        ELSE COALESCE(
+            (SELECT gf.project_id FROM game_files gf WHERE gf.id = translation_units.file_id LIMIT 1),
+            project_id,
+            'default'
+        )
+    END
+)"""
+
+
 class TranslationPipeline:
     def __init__(self, db: Database, provider: TranslationProvider):
         self.db = db
@@ -201,10 +214,11 @@ class TranslationPipeline:
                     ]
                 )
 
-                # Guarded update: only update if DB still matches the snapshot
+                expected_proj = snap.get("project_id") or project_id or "default"
+                # Guarded update: only update if DB still matches the snapshot and project identity
                 with conn:
                     cur_up = conn.execute(
-                        """
+                        f"""
                         UPDATE translation_units
                         SET status = ?
                         WHERE id = ?
@@ -212,12 +226,14 @@ class TranslationPipeline:
                           AND source_text = ?
                           AND (is_active = 1 OR is_active IS NULL)
                           AND status != 'obsolete'
+                          AND {_PROJECT_IDENTITY_SQL} = ?
                         """,
                         (
                             new_status,
                             snap["unit_id"],
                             snap["source_hash"],
                             snap["source_text"],
+                            expected_proj,
                         ),
                     )
                     if cur_up.rowcount == 1:
@@ -357,6 +373,12 @@ class TranslationPipeline:
         job_row = cur.fetchone()
         if not job_row:
             raise ValueError(f"Job {job_id} not found")
+
+        job_project_id = (
+            job_row["project_id"]
+            if (job_row and "project_id" in job_row.keys() and job_row["project_id"])
+            else "default"
+        )
 
         counts = {}
         if job_row["counts"]:
@@ -517,6 +539,12 @@ class TranslationPipeline:
                                     )
                                 )
 
+                                expected_proj = (
+                                    snap.get("project_id")
+                                    or job_project_id
+                                    or "default"
+                                )
+
                                 # Revalidate: project, active, text, and hash
                                 if (
                                     is_active == 0
@@ -524,9 +552,9 @@ class TranslationPipeline:
                                     or curr_row["source_text"] != snap["source_text"]
                                     or curr_row["source_hash"] != snap["source_hash"]
                                     or (
-                                        snap.get("project_id")
-                                        and db_proj != snap["project_id"]
-                                        and curr_row["project_id"] != snap["project_id"]
+                                        expected_proj
+                                        and db_proj != expected_proj
+                                        and curr_row["project_id"] != expected_proj
                                     )
                                 ):
                                     chunk_stale_units += 1
@@ -534,7 +562,7 @@ class TranslationPipeline:
 
                                 # Guarded update: ensures concurrent mutation between SELECT and UPDATE fails closed
                                 cur_up = conn.execute(
-                                    """
+                                    f"""
                                     UPDATE translation_units
                                     SET status = ?
                                     WHERE id = ?
@@ -542,12 +570,14 @@ class TranslationPipeline:
                                       AND source_text = ?
                                       AND (is_active = 1 OR is_active IS NULL)
                                       AND status != 'obsolete'
+                                      AND {_PROJECT_IDENTITY_SQL} = ?
                                     """,
                                     (
                                         new_status,
                                         unit_id,
                                         snap["source_hash"],
                                         snap["source_text"],
+                                        expected_proj,
                                     ),
                                 )
                                 if cur_up.rowcount != 1:
@@ -581,8 +611,14 @@ class TranslationPipeline:
                                     chunk_stale_units += 1
                                     continue
 
+                                expected_proj = (
+                                    snap.get("project_id")
+                                    or job_project_id
+                                    or "default"
+                                )
+
                                 cur_fail = conn.execute(
-                                    """
+                                    f"""
                                     UPDATE translation_units
                                     SET status = 'failed'
                                     WHERE id = ?
@@ -590,8 +626,14 @@ class TranslationPipeline:
                                       AND source_text = ?
                                       AND (is_active = 1 OR is_active IS NULL)
                                       AND status != 'obsolete'
+                                      AND {_PROJECT_IDENTITY_SQL} = ?
                                     """,
-                                    (unit_id, snap["source_hash"], snap["source_text"]),
+                                    (
+                                        unit_id,
+                                        snap["source_hash"],
+                                        snap["source_text"],
+                                        expected_proj,
+                                    ),
                                 )
                                 if cur_fail.rowcount == 1:
                                     chunk_failed_units += 1

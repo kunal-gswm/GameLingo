@@ -156,6 +156,21 @@ def create_plan(
                         rel_path = candidate
                         break
 
+        unit_pid = getattr(unit, "project_id", None)
+        if unit_pid and project_id and unit_pid != project_id and unit_pid != "default":
+            plan["edits"].append(
+                {
+                    "unit_id": unit.id,
+                    "file_id": unit.file_id,
+                    "file_path": rel_path if not is_renpy else target_rel_path,
+                    "locator": unit.locator,
+                    "status": "rejected",
+                    "reason": "project_mismatch",
+                    "details": f"Unit project '{unit_pid}' does not match plan project '{project_id}'",
+                }
+            )
+            continue
+
         unit_records = records_by_unit.get(unit.id, [])
         if not unit_records:
             plan["edits"].append(

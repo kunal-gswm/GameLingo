@@ -6,6 +6,18 @@ from gamelingo.domain.models import TranslationRecord
 from gamelingo.storage.database import Database
 from gamelingo.translation.validation import validate_translation
 
+_PROJECT_IDENTITY_SQL = """(
+    CASE 
+        WHEN (project_id IS NOT NULL AND project_id != '' AND project_id != 'default')
+        THEN project_id
+        ELSE COALESCE(
+            (SELECT gf.project_id FROM game_files gf WHERE gf.id = translation_units.file_id LIMIT 1),
+            project_id,
+            'default'
+        )
+    END
+)"""
+
 
 class ReviewService:
     def __init__(self, db: Database):
@@ -67,6 +79,7 @@ class ReviewService:
         conn = self.db.connect()
         query = """
             SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.tokens_json, u.status, u.source_hash, u.project_id,
+                   gf.project_id AS gf_project_id,
                    p.adapter_id,
                    r.id as record_id, r.rowid as record_rowid, r.draft_text, r.final_text as translated_text, r.quality_flags, r.provider, r.model, r.source_hash as record_source_hash
             FROM translation_units u
@@ -124,7 +137,12 @@ class ReviewService:
             pass
         return "rpgmaker_mv_mz"
 
-    def update_translation(self, unit_id: str, new_text: str):
+    def update_translation(
+        self,
+        unit_id: str,
+        new_text: str,
+        expected_project_id: Optional[str] = None,
+    ):
         """Updates text and revalidates. Resets status to draft or needs_review."""
         unit = self.get_unit(unit_id)
         if not unit:
@@ -158,22 +176,37 @@ class ReviewService:
 
         curr_hash = unit.get("source_hash")
         curr_text = unit.get("source_text")
+        unit_proj = (
+            unit.get("project_id")
+            if (unit.get("project_id") and unit.get("project_id") != "default")
+            else (unit.get("gf_project_id") or unit.get("project_id") or "default")
+        )
+        if (
+            expected_project_id
+            and unit_proj != expected_project_id
+            and unit.get("project_id") != expected_project_id
+        ):
+            raise ValueError(
+                f"Cannot update translation for unit {unit_id}: unit belongs to '{unit_proj}', but expected '{expected_project_id}'."
+            )
+        expected_proj = expected_project_id or unit_proj
         conn = self.db.connect()
         with conn:
             cur_up = conn.execute(
-                """
+                f"""
                 UPDATE translation_units SET status = ?
                 WHERE id = ?
                   AND (source_hash = ? OR (? IS NULL AND source_hash IS NULL))
                   AND source_text = ?
                   AND (is_active = 1 OR is_active IS NULL)
                   AND status != 'obsolete'
+                  AND {_PROJECT_IDENTITY_SQL} = ?
                 """,
-                (new_status, unit_id, curr_hash, curr_hash, curr_text),
+                (new_status, unit_id, curr_hash, curr_hash, curr_text, expected_proj),
             )
             if cur_up.rowcount == 0:
                 raise ValueError(
-                    f"Cannot update translation for unit {unit_id}: source changed or unit became inactive concurrently."
+                    f"Cannot update translation for unit {unit_id}: source or project changed, or unit became inactive concurrently."
                 )
 
             # Update record for the current source_hash or insert a new record with this source_hash
@@ -229,7 +262,11 @@ class ReviewService:
                     ),
                 )
 
-    def approve(self, unit_id: str):
+    def approve(
+        self,
+        unit_id: str,
+        expected_project_id: Optional[str] = None,
+    ):
         """Approves a translation if it has valid translation content and no blocking errors."""
         unit = self.get_unit(unit_id)
         if not unit:
@@ -267,27 +304,43 @@ class ReviewService:
         if any(i.severity == "error" for i in issues):
             raise ValueError(f"Cannot approve unit {unit_id}: has blocking errors.")
 
+        unit_proj = (
+            unit.get("project_id")
+            if (unit.get("project_id") and unit.get("project_id") != "default")
+            else (unit.get("gf_project_id") or unit.get("project_id") or "default")
+        )
+        if (
+            expected_project_id
+            and unit_proj != expected_project_id
+            and unit.get("project_id") != expected_project_id
+        ):
+            raise ValueError(
+                f"Cannot approve unit {unit_id}: unit belongs to '{unit_proj}', but expected '{expected_project_id}'."
+            )
+        expected_proj = expected_project_id or unit_proj
         conn = self.db.connect()
         with conn:
             cur_up = conn.execute(
-                """
+                f"""
                 UPDATE translation_units SET status = 'approved'
                 WHERE id = ?
                   AND (source_hash = ? OR (? IS NULL AND source_hash IS NULL))
                   AND source_text = ?
                   AND (is_active = 1 OR is_active IS NULL)
                   AND status != 'obsolete'
+                  AND {_PROJECT_IDENTITY_SQL} = ?
                 """,
                 (
                     unit_id,
                     unit.get("source_hash"),
                     unit.get("source_hash"),
                     unit.get("source_text"),
+                    expected_proj,
                 ),
             )
             if cur_up.rowcount == 0:
                 raise ValueError(
-                    f"Cannot approve unit {unit_id}: source changed or unit became inactive concurrently."
+                    f"Cannot approve unit {unit_id}: source or project changed, or unit became inactive concurrently."
                 )
 
     def approve_all(
@@ -346,11 +399,29 @@ class ReviewService:
                 for i in range(0, len(to_approve), chunk_size):
                     chunk = to_approve[i : i + chunk_size]
                     ph = ",".join(["?"] * len(chunk))
-                    conn.execute(
-                        f"UPDATE translation_units SET status = 'approved' WHERE id IN ({ph})",
-                        tuple(chunk),
-                    )
-            approved_count = len(to_approve)
+                    if project_id:
+                        cur_app = conn.execute(
+                            f"""
+                            UPDATE translation_units SET status = 'approved' 
+                            WHERE id IN ({ph})
+                              AND (is_active = 1 OR is_active IS NULL)
+                              AND status != 'obsolete'
+                              AND {_PROJECT_IDENTITY_SQL} = ?
+                            """,
+                            tuple(chunk) + (project_id,),
+                        )
+                    else:
+                        cur_app = conn.execute(
+                            f"""
+                            UPDATE translation_units SET status = 'approved' 
+                            WHERE id IN ({ph})
+                              AND (is_active = 1 OR is_active IS NULL)
+                              AND status != 'obsolete'
+                            """,
+                            tuple(chunk),
+                        )
+                    approved_count += cur_app.rowcount
+            skipped_count += len(to_approve) - approved_count
 
         return {"approved": approved_count, "skipped": skipped_count}
 

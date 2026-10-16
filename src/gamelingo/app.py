@@ -292,8 +292,23 @@ def cmd_plan_create(args):
     install_path = Path(row["install_path"])
 
     cur = conn.execute(
-        "SELECT * FROM translation_units WHERE status = 'approved' AND (is_active = 1 OR is_active IS NULL) AND (project_id = ? OR (project_id IS NULL AND file_id IN (SELECT id FROM game_files WHERE project_id = ?)))",
-        (project_id, project_id),
+        """
+        SELECT * FROM translation_units 
+        WHERE status = 'approved' 
+          AND (is_active = 1 OR is_active IS NULL) 
+          AND (
+              CASE 
+                  WHEN (project_id IS NOT NULL AND project_id != '' AND project_id != 'default')
+                  THEN project_id
+                  ELSE COALESCE(
+                      (SELECT gf.project_id FROM game_files gf WHERE gf.id = translation_units.file_id LIMIT 1),
+                      project_id,
+                      'default'
+                  )
+              END
+          ) = ?
+        """,
+        (project_id,),
     )
     unit_rows = cur.fetchall()
 

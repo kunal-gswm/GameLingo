@@ -9,6 +9,18 @@ from gamelingo.translation.spreadsheet import escape_cell, unescape_cell
 
 CSV_VERSION = "1.0"
 
+_PROJECT_IDENTITY_SQL = """(
+    CASE 
+        WHEN (project_id IS NOT NULL AND project_id != '' AND project_id != 'default')
+        THEN project_id
+        ELSE COALESCE(
+            (SELECT gf.project_id FROM game_files gf WHERE gf.id = translation_units.file_id LIMIT 1),
+            project_id,
+            'default'
+        )
+    END
+)"""
+
 EXPORT_COLUMNS = [
     "format_version",
     "project_id",
@@ -328,14 +340,24 @@ class ExportImportService:
                     ]
                 )
 
+                unit_proj = (
+                    unit.get("project_id")
+                    if (unit.get("project_id") and unit.get("project_id") != "default")
+                    else (
+                        unit.get("gf_project_id") or unit.get("project_id") or "default"
+                    )
+                )
+                expected_proj = project_id or unit_proj
+
                 cur_up = conn.execute(
-                    """
+                    f"""
                     UPDATE translation_units SET status = ?
                     WHERE id = ?
                       AND (source_hash = ? OR (? IS NULL AND source_hash IS NULL))
                       AND source_text = ?
                       AND (is_active = 1 OR is_active IS NULL)
                       AND status != 'obsolete'
+                      AND {_PROJECT_IDENTITY_SQL} = ?
                     """,
                     (
                         new_status,
@@ -343,11 +365,12 @@ class ExportImportService:
                         unit.get("source_hash"),
                         unit.get("source_hash"),
                         unit.get("source_text"),
+                        expected_proj,
                     ),
                 )
                 if cur_up.rowcount == 0:
                     raise ValueError(
-                        f"Cannot import translation for unit {unit_id}: source changed or unit became inactive concurrently."
+                        f"Cannot import translation for unit {unit_id}: source or project changed, or unit became inactive concurrently."
                     )
 
                 # Update only the current-source translation record, or insert one with current source_hash
