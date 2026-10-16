@@ -1,4 +1,6 @@
+import time
 from dataclasses import dataclass
+from typing import List
 
 
 @dataclass
@@ -35,3 +37,22 @@ class TranslationRecord:
     quality_flags: str = "[]"
     created_at: float = 0.0
     updated_at: float = 0.0
+
+    def __post_init__(self):
+        if not self.id or not str(self.id).strip():
+            raise ValueError("TranslationRecord id cannot be empty.")
+        if not self.unit_id or not str(self.unit_id).strip():
+            raise ValueError("TranslationRecord unit_id cannot be empty.")
+        now = time.time()
+        if self.created_at == 0.0:
+            self.created_at = now
+        if self.updated_at == 0.0:
+            self.updated_at = self.created_at
+
+    def validate_for_approval(self) -> List[str]:
+        """Validates that this record has valid, non-empty translation content suitable for approval."""
+        errors = []
+        effective_text = (self.final_text or self.draft_text or "").strip()
+        if not effective_text:
+            errors.append("Approved translation text cannot be empty.")
+        return errors

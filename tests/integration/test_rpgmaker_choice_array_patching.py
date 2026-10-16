@@ -2,9 +2,11 @@ import copy
 import json
 from pathlib import Path
 
+import pytest
+
 from gamelingo.adapters.rpgmaker_mv_mz import RPGMakerMVMZAdapter
-from gamelingo.domain.models import TranslationRecord
-from gamelingo.patching.apply import apply_plan
+from gamelingo.domain.models import TranslationRecord, TranslationUnit
+from gamelingo.patching.apply import _apply_rpgmaker_locator, apply_plan
 from gamelingo.patching.planner import (
     _resolve_rpgmaker_locator,
     create_plan,
@@ -672,3 +674,78 @@ def test_code_102_choice_array_backup_and_exact_rollback(tmp_path: Path):
     assert (
         _resolve_rpgmaker_locator(restored_data, target_unit.locator) == "Decline Quest"
     )
+
+
+def test_code_102_choice_array_invalid_index_fails_closed(tmp_path: Path):
+    """Verifies that referencing an out-of-bounds choice index (e.g. choices[99]) fails closed:
+
+    1. _resolve_rpgmaker_locator raises ValueError.
+    2. create_plan marks the edit as rejected with reason locator_not_found.
+    3. _apply_rpgmaker_locator directly raises ValueError.
+    4. apply_plan performs no disk writes, leaving JSON files byte-for-byte identical.
+    """
+    game_dir = tmp_path / "game"
+    backup_dir = tmp_path / "backups"
+    _create_synthetic_choice_project(game_dir)
+
+    map_path = game_dir / "data/Map001.json"
+    sha_before = calculate_sha256(map_path)
+    data = json.loads(map_path.read_text(encoding="utf-8"))
+
+    # 1. Direct locator resolution on invalid index
+    invalid_locator = "events[1].pages[0].list[2].choices[99]"
+    with pytest.raises(ValueError, match="Could not resolve locator"):
+        _resolve_rpgmaker_locator(data, invalid_locator)
+
+    # 2. Direct apply on invalid index
+    with pytest.raises(ValueError, match="Could not apply locator"):
+        _apply_rpgmaker_locator(data, invalid_locator, "Bogus Choice")
+
+    # 3. Plan creation with invalid choice unit
+    bogus_unit = TranslationUnit(
+        id=f"Map001.json::{invalid_locator}",
+        file_id="Map001.json",
+        locator=invalid_locator,
+        source_text="Non-Existent Choice",
+        context="Signpost (Choice)",
+        tokens_json="[]",
+        source_hash="fake_hash",
+        status="approved",
+    )
+    bogus_record = TranslationRecord(
+        id="rec_bogus",
+        unit_id=bogus_unit.id,
+        provider="manual",
+        model="human",
+        draft_text="Bogus TL",
+        final_text="Bogus TL",
+        quality_flags="[]",
+        created_at=100.0,
+        updated_at=100.0,
+    )
+
+    plan = create_plan(
+        source_root=game_dir,
+        project_id="invalid_choice_index_test",
+        units=[bogus_unit],
+        records=[bogus_record],
+        file_path_map={"Map001.json": "data/Map001.json"},
+        adapter_id="rpgmaker_mv_mz",
+    )
+
+    # Must be marked rejected with locator_not_found
+    assert len(plan["edits"]) == 1
+    edit = plan["edits"][0]
+    assert edit["status"] == "rejected"
+    assert edit["reason"] == "locator_not_found"
+
+    # 4. Applying plan with rejected edits must make 0 changes
+    report = apply_plan(
+        source_root=game_dir,
+        plan=plan,
+        backup_root=backup_dir,
+        execute=True,
+        overwrite=True,
+    )
+    assert len(report.get("successfully_changed_files", [])) == 0
+    assert calculate_sha256(map_path) == sha_before

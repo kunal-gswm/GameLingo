@@ -42,7 +42,42 @@ class ExtractionWorker(QThread):
     def cancel(self):
         self.is_cancelled = True
 
-    def _write_batch(self, conn, game_path, adapter, batch):
+    def _create_staging_tables(self, conn):
+        conn.execute("""
+            CREATE TEMP TABLE IF NOT EXISTS staging_game_files (
+                id TEXT PRIMARY KEY,
+                project_id TEXT,
+                relative_path TEXT,
+                format TEXT,
+                source_hash TEXT,
+                size INTEGER,
+                detected_at REAL
+            )
+        """)
+        conn.execute("DELETE FROM staging_game_files")
+
+        conn.execute("""
+            CREATE TEMP TABLE IF NOT EXISTS staging_translation_units (
+                id TEXT PRIMARY KEY,
+                file_id TEXT,
+                locator TEXT,
+                source_text TEXT,
+                context TEXT,
+                tokens_json TEXT,
+                source_hash TEXT,
+                status TEXT
+            )
+        """)
+        conn.execute("DELETE FROM staging_translation_units")
+
+    def _clean_staging_tables(self, conn):
+        try:
+            conn.execute("DELETE FROM staging_game_files")
+            conn.execute("DELETE FROM staging_translation_units")
+        except Exception:
+            pass
+
+    def _write_staging_batch(self, conn, game_path, adapter, batch):
         with conn:
             for u in batch:
                 if hasattr(adapter, "get_relative_path"):
@@ -55,12 +90,12 @@ class ExtractionWorker(QThread):
                     )
                 fmt = "rpy" if getattr(adapter, "adapter_id", "") == "renpy" else "json"
                 conn.execute(
-                    "INSERT OR IGNORE INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT OR REPLACE INTO staging_game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (u.file_id, "default", rel, fmt, "", 0, time.time()),
                 )
 
                 conn.execute(
-                    "INSERT OR IGNORE INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT OR REPLACE INTO staging_translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         u.id,
                         u.file_id,
@@ -73,7 +108,38 @@ class ExtractionWorker(QThread):
                     ),
                 )
 
+    def _publish_staging_to_production(self, conn):
+        with conn:
+            conn.execute("""
+                INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at)
+                SELECT id, project_id, relative_path, format, source_hash, size, detected_at FROM staging_game_files
+                WHERE 1
+                ON CONFLICT(id) DO UPDATE SET
+                    relative_path = excluded.relative_path,
+                    format = excluded.format,
+                    detected_at = excluded.detected_at
+            """)
+
+            conn.execute("""
+                INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status)
+                SELECT id, file_id, locator, source_text, context, tokens_json, source_hash, status FROM staging_translation_units
+                WHERE 1
+                ON CONFLICT(id) DO UPDATE SET
+                    locator = excluded.locator,
+                    source_text = excluded.source_text,
+                    context = excluded.context,
+                    tokens_json = excluded.tokens_json,
+                    status = CASE 
+                        WHEN translation_units.source_hash = excluded.source_hash THEN translation_units.status 
+                        ELSE excluded.status 
+                    END,
+                    source_hash = excluded.source_hash
+            """)
+
+            self._clean_staging_tables(conn)
+
     def run(self):
+        conn = None
         try:
             if self.is_cancelled:
                 self.cancelled.emit()
@@ -113,44 +179,57 @@ class ExtractionWorker(QThread):
             if hasattr(adapter, "warnings"):
                 adapter.warnings = []
 
+            self._create_staging_tables(conn)
+
             extracted_count = 0
             batch = []
             for u in adapter.extract(game_path):
                 if self.is_cancelled:
+                    self._clean_staging_tables(conn)
                     self.cancelled.emit()
                     return
                 batch.append(u)
                 extracted_count += 1
                 if len(batch) >= 50:
-                    self._write_batch(conn, game_path, adapter, batch)
+                    self._write_staging_batch(conn, game_path, adapter, batch)
                     batch = []
                     self.progress.emit(extracted_count)
 
             if self.is_cancelled:
+                self._clean_staging_tables(conn)
                 self.cancelled.emit()
                 return
 
             if batch:
-                self._write_batch(conn, game_path, adapter, batch)
+                self._write_staging_batch(conn, game_path, adapter, batch)
                 self.progress.emit(extracted_count)
 
             if hasattr(adapter, "warnings") and adapter.warnings:
+                self._clean_staging_tables(conn)
                 warn_msg = "\n".join(adapter.warnings)
                 self.error.emit(
                     f"Malformed JSON in game data:\n{warn_msg}\nVerify game data integrity."
                 )
                 return
 
+            # Atomically publish staged results to production tables
+            self._publish_staging_to_production(conn)
             self.finished.emit(extracted_count)
         except _json.JSONDecodeError as e:
+            if conn:
+                self._clean_staging_tables(conn)
             self.error.emit(
                 f"Malformed JSON in game data: {e.msg} at line {e.lineno}, col {e.colno}. Verify game data integrity."
             )
         except PermissionError as e:
+            if conn:
+                self._clean_staging_tables(conn)
             self.error.emit(
                 f"Permission denied accessing game files: {e.filename or e}. Ensure files are not locked or read-restricted."
             )
         except Exception as e:
+            if conn:
+                self._clean_staging_tables(conn)
             self.error.emit(str(e))
 
 
@@ -451,4 +530,5 @@ class ExtractionPage(QWidget):
         self.btn_cancel.setEnabled(False)
         self.lbl_status.setText(f"Extraction failed: {err_msg}")
         self._set_pill("Failed", "danger")
+        self.refresh()
         QMessageBox.critical(self, "Error", f"Extraction failed:\n{err_msg}")

@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from pathlib import Path
 from unittest.mock import patch
 
@@ -175,11 +176,13 @@ def test_extraction_worker_progress_and_cancelability(qapp, onboarding_app_state
     progress_calls = []
     worker.progress.connect(lambda count: progress_calls.append(count))
 
+    errors = []
     loop = QEventLoop()
     worker.finished.connect(lambda count: loop.quit())
-    worker.error.connect(lambda err: loop.quit())
+    worker.error.connect(lambda err: (errors.append(err), loop.quit()))
     worker.start()
     loop.exec()
+    assert not errors, f"Worker emitted error: {errors}"
 
     # Verify units in DB
     conn = onboarding_app_state.db.connect()
@@ -512,3 +515,472 @@ def test_patch_apply_creates_verified_backup_and_restores_cleanly(
     # Check that disk file is restored bit-for-bit to pristine pre-patch SHA-256
     sha_restored = calculate_sha256(map_file)
     assert sha_restored == sha_pristine
+
+
+def test_translation_record_validation_and_model_defaults():
+    """Verifies TranslationRecord model defaults, timestamp initialization,
+
+    and strict validation for approval.
+    """
+    # 1. Valid record with automatic timestamps
+    rec = TranslationRecord(id="rec1", unit_id="u1", final_text="Bonjour")
+    assert rec.id == "rec1"
+    assert rec.unit_id == "u1"
+    assert rec.provider == ""
+    assert rec.model == ""
+    assert rec.draft_text == ""
+    assert rec.final_text == "Bonjour"
+    assert rec.quality_flags == "[]"
+    assert rec.created_at > 0.0
+    assert rec.updated_at == rec.created_at
+    assert rec.validate_for_approval() == []
+
+    # 2. Rejection of empty id / unit_id
+    with pytest.raises(ValueError, match="id cannot be empty"):
+        TranslationRecord(id="", unit_id="u1")
+
+    with pytest.raises(ValueError, match="id cannot be empty"):
+        TranslationRecord(id="   ", unit_id="u1")
+
+    with pytest.raises(ValueError, match="unit_id cannot be empty"):
+        TranslationRecord(id="rec1", unit_id="")
+
+    # 3. Validation for approval requires non-empty translation text
+    empty_rec = TranslationRecord(
+        id="rec_empty", unit_id="u1", final_text="", draft_text=""
+    )
+    errs = empty_rec.validate_for_approval()
+    assert len(errs) == 1
+    assert "Approved translation text cannot be empty" in errs[0]
+
+
+def test_extraction_worker_cancellation_before_start_leaves_db_clean(qapp, tmp_path):
+    """Verifies that cancelling an ExtractionWorker before execution begins
+
+    leaves zero units in the database and emits the cancelled signal.
+    """
+    state = AppState()
+    state.open_workspace(tmp_path / "ws_cancel_early")
+
+    game_dir = tmp_path / "game_cancel_early"
+    game_dir.mkdir()
+    (game_dir / "data").mkdir()
+    (game_dir / "data" / "System.json").write_text(
+        json.dumps({"gameTitle": "Early Cancel"}), encoding="utf-8"
+    )
+
+    state.game_path = game_dir
+    conn = state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) "
+            "VALUES ('default', 'Early Cancel', ?, 'rpgmaker_mv_mz', '1.0', 0)",
+            (str(game_dir),),
+        )
+
+    worker = ExtractionWorker(state)
+    worker.cancel()
+    assert worker.is_cancelled is True
+
+    cancelled_called = []
+    loop = QEventLoop()
+    worker.cancelled.connect(lambda: (cancelled_called.append(True), loop.quit()))
+    worker.finished.connect(lambda c: loop.quit())
+    worker.error.connect(lambda e: loop.quit())
+    worker.start()
+    loop.exec()
+
+    assert len(cancelled_called) == 1
+    cur = conn.execute("SELECT COUNT(*) as c FROM translation_units")
+    assert cur.fetchone()["c"] == 0
+
+
+def test_extraction_worker_cancellation_after_batch_leaves_zero_units(qapp, tmp_path):
+    """Verifies atomic extraction: cancelling after at least one batch has been processed
+
+    cleans up all staging and commits ZERO units to the production database.
+    """
+    state = AppState()
+    state.open_workspace(tmp_path / "ws_cancel_mid")
+
+    game_dir = tmp_path / "game_cancel_mid"
+    game_dir.mkdir()
+    (game_dir / "data").mkdir()
+    (game_dir / "data" / "System.json").write_text(
+        json.dumps({"gameTitle": "Mid Cancel"}), encoding="utf-8"
+    )
+
+    # Create Map001.json with 65 units (batch threshold is 50)
+    events = [None]
+    cmd_list = []
+    for i in range(65):
+        cmd_list.append(
+            {"code": 401, "indent": 0, "parameters": [f"Dialogue line {i}"]}
+        )
+    cmd_list.append({"code": 0, "indent": 0, "parameters": []})
+    events.append({"id": 1, "name": "Chatter", "pages": [{"list": cmd_list}]})
+    (game_dir / "data" / "Map001.json").write_text(
+        json.dumps({"events": events}), encoding="utf-8"
+    )
+
+    state.game_path = game_dir
+    conn = state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) "
+            "VALUES ('default', 'Mid Cancel', ?, 'rpgmaker_mv_mz', '1.0', 0)",
+            (str(game_dir),),
+        )
+
+    worker = ExtractionWorker(state)
+    cancelled_called = []
+    progress_values = []
+
+    def on_prog(cnt):
+        progress_values.append(cnt)
+        if cnt >= 50:
+            worker.cancel()
+
+    worker.progress.connect(on_prog)
+    loop = QEventLoop()
+    worker.cancelled.connect(lambda: (cancelled_called.append(True), loop.quit()))
+    worker.finished.connect(lambda c: loop.quit())
+    worker.error.connect(lambda e: loop.quit())
+    worker.start()
+    loop.exec()
+
+    assert len(cancelled_called) == 1
+    assert any(p >= 50 for p in progress_values)
+    # Production database must remain 100% clean (0 units committed)
+    cur = conn.execute("SELECT COUNT(*) as c FROM translation_units")
+    assert cur.fetchone()["c"] == 0
+
+
+def test_extraction_worker_malformed_input_after_valid_units_leaves_zero_units(
+    qapp, tmp_path
+):
+    """Verifies atomic extraction: when a corrupted file is encountered after valid units
+
+    have been processed from prior files, staging is discarded and ZERO units are committed.
+    """
+    state = AppState()
+    state.open_workspace(tmp_path / "ws_corrupt_mid")
+
+    game_dir = tmp_path / "game_corrupt_mid"
+    game_dir.mkdir()
+    (game_dir / "data").mkdir()
+    # 1. Valid System.json
+    (game_dir / "data" / "System.json").write_text(
+        json.dumps({"gameTitle": "Corrupt Mid Test"}), encoding="utf-8"
+    )
+    # 2. Valid Map001.json with dialogue
+    (game_dir / "data" / "Map001.json").write_text(
+        json.dumps(
+            {
+                "events": [
+                    None,
+                    {
+                        "pages": [
+                            {"list": [{"code": 401, "parameters": ["Valid text"]}]}
+                        ]
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    # 3. Corrupted Map002.json (malformed syntax)
+    (game_dir / "data" / "Map002.json").write_text(
+        '{"events": [{"pages": [{"list": [Broken syntax',
+        encoding="utf-8",
+    )
+
+    state.game_path = game_dir
+    conn = state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) "
+            "VALUES ('default', 'Corrupt Mid Test', ?, 'rpgmaker_mv_mz', '1.0', 0)",
+            (str(game_dir),),
+        )
+
+    worker = ExtractionWorker(state)
+    errors = []
+    loop = QEventLoop()
+    worker.error.connect(lambda e: (errors.append(e), loop.quit()))
+    worker.finished.connect(lambda c: loop.quit())
+    worker.start()
+    loop.exec()
+
+    assert len(errors) == 1
+    assert "Malformed JSON in game data" in errors[0]
+    # Despite Map001 having valid units, atomic extraction must NOT have committed them!
+    cur = conn.execute("SELECT COUNT(*) as c FROM translation_units")
+    assert cur.fetchone()["c"] == 0
+
+
+def test_extraction_worker_retry_after_failure_succeeds_cleanly(qapp, tmp_path):
+    """Verifies that after an extraction failure, repairing the game data and retrying
+
+    results in a 100% clean and complete extraction without leftover corruption.
+    """
+    state = AppState()
+    state.open_workspace(tmp_path / "ws_retry")
+
+    game_dir = tmp_path / "game_retry"
+    game_dir.mkdir()
+    (game_dir / "data").mkdir()
+    (game_dir / "data" / "System.json").write_text(
+        json.dumps({"gameTitle": "Retry Test"}), encoding="utf-8"
+    )
+    # Broken Map001.json
+    map_path = game_dir / "data" / "Map001.json"
+    map_path.write_text('{"events": [ Broken', encoding="utf-8")
+
+    state.game_path = game_dir
+    conn = state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) "
+            "VALUES ('default', 'Retry Test', ?, 'rpgmaker_mv_mz', '1.0', 0)",
+            (str(game_dir),),
+        )
+
+    # 1. Attempt 1: Fails
+    worker1 = ExtractionWorker(state)
+    errs1 = []
+    loop1 = QEventLoop()
+    worker1.error.connect(lambda e: (errs1.append(e), loop1.quit()))
+    worker1.finished.connect(lambda c: loop1.quit())
+    worker1.start()
+    loop1.exec()
+    assert len(errs1) == 1
+    assert (
+        conn.execute("SELECT COUNT(*) as c FROM translation_units").fetchone()["c"] == 0
+    )
+
+    # 2. Repair Map001.json
+    map_path.write_text(
+        json.dumps(
+            {
+                "events": [
+                    None,
+                    {
+                        "pages": [
+                            {
+                                "list": [
+                                    {
+                                        "code": 401,
+                                        "parameters": ["Fixed text 1"],
+                                    },
+                                    {
+                                        "code": 401,
+                                        "parameters": ["Fixed text 2"],
+                                    },
+                                ]
+                            }
+                        ]
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    # 3. Attempt 2: Retry succeeds
+    worker2 = ExtractionWorker(state)
+    counts = []
+    errs2 = []
+    loop2 = QEventLoop()
+    worker2.finished.connect(lambda c: (counts.append(c), loop2.quit()))
+    worker2.error.connect(lambda e: (errs2.append(e), loop2.quit()))
+    worker2.start()
+    loop2.exec()
+
+    assert not errs2
+    assert len(counts) == 1
+    assert counts[0] >= 2
+    cur = conn.execute("SELECT COUNT(*) as c FROM translation_units")
+    assert cur.fetchone()["c"] >= 2
+
+
+def test_patch_page_rejected_edits_workflow(qapp, onboarding_app_state):
+    """Verifies that PatchPage dry-run preview identifies rejected edits
+
+    with specific reasons (unapproved, empty_translation, safety_validation_failed, stale_source).
+    """
+    game_dir = onboarding_app_state.game_path
+    worker = ExtractionWorker(onboarding_app_state)
+    loop = QEventLoop()
+    worker.finished.connect(lambda c: loop.quit())
+    worker.start()
+    loop.exec()
+
+    conn = onboarding_app_state.db.connect()
+    cur = conn.execute("SELECT id, source_text FROM translation_units ORDER BY id")
+    units = cur.fetchall()
+    assert len(units) >= 4
+
+    u_empty = units[0]["id"]
+    u_bad_tokens = units[1]["id"]
+    u_stale = units[2]["id"]
+
+    now = time.time()
+    with conn:
+        # u_empty
+        conn.execute(
+            "UPDATE translation_units SET status = 'approved' WHERE id = ?", (u_empty,)
+        )
+        conn.execute(
+            "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) "
+            "VALUES (?, ?, 'manual', 'human', '', '', '[]', ?, ?)",
+            ("rec_empty", u_empty, now, now),
+        )
+        # u_bad_tokens (unit requires \C[2] and \C[0])
+        conn.execute(
+            "UPDATE translation_units SET status = 'approved', tokens_json = '[\"\\\\C[2]\"]' WHERE id = ?",
+            (u_bad_tokens,),
+        )
+        conn.execute(
+            "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) "
+            "VALUES (?, ?, 'manual', 'human', 'Missing code', 'Missing code', '[]', ?, ?)",
+            ("rec_bad_tok", u_bad_tokens, now, now),
+        )
+        # u_stale: valid approved translation, but modify disk
+        conn.execute(
+            "UPDATE translation_units SET status = 'approved' WHERE id = ?", (u_stale,)
+        )
+        conn.execute(
+            "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) "
+            "VALUES (?, ?, 'manual', 'human', 'Stale TL', 'Stale TL', '[]', ?, ?)",
+            ("rec_stale", u_stale, now, now),
+        )
+
+    # Mutate disk file for u_stale
+    map_file = game_dir / "data" / "Map001.json"
+    map_data = json.loads(map_file.read_text(encoding="utf-8"))
+    for ev in map_data.get("events", []):
+        if ev and "pages" in ev:
+            for cmd in ev["pages"][0]["list"]:
+                if cmd.get("code") == 401:
+                    cmd["parameters"][0] = "Tampered Source Text"
+                    break
+    map_file.write_text(json.dumps(map_data), encoding="utf-8")
+
+    window = MainWindow(onboarding_app_state)
+    patch_page = window.pages[4]
+    patch_page.refresh()
+
+    patch_page.on_create_plan()
+    assert patch_page.current_plan is not None
+
+    preview_text = patch_page.txt_preview.toPlainText()
+    assert "Rejected Edits" in preview_text or "rejected" in preview_text.lower()
+    reasons = [
+        e.get("reason")
+        for e in patch_page.current_plan["edits"]
+        if e.get("status") == "rejected"
+    ]
+    assert (
+        "empty_translation" in reasons
+        or "safety_validation_failed" in reasons
+        or "stale_source" in reasons
+    )
+
+
+def test_patch_page_apply_failure_rollback_and_ui_error_display(
+    qapp, onboarding_app_state
+):
+    """Verifies that when patch application fails (e.g. unexpected write error),
+
+    the UI reports the error with a danger pill, shows critical dialog, and preserves original files.
+    """
+    game_dir = onboarding_app_state.game_path
+    map_file = game_dir / "data" / "Map001.json"
+    sha_pristine = calculate_sha256(map_file)
+
+    worker = ExtractionWorker(onboarding_app_state)
+    loop = QEventLoop()
+    worker.finished.connect(lambda c: loop.quit())
+    worker.start()
+    loop.exec()
+
+    conn = onboarding_app_state.db.connect()
+    cur = conn.execute("SELECT id, source_text FROM translation_units LIMIT 1")
+    unit = cur.fetchone()
+    now = time.time()
+    with conn:
+        conn.execute(
+            "UPDATE translation_units SET status = 'approved' WHERE id = ?",
+            (unit["id"],),
+        )
+        conn.execute(
+            "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) "
+            "VALUES (?, ?, 'manual', 'human', 'Valid TL', 'Valid TL', '[]', ?, ?)",
+            ("rec_apply_fail", unit["id"], now, now),
+        )
+
+    window = MainWindow(onboarding_app_state)
+    patch_page = window.pages[4]
+    patch_page.refresh()
+    patch_page.on_create_plan()
+    assert patch_page.current_plan is not None
+
+    # Simulate patch apply failure
+    with (
+        patch("PySide6.QtWidgets.QMessageBox.warning", return_value=QMessageBox.Yes),
+        patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit,
+        patch(
+            "gamelingo.gui.pages.patch_page.apply_plan",
+            side_effect=RuntimeError("Disk write simulated I/O failure"),
+        ),
+    ):
+        patch_page.on_apply_plan()
+        mock_crit.assert_called_once()
+        assert "Disk write simulated I/O failure" in mock_crit.call_args[0][2]
+        assert "Patch Failed" in patch_page.pill_plan_status.text()
+
+    # Verify disk files remain unmodified
+    assert calculate_sha256(map_file) == sha_pristine
+
+
+def test_patch_page_restore_failure_and_ui_error_display(qapp, onboarding_app_state):
+    """Verifies that when restore fails (e.g. corrupted backup manifest or missing files),
+
+    the UI shows a critical error dialog and does not falsely claim success.
+    """
+    backup_root = onboarding_app_state.workspace_path / "backups"
+    fake_backup = backup_root / "corrupted_backup"
+    fake_backup.mkdir(parents=True)
+    # Write a broken manifest referencing non-existent files
+    (fake_backup / "manifest.json").write_text(
+        json.dumps(
+            {
+                "backup_id": "corrupt_123",
+                "created_at": time.time(),
+                "files": [
+                    {
+                        "original_path": "data/Map001.json",
+                        "backup_file": "missing.json",
+                        "sha256": "bogus",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    window = MainWindow(onboarding_app_state)
+    patch_page = window.pages[4]
+    patch_page.refresh()
+
+    assert patch_page.cmb_backups.count() > 0
+
+    with (
+        patch("PySide6.QtWidgets.QMessageBox.warning", return_value=QMessageBox.Yes),
+        patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit,
+    ):
+        patch_page.on_execute_restore()
+        mock_crit.assert_called_once()
+        assert "Restoration failed" in mock_crit.call_args[0][2]
+        assert "[RESTORE COMPLETE]" not in patch_page.txt_restore_info.toPlainText()
