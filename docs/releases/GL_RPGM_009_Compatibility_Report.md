@@ -1,31 +1,35 @@
-# GL-RPGM-009: RPG Maker MV/MZ Real-Game Compatibility Matrix
+# GL-RPGM-009A: RPG Maker MV/MZ Real-Game Compatibility Matrix
 
 **Repository:** `kunal-gswm/GameLingo`  
-**Baseline Commit:** `4ef9b9035008d9c3433da6cb717924ecca1572c7`  
+**Application Baseline Commit:** `4ef9b9035008d9c3433da6cb717924ecca1572c7`  
+**Harness Source Commit:** `8a23f72ef9fd2dabe2df053140b0a9535fa4656e`  
+**Harness Version:** `GL-RPGM-009A.1`  
 **Date:** October 16, 2026  
-**Status:** **VERIFIED & COMPLETE**  
+**Status:** **VERIFIED & CALIBRATED**  
 
 ---
 
 ## Executive Summary
 
-Milestone **GL-RPGM-009** establishes an empirical, multi-project compatibility matrix for GameLingo's RPG Maker MV and MZ localization workflow. Evaluating five distinct real-world game projects (spanning official Kadokawa samples, commercial Japanese visual novels, indie Western titles, and heavily modded plugin ecosystems), the evaluation protocol independently verifies ten rigorous stages of the localization lifecycle without endangering pristine game assets.
+Milestone **GL-RPGM-009A** establishes a calibrated empirical compatibility evaluation across GameLingo's RPG Maker MV and MZ localization workflow. Evaluating five distinct real-world game projects (spanning official Kadokawa samples, commercial Japanese visual novels, indie Western titles, and heavily modded plugin ecosystems), the evaluation independently assesses ten discrete stages of the localization lifecycle on read-only original directories and isolated disposable copies.
 
-### Key Empirical Metrics
+### Key Calibrated Metrics
 
-- **Project-Level Standard Workflow Success Rate:** **5/5 (100.0%)**
-- **Locator Validation Rate:** **119,719 / 119,719 (100.0000%)**
-- **Total Real-World Translatable Units Processed:** **119,719 units** across 5 projects
-- **Conditional Branch Structural Preservation:** **14,917** `code: 111` commands inspected, with **73,561** nested translatable units patched with 100% parameter immutability.
-- **Restoration & Recovery Fidelity:** **100.0% byte-for-byte SHA-256 match** verified across all disposable project restorations.
+- **Project-Level Core Workflow Success Rate:** **5/5 (100.0%)**
+- **Locator Validation Rate:** **119,719 / 119,719 (100.0000%)** (100.0% exhaustive AST resolution across all five projects)
+- **Total Real-World Translatable Units Extracted:** **119,719 units** across 5 projects
+- **Conditional Branch Structural Coverage:** **14,917** `code: 111` commands and **73,561** nested units enumerated across 5 projects
+- **Representative Branch Patch Validation:** **35 units** actually patched across maps and common events, confirming **100% parameter immutability** and **100% byte-exact restoration**
+- **Restoration & Recovery Fidelity:** **100.0% byte-for-byte SHA-256 match** verified across multi-file disposable patch-and-restore cycles in all five projects
+- **Third-Party Plugin Isolation:** Core engine text operates at 100% compatibility; plugin commands (`code: 356/357`) and parameters are classified as **UNSUPPORTED / OUT OF CORE ENGINE SCOPE**
 
 ---
 
 ## 1. Project Diversity & Provenance Catalog
 
-The evaluation suite covers five distinct real projects with diverse engine architectures, languages, map scales, and plugin environments:
+The evaluation suite covers five distinct real projects with diverse engine architectures, languages, map scales, and plugin environments. All paths are sanitized to project identifiers:
 
-| Project Identifier | Project Name | Engine & Version | Language | Layout | Maps / Files | Units | Architectural Profile |
+| Project Identifier | Project Name | Engine & Version | Language | Layout | Files | Extracted Units | Provenance & Architectural Profile |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `mv_commercial_succubi` | **Do Disciplinary Committee Members Dream of Succubi** | RPG Maker MV (conf=1.00) | Japanese | `www/data` | 555 files | 66,405 | Commercial Japanese RPG Maker MV (v1.6.1) with www/data layout and 40+ maps |
 | `mz_sample_nannnimo` | **Official MZ Sample (Nannnimo / Karakuri Town)** | RPG Maker MZ (conf=1.00) | Japanese | `data` | 20 files | 1,143 | Official Kadokawa RPG Maker MZ v1.8.0 sample game, canonical clean schema |
@@ -35,7 +39,7 @@ The evaluation suite covers five distinct real projects with diverse engine arch
 
 ---
 
-## 2. 10-Stage Evaluation Matrix
+## 2. 10-Stage Calibrated Compatibility Matrix
 
 Every project was independently subjected to the 10-stage evaluation protocol:
 
@@ -43,25 +47,25 @@ Every project was independently subjected to the 10-stage evaluation protocol:
 2. **Engine Detection:** Distinction between MV (`rpg_core.js`) and MZ (`rmmz_core.js`).
 3. **Project Opening:** Parsing project metadata, UTF-8 BOM, and system terms.
 4. **Extraction:** High-throughput extraction across system, database, maps, and common events.
-5. **Locator Integrity:** Exhaustive or high-density sample resolution against raw JSON source data.
-6. **Token Integrity:** Detection and fail-closed validation of RPG Maker control codes (`\V`, `\N`, `\C`, `\I`, etc.).
-7. **Conditional Structures:** Event command 111, 411, 412 inspection and nested content parameter preservation.
-8. **Patch Planning:** Representative dry-run plan generation and validation.
+5. **Locator Integrity:** Exhaustive in-memory resolution of every extracted locator against raw JSON data AST.
+6. **Token Integrity:** Detection and multi-token fail-closed rejection of dropped control codes (`\V`, `\N`, `\C`, `\I`, etc.).
+7. **Conditional Structures:** Event command 111, 411, 412 inspection, representative branch patching, and parameter immutability.
+8. **Patch Planning:** Stratified dry-run plan generation across diverse file categories.
 9. **Preflight & Failure Handling:** Defensive rejection of stale source, invalid locators, and malformed files.
-10. **Restoration:** Byte-for-byte SHA-256 restoration on disposable project instances.
+10. **Restoration:** Byte-for-byte SHA-256 restoration on multi-file disposable project instances.
 
-| Stage | `mv_commercial_succubi` | `mz_sample_nannnimo` | `mz_indie_playful_parcels` | `mz_modded_waifu_trap_house` | `mz_commercial_fallen_gf` | Evaluation Criteria |
+| Stage | `mv_commercial_succubi` | `mz_sample_nannnimo` | `mz_indie_playful_parcels` | `mz_modded_waifu_trap_house` | `mz_commercial_fallen_gf` | Evaluation Criteria & Operational Boundary |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
 | **1. Discovery** | PASS | PASS | PASS | PASS | PASS | Resolves `data/` or `www/data/` with `System.json` |
 | **2. Engine Detection** | PASS | PASS | PASS | PASS | PASS | Correct MV vs MZ identification (confidence >= 0.70) |
 | **3. Project Opening** | PASS | PASS | PASS | PASS | PASS | Parses `gameTitle`, `currencyUnit`, and system terms |
-| **4. Extraction** | PASS | PASS | PASS | PASS | PASS | Extracts translatable units without crash |
-| **5. Locator Integrity** | PASS | PASS | PASS | PASS | PASS | 100.0% locator match to source text |
-| **6. Token Integrity** | PASS | PASS | PASS | PASS | PASS | Control codes extracted; dropping triggers validation rejection |
-| **7. Conditional Structures** | PASS | PASS | PASS | PASS | PASS | Nested branch locators valid; parameters unchanged |
-| **8. Patch Planning** | PASS | PASS | PASS | PASS | PASS | Generates valid dry-run patch plan without error |
-| **9. Failure Handling** | PASS | PASS | PASS | PASS | PASS | Stale sources & invalid locators rejected fail-closed |
-| **10. Restoration** | PASS | PASS | PASS | PASS | PASS | Byte-exact SHA-256 restoration on disposable copy |
+| **4. Extraction** | PASS | PASS | PASS | PASS | PASS | Extracts translatable units without unhandled exception |
+| **5. Locator Integrity** | PASS | PASS | PASS | PASS | PASS | 100.0% exhaustive locator resolution against raw JSON source data |
+| **6. Token Integrity** | PASS | PASS | PASS | PASS | PASS | Control codes extracted; dropping each detected form triggers validation rejection |
+| **7. Conditional Structures** | PASS | PASS | PASS | PASS | PASS | Nested branch locators valid; representative patching preserves 111/411/412 parameters |
+| **8. Patch Planning** | PASS | PASS | PASS | PASS | PASS | Generates valid stratified dry-run patch plan across multiple file categories |
+| **9. Failure Handling** | PASS | PASS | PASS | PASS | PASS | Stale sources & invalid locators rejected fail-closed; malformed files handled safely |
+| **10. Restoration** | PASS | PASS | PASS | PASS | PASS | Multi-file byte-exact SHA-256 restoration on disposable copy |
 
 ---
 
@@ -71,11 +75,11 @@ Detailed yield breakdown across file categories and RPG Maker event command code
 
 | Project Identifier | System | Database | Maps | CommonEvents | MapInfos | Total Units | Extraction Time | Throughput |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `mv_commercial_succubi` | 98 | 3,903 | 40,382 | 21,491 | 531 | **66,405** | 2.042s | 32,511 units/s |
-| `mz_sample_nannnimo` | 99 | 821 | 213 | 4 | 6 | **1,143** | 0.023s | 49,964 units/s |
-| `mz_indie_playful_parcels` | 99 | 831 | 7,236 | 37 | 20 | **8,223** | 0.095s | 86,399 units/s |
-| `mz_modded_waifu_trap_house` | 98 | 1,012 | 5,055 | 134 | 54 | **6,353** | 0.129s | 49,216 units/s |
-| `mz_commercial_fallen_gf` | 99 | 810 | 33,433 | 2,923 | 330 | **37,595** | 0.812s | 46,284 units/s |
+| `mv_commercial_succubi` | 98 | 3,903 | 40,382 | 21,491 | 531 | **66,405** | 1.876s | 35,389 units/s |
+| `mz_sample_nannnimo` | 99 | 821 | 213 | 4 | 6 | **1,143** | 0.022s | 50,762 units/s |
+| `mz_indie_playful_parcels` | 99 | 831 | 7,236 | 37 | 20 | **8,223** | 0.115s | 71,350 units/s |
+| `mz_modded_waifu_trap_house` | 98 | 1,012 | 5,055 | 134 | 54 | **6,353** | 0.125s | 50,877 units/s |
+| `mz_commercial_fallen_gf` | 99 | 810 | 33,433 | 2,923 | 330 | **37,595** | 0.965s | 38,955 units/s |
 
 ### Event Command Code Distribution
 
@@ -89,29 +93,31 @@ Detailed yield breakdown across file categories and RPG Maker event command code
 
 ---
 
-## 4. Conditional Branch Structural Safety Analysis
+## 4. Conditional Branch Structural Coverage & Real-Game Patch Validation
 
-All five projects feature event command `111` (Conditional Branch). The table below quantifies the structural branch complexity and confirms parameter immutability:
+All five projects feature event command `111` (Conditional Branch). The table below distinguishes units counted inside conditional structures from units actually patched during representative validation:
 
-| Project Identifier | Code 111 (If) | Code 411 (Else) | Code 412 (End) | Units Nested in Branches | Parameter Immutability | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `mv_commercial_succubi` | 8,533 | 3,637 | 8,533 | 54,282 | Preserved (Unchanged) | **PASS** |
-| `mz_sample_nannnimo` | 36 | 5 | 36 | 11 | Preserved (Unchanged) | **PASS** |
-| `mz_indie_playful_parcels` | 737 | 203 | 737 | 3,753 | Preserved (Unchanged) | **PASS** |
-| `mz_modded_waifu_trap_house` | 459 | 145 | 459 | 2,577 | Preserved (Unchanged) | **PASS** |
-| `mz_commercial_fallen_gf` | 5,152 | 1,129 | 5,152 | 12,938 | Preserved (Unchanged) | **PASS** |
+| Project Identifier | Code 111 (If) | Code 411 (Else) | Code 412 (End) | Units Counted in Branches | Units Patched in Validation | Command Types Tested | Immutability Verified | Byte-Exact Restore |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `mv_commercial_succubi` | 8,533 | 3,637 | 8,533 | 54,282 | **6** | `code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **100% Immutable** | **100% Exact** |
+| `mz_sample_nannnimo` | 36 | 5 | 36 | 11 | **2** | `code_401_if` | **100% Immutable** | **100% Exact** |
+| `mz_indie_playful_parcels` | 737 | 203 | 737 | 3,753 | **9** | `code_101_speaker, code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **100% Immutable** | **100% Exact** |
+| `mz_modded_waifu_trap_house` | 459 | 145 | 459 | 2,577 | **10** | `code_101_speaker, code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **100% Immutable** | **100% Exact** |
+| `mz_commercial_fallen_gf` | 5,152 | 1,129 | 5,152 | 12,938 | **8** | `code_101_speaker, code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **100% Immutable** | **100% Exact** |
 
-> [!NOTE] Conditional Branch Scope
-> Verification of conditional branch commands in this matrix confirms structural extraction, locator stability, parameter immutability, and rollback safety.
-> Direct native runtime execution of all conditional branches in live NW.js gameplay sessions was verified on Map 7 in GL-RPGM-PILOT-6B, and is not claimed for every conditional branch type across all projects.
+> [!NOTE] Distinction: Structural Count vs. Representative Patch Testing
+> Across the 5 real projects, **73,561 translatable units** reside inside conditional branches (54,282 in Succubi, 11 in MZ Sample, 3,753 in Playful Parcels, 2,577 in Waifu Trap House, 12,938 in Fallen GF). > Rather than falsely claiming all 73,561 units were modified, the evaluation executed representative patch validation on **35 targeted units** across maps and common events. > In every case, deep AST inspection proved that only the targeted dialogue/speaker string changed; condition codes, comparator arguments, switch/variable IDs, branch markers, indents, and event sequences remained 100% byte-for-byte immutable.
+
+> [!IMPORTANT] Runtime Boundary
+> Representative branch patching confirms structural safety, locator validity, and rollback fidelity. > Live native runtime execution of conditional branches within NW.js gameplay sessions was verified on Map 7 in GL-RPGM-PILOT-6B, and is not claimed for every conditional branch type across all projects.
 
 ---
 
 ## 5. Third-Party Plugin Audit & Boundary Definition
 
-Standard RPG Maker MV/MZ games use built-in event commands and database records. Many production titles incorporate third-party plugin suites. The compatibility evaluation isolates standard core engine compatibility from specialized plugin systems:
+The evaluation evaluated plugin environments across all titles to delineate core engine support from plugin limitations:
 
-| Project Identifier | Registered Plugins | Active Plugins | Detected Plugin Suites | Code 356 (MV Cmd) | Code 357 (MZ Cmd) | Database Notes | Core Compatibility |
+| Project Identifier | Registered Plugins | Active Plugins | Detected Plugin Suites | Code 356 (MV Cmd) | Code 357 (MZ Cmd) | Database Notes | Core Engine Support |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `mv_commercial_succubi` | 218 | 210 | Galv Scripts, Moghunter (Atelier RGSS), Mokusei Penguin (MPP), TRP Skit Suite, Yanfly Engine Plugins (YEP) | 2,127 | 0 | 2,977 | **100% Core PASS** |
 | `mz_sample_nannnimo` | 0 | 0 | None | 0 | 0 | 3 | **100% Core PASS** |
@@ -119,28 +125,38 @@ Standard RPG Maker MV/MZ games use built-in event commands and database records.
 | `mz_modded_waifu_trap_house` | 17 | 11 | Galv Scripts | 0 | 66 | 5 | **100% Core PASS** |
 | `mz_commercial_fallen_gf` | 40 | 40 | Moghunter (Atelier RGSS), Mokusei Penguin (MPP), TRP Skit Suite | 0 | 3,197 | 7 | **100% Core PASS** |
 
-> [!IMPORTANT] Architectural Boundary: Core Engine vs. Plugin Extensions
-> - **Core Engine Compatibility (100% Supported):** Dialogue, speakers, choices, scrolling text, database records, map displays, system terms, and conditional branch structures are 100% extracted, validated, and patched.
-> - **Plugin Command Limitations (Design Isolation):** Event commands `356` (MV) and `357` (MZ) carry arbitrary third-party plugin instructions (e.g. camera shakes, screen zooms, skit portrait changes). GameLingo intentionally isolates standard dialogue from arbitrary plugin parameters.
+> [!WARNING] Plugin Support Policy: Unsupported / Out of Core Scope
+> - **Core Engine Compatibility (100% Verified):** Built-in dialogue, choices, scrolling text, database records, map displays, system terms, and conditional branch structures operate with 100% stability regardless of plugin presence.
+> - **Third-Party Plugin Commands (Out of Scope):** Event commands `356` (MV) and `357` (MZ) carry arbitrary third-party plugin instructions (e.g. camera shakes, screen zooms, skit portrait changes). GameLingo intentionally isolates standard dialogue from arbitrary plugin parameters.
 > - **Database Note Tags:** Note fields often contain formula scripts or metadata tags (e.g. `<Help: ...>`). These are safely preserved unmodified to protect game logic stability.
 
 ---
 
-## 6. Restoration & Safety Verification
+## 6. Multi-File Restoration & Recovery Verification
 
-Every project underwent a disposable patch-and-restore cycle in an isolated directory. The table below verifies that original files were modified during patching and restored to exact bit-for-bit SHA-256 equivalence:
+Every project underwent a disposable patch-and-restore cycle modifying multiple files simultaneously. Original files were verified modified and restored to exact bit-for-bit SHA-256 equivalence:
 
-| Project Identifier | Target File | Original SHA-256 (Prefix) | Patched SHA-256 (Prefix) | Restored SHA-256 (Prefix) | Hash Match |
+| Project Identifier | Files Tested | Hash Before Patch | Hash After Patch | Hash After Restore | Byte-Exact Match |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `mv_commercial_succubi` | `www/data/System.json` | `c046f2f05438...` | `db7b912d78a1...` | `c046f2f05438...` | **100.0% Exact** |
-| `mz_sample_nannnimo` | `data/System.json` | `028a83cb052f...` | `e73391f8a204...` | `028a83cb052f...` | **100.0% Exact** |
-| `mz_indie_playful_parcels` | `data/System.json` | `f0db46f85e89...` | `87ca4872230e...` | `f0db46f85e89...` | **100.0% Exact** |
-| `mz_modded_waifu_trap_house` | `data/System.json` | `b173a3fbf1ce...` | `860a28f476ec...` | `b173a3fbf1ce...` | **100.0% Exact** |
-| `mz_commercial_fallen_gf` | `data/System.json` | `4429f1736e4f...` | `9fbf66dddd03...` | `4429f1736e4f...` | **100.0% Exact** |
+| `mv_commercial_succubi` | `www/data/Map001.json`<br>`www/data/System.json` | `51129fc99384...`<br>`c046f2f05438...` | `220358f60a25...`<br>`d7e6e0c3a252...` | `51129fc99384...`<br>`c046f2f05438...` | **100.0% Exact** |
+| `mz_sample_nannnimo` | `data/Map001.json`<br>`data/System.json` | `eece65ab0238...`<br>`028a83cb052f...` | `886af7531585...`<br>`2aca732c13ce...` | `eece65ab0238...`<br>`028a83cb052f...` | **100.0% Exact** |
+| `mz_indie_playful_parcels` | `data/Map001.json`<br>`data/System.json` | `77fbb014d406...`<br>`f0db46f85e89...` | `ba4884f74317...`<br>`21ab1a318fd4...` | `77fbb014d406...`<br>`f0db46f85e89...` | **100.0% Exact** |
+| `mz_modded_waifu_trap_house` | `data/Map001.json`<br>`data/System.json` | `a54022dd18c0...`<br>`b173a3fbf1ce...` | `4bf93fbdc780...`<br>`6e78bbe4c7e1...` | `a54022dd18c0...`<br>`b173a3fbf1ce...` | **100.0% Exact** |
+| `mz_commercial_fallen_gf` | `data/Map035.json`<br>`data/System.json` | `8602888bd171...`<br>`4429f1736e4f...` | `1ee4afe822d4...`<br>`e2fa09d67aa7...` | `8602888bd171...`<br>`4429f1736e4f...` | **100.0% Exact** |
 
 ---
 
-## 7. Reproduction Instructions
+## 7. Reconciliation of MV Extraction Counts (GL-030 65,616 vs. GL-RPGM-PILOT 66,405)
+
+The historical GL-030 pilot extracted **65,616 units** from *Do Disciplinary Committee Members Dream of Succubi*. The current extraction count of **66,405 units** (+789 units) is substantiated by empirical repository evidence recorded in `docs/releases/GL_RPGM_Pilot_Report.md` (lines 239-241):
+
+- **Expanded System Term Scope:** GameLingo added full extraction for `terms.basic` (Level, HP, MP), `terms.commands` (Fight, Escape, Attack, Defend), `terms.params` (MHP, MMP, ATK, DEF), and `terms.messages` (Action Failure, Actor Damage, etc.).
+- **Interactive Choice Structures:** GameLingo expanded extraction to cover choice option arrays (`code: 102`) and choice branch handlers (`code: 402`).
+- Together, these structural additions contribute exactly +789 translatable units to the commercial MV game baseline.
+
+---
+
+## 8. Reproduction Instructions
 
 To reproduce the evaluation results:
 
@@ -157,8 +173,8 @@ uv run pytest tests/integration/test_rpgmaker_compatibility_matrix.py
 
 ---
 
-## 8. Known Gaps & Next Highest-Priority Defects
+## 9. Known Limitations & Next Priorities
 
-1. **Plugin Parameter Extraction:** Third-party visual novel skits (e.g. `TRP_SkitMZ` in *Fallen GF*) define speaker portraits and custom messages in plugin commands (`code: 357`). Developing schema-guided plugin decoders is the next logical enhancement.
+1. **Plugin Parameter Decoding:** Third-party visual novel skits (e.g. `TRP_SkitMZ` in *Fallen GF*) define speaker portraits and custom messages in plugin commands (`code: 357`). Developing schema-guided plugin decoders is the next logical enhancement.
 2. **Database Note Field Localization:** Games utilizing note-field tags (e.g. `<Description: ...>`) require selective tag parsing rather than whole-field extraction to prevent formula corruption.
 3. **Dynamic Script Execution:** Scripts inside `code: 355` (Script) containing embedded string literals are not extracted by static AST analysis.
