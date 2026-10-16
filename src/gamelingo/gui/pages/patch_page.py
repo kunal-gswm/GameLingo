@@ -222,7 +222,17 @@ class PatchPage(QWidget):
 
         conn = self.state.db.connect()
 
-        cur = conn.execute("SELECT * FROM translation_units WHERE status = 'approved'")
+        cur = conn.execute(
+            "SELECT id FROM projects WHERE install_path = ?",
+            (str(self.state.game_path.resolve()),),
+        )
+        p_row = cur.fetchone()
+        project_id = p_row["id"] if p_row else "default"
+
+        cur = conn.execute(
+            "SELECT * FROM translation_units WHERE status = 'approved' AND (is_active = 1 OR is_active IS NULL) AND (project_id = ? OR ? = 'default')",
+            (project_id, project_id),
+        )
         unit_rows = cur.fetchall()
 
         if not unit_rows:
@@ -254,7 +264,7 @@ class PatchPage(QWidget):
 
         placeholders = ",".join("?" * len(unit_ids))
         cur = conn.execute(
-            f"SELECT * FROM translation_records WHERE unit_id IN ({placeholders})",
+            f"SELECT r.* FROM translation_records r JOIN translation_units u ON u.id = r.unit_id WHERE r.unit_id IN ({placeholders}) AND (r.source_hash IS NULL OR r.source_hash = u.source_hash)",
             tuple(unit_ids),
         )
         rec_rows = cur.fetchall()
@@ -281,7 +291,7 @@ class PatchPage(QWidget):
         include_act = self.chk_activate_lang.isChecked()
         plan = create_plan(
             self.state.game_path,
-            "default",
+            project_id,
             units,
             records,
             file_path_map,

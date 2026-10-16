@@ -90,76 +90,24 @@ def cmd_game_inspect(args):
 def cmd_extract(args):
     db = get_db(args.workspace)
     game_path = Path(args.game_path).resolve()
-    adapter, version, conf = detect_adapter(game_path)
-    if not adapter or conf == 0.0:
-        print(f"Unsupported game path: {game_path}")
-        sys.exit(1)
+    from gamelingo.services.extraction import ExtractionService
 
-    if hasattr(adapter, "diagnose"):
-        diag = adapter.diagnose(game_path)
-        if not (diag.get("has_source_scripts") or diag.get("has_extractable_scripts")):
-            print(f"Extraction unsupported: {diag.get('message')}")
-            sys.exit(1)
-
-    conn = db.connect()
-    with conn:
-        cur = conn.execute("SELECT id FROM projects WHERE id = 'default'")
-        if not cur.fetchone():
-            conn.execute(
-                "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    "default",
-                    "Default Project",
-                    str(game_path),
-                    adapter.adapter_id,
-                    "1.0",
-                    time.time(),
-                ),
-            )
-        else:
-            conn.execute(
-                "UPDATE projects SET install_path = ?, adapter_id = ? WHERE id = 'default'",
-                (str(game_path), adapter.adapter_id),
-            )
-
+    service = ExtractionService(db)
     print(f"Extracting texts from {game_path}...")
-    units = list(adapter.extract(game_path))
-
-    with conn:
-        for u in units:
-            if hasattr(adapter, "get_relative_path"):
-                rel = adapter.get_relative_path(game_path, u.file_id)
-            else:
-                rel = (
-                    f"data/{u.file_id}"
-                    if (game_path / "data" / u.file_id).exists()
-                    else f"www/data/{u.file_id}"
-                )
-            fmt = "rpy" if getattr(adapter, "adapter_id", "") == "renpy" else "json"
-            conn.execute(
-                "INSERT OR IGNORE INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (u.file_id, "default", rel, fmt, "", 0, time.time()),
-            )
-
-            # Using INSERT OR IGNORE to not overwrite if they exist, but actually we should update if source changed.
-            # For this CLI step, INSERT OR IGNORE is a safe start, but let's do INSERT OR REPLACE to keep it fresh
-            # Wait, replacing means we might lose status!
-            # Let's do INSERT OR IGNORE
-            conn.execute(
-                "INSERT OR IGNORE INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (
-                    u.id,
-                    u.file_id,
-                    u.locator,
-                    u.source_text,
-                    u.context,
-                    u.tokens_json,
-                    u.source_hash,
-                    u.status,
-                ),
-            )
-
-    print(f"Extracted {len(units)} units.")
+    try:
+        result = service.extract_project(
+            game_path,
+            project_id=getattr(args, "project_id", None),
+            progress_callback=lambda count: print(
+                f"Extracting texts... ({count} units processed)", end="\r"
+            ),
+        )
+        print(
+            f"\nExtracted {result.extracted_units} units ({result.active_units} active in project database)."
+        )
+    except Exception as e:
+        print(f"\nExtraction failed: {e}")
+        sys.exit(1)
 
 
 def cmd_translate(args):
@@ -571,6 +519,12 @@ def main() -> int:
     # Extract
     p_ext = subparsers.add_parser("extract", help="Extract text")
     p_ext.add_argument("game_path")
+    p_ext.add_argument(
+        "--project-id",
+        dest="project_id",
+        default=None,
+        help="Target project identifier",
+    )
     p_ext.set_defaults(func=cmd_extract)
 
     # Translate

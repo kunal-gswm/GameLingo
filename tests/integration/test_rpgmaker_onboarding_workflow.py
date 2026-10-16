@@ -20,6 +20,7 @@ from gamelingo.patching.apply import apply_plan
 from gamelingo.patching.planner import create_plan, preview_plan, validate_plan
 from gamelingo.safety.backup import calculate_sha256
 from gamelingo.safety.restore import execute_restore, preview_restore
+from gamelingo.translation.review import ReviewService
 
 
 @pytest.fixture(scope="session")
@@ -984,3 +985,125 @@ def test_patch_page_restore_failure_and_ui_error_display(qapp, onboarding_app_st
         mock_crit.assert_called_once()
         assert "Restoration failed" in mock_crit.call_args[0][2]
         assert "[RESTORE COMPLETE]" not in patch_page.txt_restore_info.toPlainText()
+
+
+def test_reextraction_reconciliation_preserves_valid_and_marks_obsolete(
+    onboarding_app_state: AppState,
+):
+    """Verifies that re-extracting an updated project reconciles obsolete units,
+    preserves valid reviewed translations, and updates active review/patch queues.
+    """
+    # 1. Add extra event before initial extraction
+    map_file = onboarding_app_state.game_path / "data" / "Map001.json"
+    data = json.loads(map_file.read_text(encoding="utf-8"))
+    data["events"].append(
+        {
+            "id": 2,
+            "name": "Removable",
+            "pages": [
+                {
+                    "list": [
+                        {"code": 101, "parameters": ["", 0, 0, 2, "Villager"]},
+                        {"code": 401, "parameters": ["I will be removed soon."]},
+                        {"code": 0, "parameters": []},
+                    ]
+                }
+            ],
+        }
+    )
+    map_file.write_text(json.dumps(data), encoding="utf-8")
+
+    worker = ExtractionWorker(onboarding_app_state)
+    loop = QEventLoop()
+    worker.finished.connect(lambda c: loop.quit())
+    worker.start()
+    loop.exec()
+
+    review = ReviewService(onboarding_app_state.db)
+    units = review.list_units_for_review()
+    assert len(units) > 0
+
+    # Pick a dialogue unit to approve
+    u_dialogue = next(u for u in units if "GameLingo" in u.get("source_text", ""))
+    review.update_translation(
+        u_dialogue["id"], "Bienvenue dans le royaume \\C[2]GameLingo\\C[0]."
+    )
+    review.approve(u_dialogue["id"])
+
+    # 2. Modify map file: remove the removable event
+    data = json.loads(map_file.read_text(encoding="utf-8"))
+    data["events"].pop()  # Remove event 2
+    map_file.write_text(json.dumps(data), encoding="utf-8")
+
+    # 3. Re-extract
+    worker2 = ExtractionWorker(onboarding_app_state)
+    loop2 = QEventLoop()
+    worker2.finished.connect(lambda c: loop2.quit())
+    worker2.start()
+    loop2.exec()
+
+    # 4. Verify reconciliation results
+    assert worker2.result.obsolete_units >= 1
+    assert worker2.result.active_units < len(units)
+
+    # Approved unit must STILL be approved with translation preserved
+    re_approved = review.get_unit(u_dialogue["id"])
+    assert re_approved["status"] == "approved"
+    assert (
+        re_approved["translated_text"]
+        == "Bienvenue dans le royaume \\C[2]GameLingo\\C[0]."
+    )
+
+    # Excluded obsolete units must not appear in review list
+    active_units = review.list_units_for_review()
+    assert len(active_units) == worker2.result.active_units
+
+
+def test_project_switching_isolates_units(
+    onboarding_app_state: AppState, tmp_path: Path
+):
+    """Verifies that switching between two game directories in the same workspace
+    isolates translation units and does not expose stale units across projects.
+    """
+    # 1. Extract Project 1
+    worker1 = ExtractionWorker(onboarding_app_state)
+    loop = QEventLoop()
+    worker1.finished.connect(lambda c: loop.quit())
+    worker1.start()
+    loop.exec()
+    proj1_units = worker1.result.extracted_units
+
+    # 2. Create small Project 2
+    proj2_dir = tmp_path / "game_project_2"
+    proj2_data = proj2_dir / "data"
+    proj2_data.mkdir(parents=True)
+    proj2_js = proj2_dir / "js"
+    proj2_js.mkdir(parents=True)
+    (proj2_js / "rmmz_core.js").write_text("// RMMZ", encoding="utf-8")
+    (proj2_dir / "game.rmmzproject").write_text("", encoding="utf-8")
+    (proj2_data / "System.json").write_text(
+        json.dumps({"gameTitle": "Project 2 Mini", "terms": {"basic": ["HP"]}}),
+        encoding="utf-8",
+    )
+
+    # Switch app state to Project 2
+    onboarding_app_state.game_path = proj2_dir
+
+    worker2 = ExtractionWorker(onboarding_app_state)
+    loop2 = QEventLoop()
+    worker2.finished.connect(lambda c: loop2.quit())
+    worker2.start()
+    loop2.exec()
+
+    # Project 2 has far fewer units
+    assert worker2.result.extracted_units < proj1_units
+    assert worker2.result.project_id != "default"
+
+    # Review service scoped to Project 2 must return only Project 2's units
+    review = ReviewService(onboarding_app_state.db)
+    units_p2 = review.list_units_for_review(project_id=worker2.result.project_id)
+    assert len(units_p2) == worker2.result.active_units
+
+    p2_sources = {u["source_text"] for u in units_p2}
+    assert "Project 2 Mini" in p2_sources
+    assert "Hello, world!" not in p2_sources

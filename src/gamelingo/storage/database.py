@@ -124,7 +124,24 @@ MIGRATIONS = [
         created_at REAL NOT NULL,
         FOREIGN KEY(project_id) REFERENCES projects(id)
     );
+    """,
     """
+    ALTER TABLE translation_units ADD COLUMN project_id TEXT NOT NULL DEFAULT 'default';
+    ALTER TABLE translation_units ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE translation_records ADD COLUMN source_hash TEXT;
+
+    UPDATE translation_records
+    SET source_hash = (SELECT source_hash FROM translation_units WHERE translation_units.id = translation_records.unit_id)
+    WHERE source_hash IS NULL;
+
+    UPDATE translation_units
+    SET project_id = (SELECT project_id FROM game_files WHERE game_files.id = translation_units.file_id)
+    WHERE project_id = 'default' AND EXISTS (SELECT 1 FROM game_files WHERE game_files.id = translation_units.file_id);
+
+    CREATE INDEX IF NOT EXISTS idx_tu_project_status ON translation_units(project_id, status);
+    CREATE INDEX IF NOT EXISTS idx_tu_project_active ON translation_units(project_id, is_active);
+    CREATE INDEX IF NOT EXISTS idx_tr_unit_source ON translation_records(unit_id, source_hash);
+    """,
 ]
 
 

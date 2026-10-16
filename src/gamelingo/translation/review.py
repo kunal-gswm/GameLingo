@@ -2,6 +2,7 @@ import json
 import time
 from typing import Any, Dict, List, Optional
 
+from gamelingo.domain.models import TranslationRecord
 from gamelingo.storage.database import Database
 from gamelingo.translation.validation import validate_translation
 
@@ -21,16 +22,20 @@ class ReviewService:
             FROM translation_units u
             LEFT JOIN game_files gf ON gf.id = u.file_id
             LEFT JOIN projects p ON p.id = gf.project_id
-            LEFT JOIN translation_records r ON r.unit_id = u.id
+            LEFT JOIN translation_records r ON r.unit_id = u.id AND (r.source_hash IS NULL OR r.source_hash = u.source_hash)
         """
         conditions = []
         params = []
 
+        if not statuses or "obsolete" not in statuses:
+            conditions.append("u.status != 'obsolete'")
+            conditions.append("(u.is_active = 1 OR u.is_active IS NULL)")
+
         if project_id:
             conditions.append(
-                "u.file_id IN (SELECT id FROM game_files WHERE project_id = ?)"
+                "(u.project_id = ? OR u.file_id IN (SELECT id FROM game_files WHERE project_id = ?))"
             )
-            params.append(project_id)
+            params.extend([project_id, project_id])
 
         if statuses:
             placeholders = ",".join(["?"] * len(statuses))
@@ -53,7 +58,7 @@ class ReviewService:
             FROM translation_units u
             LEFT JOIN game_files gf ON gf.id = u.file_id
             LEFT JOIN projects p ON p.id = gf.project_id
-            LEFT JOIN translation_records r ON r.unit_id = u.id
+            LEFT JOIN translation_records r ON r.unit_id = u.id AND (r.source_hash IS NULL OR r.source_hash = u.source_hash)
             WHERE u.id = ?
         """
         cur = conn.execute(query, (unit_id,))
@@ -120,22 +125,28 @@ class ReviewService:
             )
 
             # Update record
-            # If no record exists, this implies manual translation from untranslated state.
+            # If no record exists for this unit and source_hash, insert a new one.
             cur = conn.execute(
-                "SELECT id FROM translation_records WHERE unit_id = ?", (unit_id,)
+                "SELECT id FROM translation_records WHERE unit_id = ? AND (source_hash IS NULL OR source_hash = ?)",
+                (unit_id, unit["source_hash"]),
             )
             record = cur.fetchone()
             now = time.time()
-            if record:
+            if record and record["id"] is not None:
                 conn.execute(
-                    "UPDATE translation_records SET final_text = ?, quality_flags = ?, updated_at = ? WHERE unit_id = ?",
-                    (new_text, quality_flags, now, unit_id),
+                    "UPDATE translation_records SET final_text = ?, quality_flags = ?, source_hash = ?, updated_at = ? WHERE id = ?",
+                    (new_text, quality_flags, unit["source_hash"], now, record["id"]),
+                )
+            elif record:
+                conn.execute(
+                    "UPDATE translation_records SET final_text = ?, quality_flags = ?, source_hash = ?, updated_at = ? WHERE unit_id = ?",
+                    (new_text, quality_flags, unit["source_hash"], now, unit_id),
                 )
             else:
                 import uuid
 
                 conn.execute(
-                    "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, source_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         str(uuid.uuid4()),
                         unit_id,
@@ -144,18 +155,29 @@ class ReviewService:
                         new_text,
                         new_text,
                         quality_flags,
+                        unit["source_hash"],
                         now,
                         now,
                     ),
                 )
 
     def approve(self, unit_id: str):
-        """Approves a translation if it has no blocking errors."""
+        """Approves a translation if it has valid translation content and no blocking errors."""
         unit = self.get_unit(unit_id)
         if not unit:
             raise ValueError(f"Unit {unit_id} not found")
 
         text = unit.get("translated_text") or ""
+        record = TranslationRecord(
+            id=unit.get("record_id") or unit["id"],
+            unit_id=unit["id"],
+            draft_text=unit.get("draft_text") or "",
+            final_text=text,
+        )
+        rec_errors = record.validate_for_approval()
+        if rec_errors:
+            raise ValueError(f"Cannot approve unit {unit_id}: {'; '.join(rec_errors)}")
+
         adapter_id = self._resolve_adapter_id(unit)
         expected_tokens = None
         if adapter_id == "rpgmaker_mv_mz" and unit.get("tokens_json"):
@@ -196,6 +218,17 @@ class ReviewService:
         for u in units:
             text = u.get("translated_text") or ""
             if not text:
+                skipped_count += 1
+                continue
+
+            record = TranslationRecord(
+                id=u.get("record_id") or u["id"],
+                unit_id=u["id"],
+                draft_text=u.get("draft_text") or "",
+                final_text=text,
+            )
+            rec_errors = record.validate_for_approval()
+            if rec_errors:
                 skipped_count += 1
                 continue
 

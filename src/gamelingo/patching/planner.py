@@ -152,8 +152,8 @@ def create_plan(
             )
             continue
 
-        translated_text = record.final_text if record.final_text else record.draft_text
-        if not translated_text:
+        approval_errors = record.validate_for_approval()
+        if approval_errors:
             plan["edits"].append(
                 {
                     "unit_id": unit.id,
@@ -162,9 +162,12 @@ def create_plan(
                     "locator": unit.locator,
                     "status": "rejected",
                     "reason": "empty_translation",
+                    "details": "; ".join(approval_errors),
                 }
             )
             continue
+
+        translated_text = record.final_text if record.final_text else record.draft_text
 
         if unit.status != "approved":
             plan["edits"].append(

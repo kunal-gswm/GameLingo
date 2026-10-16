@@ -1,5 +1,3 @@
-import time
-
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -14,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from gamelingo.adapters.registry import detect_adapter, get_adapter
+from gamelingo.adapters.registry import detect_adapter
 from gamelingo.adapters.rpgmaker_mv_mz import RPGMakerMVMZAdapter
 from gamelingo.gui.state import AppState
 from gamelingo.gui.theme import (
@@ -26,6 +24,7 @@ from gamelingo.gui.theme import (
     create_status_pill,
     style_primary_button,
 )
+from gamelingo.services.extraction import ExtractionService
 
 
 class ExtractionWorker(QThread):
@@ -38,108 +37,12 @@ class ExtractionWorker(QThread):
         super().__init__()
         self.state = state
         self.is_cancelled = False
+        self.result = None
 
     def cancel(self):
         self.is_cancelled = True
 
-    def _create_staging_tables(self, conn):
-        conn.execute("""
-            CREATE TEMP TABLE IF NOT EXISTS staging_game_files (
-                id TEXT PRIMARY KEY,
-                project_id TEXT,
-                relative_path TEXT,
-                format TEXT,
-                source_hash TEXT,
-                size INTEGER,
-                detected_at REAL
-            )
-        """)
-        conn.execute("DELETE FROM staging_game_files")
-
-        conn.execute("""
-            CREATE TEMP TABLE IF NOT EXISTS staging_translation_units (
-                id TEXT PRIMARY KEY,
-                file_id TEXT,
-                locator TEXT,
-                source_text TEXT,
-                context TEXT,
-                tokens_json TEXT,
-                source_hash TEXT,
-                status TEXT
-            )
-        """)
-        conn.execute("DELETE FROM staging_translation_units")
-
-    def _clean_staging_tables(self, conn):
-        try:
-            conn.execute("DELETE FROM staging_game_files")
-            conn.execute("DELETE FROM staging_translation_units")
-        except Exception:
-            pass
-
-    def _write_staging_batch(self, conn, game_path, adapter, batch):
-        with conn:
-            for u in batch:
-                if hasattr(adapter, "get_relative_path"):
-                    rel = adapter.get_relative_path(game_path, u.file_id)
-                else:
-                    rel = (
-                        f"data/{u.file_id}"
-                        if (game_path / "data" / u.file_id).exists()
-                        else f"www/data/{u.file_id}"
-                    )
-                fmt = "rpy" if getattr(adapter, "adapter_id", "") == "renpy" else "json"
-                conn.execute(
-                    "INSERT OR REPLACE INTO staging_game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (u.file_id, "default", rel, fmt, "", 0, time.time()),
-                )
-
-                conn.execute(
-                    "INSERT OR REPLACE INTO staging_translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        u.id,
-                        u.file_id,
-                        u.locator,
-                        u.source_text,
-                        u.context,
-                        u.tokens_json,
-                        u.source_hash,
-                        u.status,
-                    ),
-                )
-
-    def _publish_staging_to_production(self, conn):
-        with conn:
-            conn.execute("""
-                INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at)
-                SELECT id, project_id, relative_path, format, source_hash, size, detected_at FROM staging_game_files
-                WHERE 1
-                ON CONFLICT(id) DO UPDATE SET
-                    relative_path = excluded.relative_path,
-                    format = excluded.format,
-                    detected_at = excluded.detected_at
-            """)
-
-            conn.execute("""
-                INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status)
-                SELECT id, file_id, locator, source_text, context, tokens_json, source_hash, status FROM staging_translation_units
-                WHERE 1
-                ON CONFLICT(id) DO UPDATE SET
-                    locator = excluded.locator,
-                    source_text = excluded.source_text,
-                    context = excluded.context,
-                    tokens_json = excluded.tokens_json,
-                    status = CASE 
-                        WHEN translation_units.source_hash = excluded.source_hash THEN translation_units.status 
-                        ELSE excluded.status 
-                    END,
-                    source_hash = excluded.source_hash
-            """)
-
-            self._clean_staging_tables(conn)
-
     def run(self):
-        conn = None
         try:
             if self.is_cancelled:
                 self.cancelled.emit()
@@ -147,89 +50,41 @@ class ExtractionWorker(QThread):
 
             import json as _json
 
-            from gamelingo.adapters.rpgmaker_mv_mz import (
-                RPGMakerMVMZAdapter as _OrigRPG,
-            )
             from gamelingo.storage.database import Database
 
             local_db = Database(self.state.db.db_path)
             game_path = self.state.game_path
-            conn = local_db.connect()
+            service = ExtractionService(local_db)
 
-            if RPGMakerMVMZAdapter is not _OrigRPG:
-                adapter = RPGMakerMVMZAdapter()
-            else:
-                adapter = None
-                with conn:
-                    cur = conn.execute(
-                        "SELECT adapter_id FROM projects WHERE id = 'default'"
-                    )
-                    row = cur.fetchone()
-                    if row and row["adapter_id"]:
-                        adapter = get_adapter(row["adapter_id"])
+            from gamelingo.adapters.rpgmaker_mv_mz import (
+                RPGMakerMVMZAdapter as _OrigRPGMakerMVMZAdapter,
+            )
 
-                if not adapter and game_path:
-                    adapter, _, _ = detect_adapter(game_path)
+            adapter = (
+                RPGMakerMVMZAdapter()
+                if RPGMakerMVMZAdapter is not _OrigRPGMakerMVMZAdapter
+                else None
+            )
 
-                if not adapter:
-                    raise RuntimeError(
-                        f"No supported game engine adapter detected at '{game_path}'."
-                    )
-
-            if hasattr(adapter, "warnings"):
-                adapter.warnings = []
-
-            self._create_staging_tables(conn)
-
-            extracted_count = 0
-            batch = []
-            for u in adapter.extract(game_path):
-                if self.is_cancelled:
-                    self._clean_staging_tables(conn)
-                    self.cancelled.emit()
-                    return
-                batch.append(u)
-                extracted_count += 1
-                if len(batch) >= 50:
-                    self._write_staging_batch(conn, game_path, adapter, batch)
-                    batch = []
-                    self.progress.emit(extracted_count)
-
-            if self.is_cancelled:
-                self._clean_staging_tables(conn)
-                self.cancelled.emit()
-                return
-
-            if batch:
-                self._write_staging_batch(conn, game_path, adapter, batch)
-                self.progress.emit(extracted_count)
-
-            if hasattr(adapter, "warnings") and adapter.warnings:
-                self._clean_staging_tables(conn)
-                warn_msg = "\n".join(adapter.warnings)
-                self.error.emit(
-                    f"Malformed JSON in game data:\n{warn_msg}\nVerify game data integrity."
-                )
-                return
-
-            # Atomically publish staged results to production tables
-            self._publish_staging_to_production(conn)
-            self.finished.emit(extracted_count)
+            result = service.extract_project(
+                game_path,
+                adapter=adapter,
+                progress_callback=self.progress.emit,
+                cancel_check=lambda: self.is_cancelled,
+            )
+            self.result = result
+            self.finished.emit(result.extracted_units)
+        except InterruptedError:
+            self.cancelled.emit()
         except _json.JSONDecodeError as e:
-            if conn:
-                self._clean_staging_tables(conn)
             self.error.emit(
                 f"Malformed JSON in game data: {e.msg} at line {e.lineno}, col {e.colno}. Verify game data integrity."
             )
         except PermissionError as e:
-            if conn:
-                self._clean_staging_tables(conn)
             self.error.emit(
                 f"Permission denied accessing game files: {e.filename or e}. Ensure files are not locked or read-restricted."
             )
         except Exception as e:
-            if conn:
-                self._clean_staging_tables(conn)
             self.error.emit(str(e))
 
 
@@ -305,6 +160,9 @@ class ExtractionPage(QWidget):
 
         self.box_count = self._create_summary_box("Extracted Units", "0")
         results_layout.addWidget(self.box_count)
+
+        self.box_active = self._create_summary_box("Active in DB", "0")
+        results_layout.addWidget(self.box_active)
 
         self.box_db = self._create_summary_box("Database Status", "Not Initialized")
         results_layout.addWidget(self.box_db)
@@ -415,11 +273,13 @@ class ExtractionPage(QWidget):
         if self.state.db:
             try:
                 conn = self.state.db.connect()
-                cur = conn.execute("SELECT COUNT(*) as c FROM translation_units")
+                cur = conn.execute(
+                    "SELECT COUNT(*) as c FROM translation_units WHERE is_active = 1"
+                )
                 c = cur.fetchone()["c"]
-                val_lbl = self.box_count.findChild(QLabel, "val_label")
-                if val_lbl:
-                    val_lbl.setText(str(c))
+                val_active = self.box_active.findChild(QLabel, "val_label")
+                if val_active:
+                    val_active.setText(str(c))
 
                 db_lbl = self.box_db.findChild(QLabel, "val_label")
                 if db_lbl:
@@ -504,23 +364,58 @@ class ExtractionPage(QWidget):
         self.refresh()
 
     def on_finished(self, count):
+        res = self.worker.result if self.worker else None
         self.worker = None
         self.progress_bar.setVisible(False)
         self.btn_extract.setEnabled(True)
         self.btn_cancel.setEnabled(False)
-        self.lbl_status.setText(
-            f"Extraction completed successfully. {count} units imported into project database."
-        )
+
+        active_count = count
+        obsolete_count = 0
+        if res:
+            active_count = res.active_units
+            obsolete_count = res.obsolete_units
+        elif self.state.db:
+            try:
+                conn = self.state.db.connect()
+                cur = conn.execute(
+                    "SELECT COUNT(*) as c FROM translation_units WHERE is_active = 1"
+                )
+                active_count = cur.fetchone()["c"]
+                cur_obs = conn.execute(
+                    "SELECT COUNT(*) as c FROM translation_units WHERE is_active = 0"
+                )
+                obsolete_count = cur_obs.fetchone()["c"]
+            except Exception:
+                pass
+
+        if count == active_count and obsolete_count == 0:
+            self.lbl_status.setText(
+                f"Extraction completed successfully. {count} units imported into project database."
+            )
+        else:
+            self.lbl_status.setText(
+                f"Extraction completed successfully. {count} units extracted ({active_count} active in project database, {obsolete_count} obsolete)."
+            )
         self._set_pill("Success", "success")
 
         val_lbl = self.box_count.findChild(QLabel, "val_label")
         if val_lbl:
             val_lbl.setText(str(count))
 
+        val_active = self.box_active.findChild(QLabel, "val_label")
+        if val_active:
+            val_active.setText(str(active_count))
+
+        msg = (
+            f"Extracted {count} translation units from game files."
+            if (count == active_count and obsolete_count == 0)
+            else f"Extracted {count} translation units ({active_count} active in project database, {obsolete_count} obsolete)."
+        )
         QMessageBox.information(
             self,
             "Extraction Complete",
-            f"Extracted {count} translation units from game files.",
+            msg,
         )
 
     def on_error(self, err_msg):

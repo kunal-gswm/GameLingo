@@ -611,9 +611,20 @@ class DashboardPage(QWidget):
         if self.state.db:
             try:
                 conn = self.state.db.connect()
-                cur = conn.execute(
-                    "SELECT status, COUNT(*) as c FROM translation_units GROUP BY status"
-                )
+                proj_clause = ""
+                params = []
+                if self.state.game_path:
+                    p_cur = conn.execute(
+                        "SELECT id FROM projects WHERE install_path = ?",
+                        (str(self.state.game_path.resolve()),),
+                    )
+                    p_row = p_cur.fetchone()
+                    if p_row:
+                        proj_clause = "AND (project_id = ? OR ? = 'default')"
+                        params = [p_row["id"], p_row["id"]]
+
+                query = f"SELECT status, COUNT(*) as c FROM translation_units WHERE is_active = 1 {proj_clause} GROUP BY status"
+                cur = conn.execute(query, tuple(params))
                 for r in cur.fetchall():
                     st = r["status"]
                     c = r["c"]
