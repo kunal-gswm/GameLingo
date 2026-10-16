@@ -809,3 +809,446 @@ def test_plan_format_version_1_1_and_1_0_contract(tmp_path: Path):
     del bad_id_plan["target_root"]
     with pytest.raises(PlanValidationError, match="missing required 'target_root'"):
         validate_plan(game_root, bad_id_plan)
+
+
+# =============================================================================
+# 6. GL-RPGM-010F: Deterministic Source-Snapshot Race Regression Tests
+# =============================================================================
+
+
+def test_source_changed_before_job_resume(tmp_path: Path):
+    """
+    Scenario A: Source changed before job resume
+    1. Extract source A ("Open the chest").
+    2. Queue a job for source A.
+    3. Change the game source to B ("Open the golden chest") and re-extract before resuming.
+    4. Resume the old job.
+    5. Assert no translation generated for A is stored as a record for B.
+    6. Assert B's status is not changed by the stale result (remains untranslated).
+    7. Assert the job reports the stale/skipped result accurately.
+    """
+    ws = tmp_path / "workspace_scen_a"
+    ws.mkdir(parents=True, exist_ok=True)
+    game_root = tmp_path / "game_scen_a"
+    _create_rpgm_game(game_root, ["Open the chest"])
+
+    db_path = ws / "gamelingo.db"
+    db = Database(db_path)
+    db.migrate()
+
+    ext_service = ExtractionService(db)
+    provider = FakeProvider(batch_limit=10)
+    pipeline = TranslationPipeline(db, provider)
+    project_id = "proj_race_a"
+
+    # 1. Extract source A
+    ext_service.extract_project(game_root, project_id=project_id)
+
+    conn = db.connect()
+    cur = conn.execute(
+        "SELECT * FROM translation_units WHERE project_id = ? AND source_text = 'Open the chest'",
+        (project_id,),
+    )
+    u_a = cur.fetchone()
+    assert u_a is not None
+    unit_id = u_a["id"]
+    hash_a = u_a["source_hash"]
+
+    # 2. Queue job for source A
+    tu_a = TranslationUnit(
+        unit_id,
+        u_a["file_id"],
+        u_a["locator"],
+        u_a["source_text"],
+        u_a["context"],
+        "[]",
+        hash_a,
+    )
+    job_id = pipeline.create_job(project_id, [tu_a], "en", "es")
+
+    # 3. Change game source to B and re-extract
+    map_file = game_root / "data" / "Map001.json"
+    map_data = json.loads(map_file.read_text(encoding="utf-8"))
+    map_data["events"][1]["pages"][0]["list"][0]["parameters"][0] = (
+        "Open the golden chest"
+    )
+    map_file.write_text(json.dumps(map_data), encoding="utf-8")
+
+    ext_service.extract_project(game_root, project_id=project_id)
+
+    cur = conn.execute("SELECT * FROM translation_units WHERE id = ?", (unit_id,))
+    u_b = cur.fetchone()
+    assert u_b["source_text"] == "Open the golden chest"
+    hash_b = u_b["source_hash"]
+    assert hash_b != hash_a
+    assert u_b["status"] == "untranslated"
+
+    # 4. Resume old job
+    rep = pipeline.resume_job(job_id)
+
+    # 5. Assert no translation generated for A is stored as a record for B
+    cur = conn.execute(
+        "SELECT * FROM translation_records WHERE unit_id = ? AND source_hash = ?",
+        (unit_id, hash_b),
+    )
+    assert cur.fetchall() == []
+
+    cur_all = conn.execute(
+        "SELECT * FROM translation_records WHERE unit_id = ?", (unit_id,)
+    )
+    assert cur_all.fetchall() == []
+
+    # 6. Assert B's status is not changed by the stale result
+    cur = conn.execute("SELECT status FROM translation_units WHERE id = ?", (unit_id,))
+    assert cur.fetchone()["status"] == "untranslated"
+
+    # 7. Assert job reports stale result accurately
+    assert rep["stale"] == 1
+    assert rep["completed"] == 0
+
+
+def test_source_changed_while_provider_call_in_progress(tmp_path: Path):
+    """
+    Scenario B: Source changed while provider call is in progress
+    1. Queue a translation for source A.
+    2. Use a fake provider that triggers a source mutation and re-extraction immediately before returning.
+    3. Resume the job.
+    4. Assert worker detects that the snapshot is stale and does not associate A's translation with B's hash.
+    5. Assert no stale status update is applied to B.
+    """
+    ws = tmp_path / "workspace_scen_b"
+    ws.mkdir(parents=True, exist_ok=True)
+    game_root = tmp_path / "game_scen_b"
+    _create_rpgm_game(game_root, ["Defeat the dragon"])
+
+    db_path = ws / "gamelingo.db"
+    db = Database(db_path)
+    db.migrate()
+
+    ext_service = ExtractionService(db)
+    project_id = "proj_race_b"
+
+    # 1. Extract source A
+    ext_service.extract_project(game_root, project_id=project_id)
+
+    conn = db.connect()
+    cur = conn.execute(
+        "SELECT * FROM translation_units WHERE project_id = ? AND source_text = 'Defeat the dragon'",
+        (project_id,),
+    )
+    u_a = cur.fetchone()
+    assert u_a is not None
+    unit_id = u_a["id"]
+    hash_a = u_a["source_hash"]
+
+    # 2. Define custom provider that mutates file and re-extracts right before returning
+    class MutatingProvider(FakeProvider):
+        def translate_batch(self, requests):
+            map_file = game_root / "data" / "Map001.json"
+            map_data = json.loads(map_file.read_text(encoding="utf-8"))
+            map_data["events"][1]["pages"][0]["list"][0]["parameters"][0] = (
+                "Defeat the ancient dragon"
+            )
+            map_file.write_text(json.dumps(map_data), encoding="utf-8")
+            ext_service.extract_project(game_root, project_id=project_id)
+            return super().translate_batch(requests)
+
+    provider = MutatingProvider(batch_limit=10)
+    pipeline = TranslationPipeline(db, provider)
+
+    tu_a = TranslationUnit(
+        unit_id,
+        u_a["file_id"],
+        u_a["locator"],
+        u_a["source_text"],
+        u_a["context"],
+        "[]",
+        hash_a,
+    )
+    job_id = pipeline.create_job(project_id, [tu_a], "en", "es")
+
+    # 3. Resume the job (exercises real resume_job path with mutation during translate_batch)
+    rep = pipeline.resume_job(job_id)
+
+    # 4. Assert worker detects stale snapshot and does not associate A's translation with B's hash
+    cur = conn.execute("SELECT * FROM translation_units WHERE id = ?", (unit_id,))
+    u_b = cur.fetchone()
+    assert u_b["source_text"] == "Defeat the ancient dragon"
+    hash_b = u_b["source_hash"]
+    assert hash_b != hash_a
+
+    cur_records = conn.execute(
+        "SELECT * FROM translation_records WHERE unit_id = ?", (unit_id,)
+    )
+    assert cur_records.fetchall() == []
+
+    # 5. Assert no stale status update is applied to B
+    assert u_b["status"] == "untranslated"
+    assert rep["stale"] == 1
+    assert rep["completed"] == 0
+
+
+def test_stale_cache_hit_input_rejected(tmp_path: Path):
+    """
+    Scenario C: Stale cache-hit input
+    1. Prepare a valid cached translation for source A.
+    2. Change the database unit to source B.
+    3. Attempt to create a job using a stale unit object for A.
+    4. Assert no record is stamped with B's hash and the current unit status is unchanged.
+    """
+    ws = tmp_path / "workspace_scen_c"
+    ws.mkdir(parents=True, exist_ok=True)
+    game_root = tmp_path / "game_scen_c"
+    _create_rpgm_game(game_root, ["Secret passage"])
+
+    db_path = ws / "gamelingo.db"
+    db = Database(db_path)
+    db.migrate()
+
+    ext_service = ExtractionService(db)
+    provider = FakeProvider(batch_limit=10)
+    pipeline = TranslationPipeline(db, provider)
+    project_id = "proj_race_c"
+
+    # Extract source A
+    ext_service.extract_project(game_root, project_id=project_id)
+
+    conn = db.connect()
+    cur = conn.execute(
+        "SELECT * FROM translation_units WHERE project_id = ? AND source_text = 'Secret passage'",
+        (project_id,),
+    )
+    u_a = cur.fetchone()
+    unit_id = u_a["id"]
+    hash_a = u_a["source_hash"]
+
+    # 1. Prime translation memory with cached translation for source A
+    pipeline._save_cache("Secret passage", "en", "es", "", "Pasaje secreto", "test")
+
+    # 2. Mutate database unit to source B ("Hidden passage") and re-extract
+    map_file = game_root / "data" / "Map001.json"
+    map_data = json.loads(map_file.read_text(encoding="utf-8"))
+    map_data["events"][1]["pages"][0]["list"][0]["parameters"][0] = "Hidden passage"
+    map_file.write_text(json.dumps(map_data), encoding="utf-8")
+    ext_service.extract_project(game_root, project_id=project_id)
+
+    cur = conn.execute("SELECT * FROM translation_units WHERE id = ?", (unit_id,))
+    u_b = cur.fetchone()
+    assert u_b["source_text"] == "Hidden passage"
+    hash_b = u_b["source_hash"]
+    assert hash_b != hash_a
+    assert u_b["status"] == "untranslated"
+
+    # 3. Attempt to create a job using a stale TranslationUnit object for A
+    stale_tu = TranslationUnit(
+        unit_id,
+        u_a["file_id"],
+        u_a["locator"],
+        "Secret passage",
+        "",
+        "[]",
+        hash_a,
+    )
+    job_id = pipeline.create_job(project_id, [stale_tu], "en", "es")
+
+    # 4. Assert no record is stamped with B's hash and unit status remains untranslated
+    cur = conn.execute(
+        "SELECT * FROM translation_records WHERE unit_id = ?", (unit_id,)
+    )
+    assert cur.fetchall() == []
+
+    cur = conn.execute("SELECT status FROM translation_units WHERE id = ?", (unit_id,))
+    assert cur.fetchone()["status"] == "untranslated"
+
+    # Verify job reported the stale unit
+    cur = conn.execute("SELECT counts FROM jobs WHERE id = ?", (job_id,))
+    counts = json.loads(cur.fetchone()["counts"])
+    assert counts["stale"] == 1
+    assert counts["completed"] == 0
+
+
+def test_deduplicated_units_partial_mutation_safety(tmp_path: Path):
+    """
+    Scenario D: Deduplicated units
+    1. Queue multiple units sharing identical request text ("Potion of Healing").
+    2. Ensure each unit has its own captured snapshot metadata.
+    3. Change one unit while the job is running (or before resume).
+    4. Assert the still-current unit receives its valid result and the stale unit does not.
+    5. Verify correct source hashes on all stored records.
+    """
+    ws = tmp_path / "workspace_scen_d"
+    ws.mkdir(parents=True, exist_ok=True)
+    game_root = tmp_path / "game_scen_d"
+    _create_rpgm_game(game_root, ["Potion of Healing", "Potion of Healing"])
+
+    db_path = ws / "gamelingo.db"
+    db = Database(db_path)
+    db.migrate()
+
+    ext_service = ExtractionService(db)
+    provider = FakeProvider(batch_limit=10)
+    pipeline = TranslationPipeline(db, provider)
+    project_id = "proj_race_d"
+
+    # 1. Extract both units sharing identical source text
+    ext_service.extract_project(game_root, project_id=project_id)
+
+    conn = db.connect()
+    cur = conn.execute(
+        "SELECT * FROM translation_units WHERE project_id = ? AND source_text = 'Potion of Healing' ORDER BY locator ASC",
+        (project_id,),
+    )
+    units_raw = cur.fetchall()
+    assert len(units_raw) == 2
+    u1, u2 = units_raw[0], units_raw[1]
+
+    tu1 = TranslationUnit(
+        u1["id"],
+        u1["file_id"],
+        u1["locator"],
+        u1["source_text"],
+        u1["context"],
+        "[]",
+        u1["source_hash"],
+    )
+    tu2 = TranslationUnit(
+        u2["id"],
+        u2["file_id"],
+        u2["locator"],
+        u2["source_text"],
+        u2["context"],
+        "[]",
+        u2["source_hash"],
+    )
+
+    # 2. Queue job for both units (deduplicated request)
+    job_id = pipeline.create_job(project_id, [tu1, tu2], "en", "es")
+
+    # Verify separate snapshot metadata exists in chunk
+    cur = conn.execute(
+        "SELECT chunk_data_json FROM job_chunks WHERE job_id = ?", (job_id,)
+    )
+    chunk_json = json.loads(cur.fetchone()["chunk_data_json"])
+    req = chunk_json["requests"][0]
+    assert set(req["unit_ids"]) == {u1["id"], u2["id"]}
+    assert u1["id"] in req["snapshots"]
+    assert u2["id"] in req["snapshots"]
+
+    # 3. Change unit 1 while job is queued / before resume
+    with conn:
+        conn.execute(
+            "UPDATE translation_units SET source_text = 'Super Potion of Healing', source_hash = 'mutated_hash_1' WHERE id = ?",
+            (u1["id"],),
+        )
+
+    # 4. Resume job
+    rep = pipeline.resume_job(job_id)
+
+    # 4a. Still-current unit 2 received valid result
+    cur = conn.execute(
+        "SELECT * FROM translation_records WHERE unit_id = ?", (u2["id"],)
+    )
+    u2_recs = cur.fetchall()
+    assert len(u2_recs) == 1
+    assert u2_recs[0]["source_hash"] == u2["source_hash"]
+    assert u2_recs[0]["final_text"] == "Potion of Healing TR"
+
+    cur = conn.execute("SELECT status FROM translation_units WHERE id = ?", (u2["id"],))
+    assert cur.fetchone()["status"] == "draft"
+
+    # 4b. Stale unit 1 did not receive a record
+    cur = conn.execute(
+        "SELECT * FROM translation_records WHERE unit_id = ?", (u1["id"],)
+    )
+    assert cur.fetchall() == []
+
+    cur = conn.execute("SELECT status FROM translation_units WHERE id = ?", (u1["id"],))
+    assert cur.fetchone()["status"] == "untranslated"
+
+    # 5. Assert job report
+    assert rep["completed"] == 1
+    assert rep["stale"] == 1
+
+
+def test_job_persistence_and_retry_with_source_mutation(tmp_path: Path):
+    """
+    Scenario E: Job persistence and retry
+    1. Persist a job, stop before processing, and resume it.
+    2. Verify snapshot metadata survives serialization and reload.
+    3. Retry a failed chunk after a source mutation.
+    4. Ensure retry processing does not discard the original snapshot or relabel stale output as current.
+    """
+    ws = tmp_path / "workspace_scen_e"
+    ws.mkdir(parents=True, exist_ok=True)
+    game_root = tmp_path / "game_scen_e"
+    _create_rpgm_game(game_root, ["Magic Mirror"])
+
+    db_path = ws / "gamelingo.db"
+    db = Database(db_path)
+    db.migrate()
+
+    ext_service = ExtractionService(db)
+    provider = FakeProvider(simulate_error_for=["Magic Mirror"], batch_limit=10)
+    pipeline = TranslationPipeline(db, provider)
+    project_id = "proj_race_e"
+
+    ext_service.extract_project(game_root, project_id=project_id)
+
+    conn = db.connect()
+    cur = conn.execute(
+        "SELECT * FROM translation_units WHERE project_id = ? AND source_text = 'Magic Mirror'",
+        (project_id,),
+    )
+    u_row = cur.fetchone()
+    unit_id = u_row["id"]
+    hash_orig = u_row["source_hash"]
+
+    # 1. Queue job
+    tu = TranslationUnit(
+        unit_id,
+        u_row["file_id"],
+        u_row["locator"],
+        u_row["source_text"],
+        u_row["context"],
+        "[]",
+        hash_orig,
+    )
+    job_id = pipeline.create_job(project_id, [tu], "en", "es")
+
+    # 2. Verify snapshot metadata survives serialization in job_chunks
+    cur = conn.execute(
+        "SELECT chunk_data_json FROM job_chunks WHERE job_id = ?", (job_id,)
+    )
+    chunk_json = json.loads(cur.fetchone()["chunk_data_json"])
+    snap = chunk_json["requests"][0]["snapshots"][unit_id]
+    assert snap["source_hash"] == hash_orig
+    assert snap["source_text"] == "Magic Mirror"
+
+    # First resume fails due to simulated provider error
+    rep1 = pipeline.resume_job(job_id)
+    assert rep1["status"] == "running"
+
+    # 3. Mutate source while chunk is pending retry
+    with conn:
+        conn.execute(
+            "UPDATE translation_units SET source_text = 'Cursed Mirror', source_hash = 'hash_cursed' WHERE id = ?",
+            (unit_id,),
+        )
+
+    # Remove simulated error for retry
+    provider.simulate_error_for = []
+
+    # 4. Resume (retry) chunk
+    rep2 = pipeline.resume_job(job_id)
+
+    # Retry must not discard snapshot or relabel Magic Mirror TR with hash_cursed
+    cur = conn.execute(
+        "SELECT * FROM translation_records WHERE unit_id = ?", (unit_id,)
+    )
+    assert cur.fetchall() == []
+
+    cur = conn.execute("SELECT status FROM translation_units WHERE id = ?", (unit_id,))
+    assert cur.fetchone()["status"] == "untranslated"
+
+    assert rep2["stale"] == 1
+    assert rep2["completed"] == 0

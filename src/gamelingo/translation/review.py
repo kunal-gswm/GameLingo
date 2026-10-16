@@ -156,15 +156,27 @@ class ReviewService:
             ]
         )
 
+        curr_hash = unit.get("source_hash")
+        curr_text = unit.get("source_text")
         conn = self.db.connect()
         with conn:
-            conn.execute(
-                "UPDATE translation_units SET status = ? WHERE id = ?",
-                (new_status, unit_id),
+            cur_up = conn.execute(
+                """
+                UPDATE translation_units SET status = ?
+                WHERE id = ?
+                  AND (source_hash = ? OR (? IS NULL AND source_hash IS NULL))
+                  AND source_text = ?
+                  AND (is_active = 1 OR is_active IS NULL)
+                  AND status != 'obsolete'
+                """,
+                (new_status, unit_id, curr_hash, curr_hash, curr_text),
             )
+            if cur_up.rowcount == 0:
+                raise ValueError(
+                    f"Cannot update translation for unit {unit_id}: source changed or unit became inactive concurrently."
+                )
 
             # Update record for the current source_hash or insert a new record with this source_hash
-            curr_hash = unit.get("source_hash")
             record = None
             if curr_hash is not None:
                 cur = conn.execute(
@@ -257,10 +269,26 @@ class ReviewService:
 
         conn = self.db.connect()
         with conn:
-            conn.execute(
-                "UPDATE translation_units SET status = 'approved' WHERE id = ?",
-                (unit_id,),
+            cur_up = conn.execute(
+                """
+                UPDATE translation_units SET status = 'approved'
+                WHERE id = ?
+                  AND (source_hash = ? OR (? IS NULL AND source_hash IS NULL))
+                  AND source_text = ?
+                  AND (is_active = 1 OR is_active IS NULL)
+                  AND status != 'obsolete'
+                """,
+                (
+                    unit_id,
+                    unit.get("source_hash"),
+                    unit.get("source_hash"),
+                    unit.get("source_text"),
+                ),
             )
+            if cur_up.rowcount == 0:
+                raise ValueError(
+                    f"Cannot approve unit {unit_id}: source changed or unit became inactive concurrently."
+                )
 
     def approve_all(
         self, project_id: Optional[str] = None, unit_ids: Optional[List[str]] = None

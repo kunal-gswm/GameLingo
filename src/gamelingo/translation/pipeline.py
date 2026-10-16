@@ -89,41 +89,107 @@ class TranslationPipeline:
         target_lang: str,
         chunk_size: int = None,
     ) -> str:
+        """
+        Policy for missing or mismatched source hashes:
+        1. Supplied units must match the authoritative database row in both source_text and source_hash.
+        2. If the supplied unit has no source_hash (None or empty) while the database row has a non-null source_hash,
+           or vice versa, the unit is treated as having mismatched provenance and is skipped from queueing.
+        3. We NEVER replace a missing snapshot hash with the current database hash to assume provenance.
+        4. Inactive (is_active = 0) or obsolete units are never queued for new translation work.
+        """
         if chunk_size is None:
             chunk_size = self.provider.batch_limit
 
         job_id = str(uuid.uuid4())
 
-        # We need to map units to requests
-        # Then deduplicate within the job
-        # Then check cache
-
         pending_requests = []
-        # within-job deduplication mapping
         dedup_map: Dict[tuple, List[str]] = {}
+        snapshots_by_unit_id: Dict[str, Dict[str, Any]] = {}
 
-        # check cache and dedup
         conn = self.db.connect()
 
+        completed_cache_hits = 0
+        stale_units_count = 0
+        skipped_units_count = 0
+
         for unit in units:
-            # check cache
+            cur = conn.execute(
+                """
+                SELECT tu.id, tu.project_id, tu.file_id, tu.locator, tu.source_text, tu.context, tu.tokens_json, tu.source_hash, tu.status, tu.is_active,
+                       gf.project_id AS gf_project_id
+                FROM translation_units tu
+                LEFT JOIN game_files gf ON gf.id = tu.file_id
+                WHERE tu.id = ?
+                """,
+                (unit.id,),
+            )
+            db_row = cur.fetchone()
+            if not db_row:
+                skipped_units_count += 1
+                continue
+
+            is_active = db_row["is_active"] if db_row["is_active"] is not None else 1
+            if is_active == 0 or db_row["status"] == "obsolete":
+                skipped_units_count += 1
+                continue
+
+            db_proj = (
+                db_row["project_id"]
+                if (db_row["project_id"] and db_row["project_id"] != "default")
+                else (db_row["gf_project_id"] or db_row["project_id"] or "default")
+            )
+            if (
+                project_id
+                and db_proj != project_id
+                and db_row["project_id"] != project_id
+            ):
+                skipped_units_count += 1
+                continue
+
+            # Agreement check: supplied unit vs DB row
+            # Never replace a missing snapshot hash with the current database hash and assume provenance is established.
+            if unit.source_text != db_row["source_text"]:
+                stale_units_count += 1
+                skipped_units_count += 1
+                continue
+            if unit.source_hash != db_row["source_hash"] or not db_row["source_hash"]:
+                stale_units_count += 1
+                skipped_units_count += 1
+                continue
+
+            snap = {
+                "unit_id": db_row["id"],
+                "project_id": db_proj,
+                "source_text": db_row["source_text"],
+                "source_hash": db_row["source_hash"],
+                "context": db_row["context"] or "",
+                "tokens_json": db_row["tokens_json"] or "[]",
+                "status": db_row["status"],
+                "is_active": is_active,
+            }
+            snapshots_by_unit_id[unit.id] = snap
+
+            # Check cache
             cached = self._check_cache(
-                unit.source_text, source_lang, target_lang, unit.context
+                snap["source_text"], source_lang, target_lang, snap["context"]
             )
             if cached:
-                # Resolve exact current source_hash from translation_units for provenance consistency
-                cur = conn.execute(
-                    "SELECT source_hash FROM translation_units WHERE id = ?",
-                    (unit.id,),
-                )
-                row = cur.fetchone()
-                s_hash = (
-                    row["source_hash"]
-                    if row and row["source_hash"]
-                    else unit.source_hash
-                )
+                expected_tokens = None
+                if snap.get("tokens_json"):
+                    try:
+                        expected_tokens = json.loads(snap["tokens_json"])
+                    except (json.JSONDecodeError, TypeError):
+                        expected_tokens = None
 
-                issues = validate_translation(unit.source_text, cached)
+                issues = validate_translation(
+                    snap["source_text"],
+                    cached,
+                    expected_tokens=expected_tokens,
+                )
+                has_errors = any(i.severity == "error" for i in issues)
+                new_status = (
+                    "failed" if has_errors else ("needs_review" if issues else "draft")
+                )
                 quality_flags = json.dumps(
                     [
                         {
@@ -134,40 +200,53 @@ class TranslationPipeline:
                         for i in issues
                     ]
                 )
-                has_errors = any(i.severity == "error" for i in issues)
-                new_status = (
-                    "failed" if has_errors else ("needs_review" if issues else "draft")
-                )
 
-                # already cached, save a TranslationRecord immediately and update unit status
+                # Guarded update: only update if DB still matches the snapshot
                 with conn:
-                    conn.execute(
+                    cur_up = conn.execute(
                         """
-                        INSERT INTO translation_records 
-                        (id, unit_id, provider, model, draft_text, final_text, quality_flags, source_hash, created_at, updated_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        UPDATE translation_units
+                        SET status = ?
+                        WHERE id = ?
+                          AND source_hash = ?
+                          AND source_text = ?
+                          AND (is_active = 1 OR is_active IS NULL)
+                          AND status != 'obsolete'
                         """,
                         (
-                            str(uuid.uuid4()),
-                            unit.id,
-                            "cache",
-                            "cache",
-                            cached,
-                            cached,
-                            quality_flags,
-                            s_hash,
-                            time.time(),
-                            time.time(),
+                            new_status,
+                            snap["unit_id"],
+                            snap["source_hash"],
+                            snap["source_text"],
                         ),
                     )
-                    conn.execute(
-                        "UPDATE translation_units SET status = ? WHERE id = ?",
-                        (new_status, unit.id),
-                    )
+                    if cur_up.rowcount == 1:
+                        conn.execute(
+                            """
+                            INSERT INTO translation_records 
+                            (id, unit_id, provider, model, draft_text, final_text, quality_flags, source_hash, created_at, updated_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                str(uuid.uuid4()),
+                                snap["unit_id"],
+                                "cache",
+                                "cache",
+                                cached,
+                                cached,
+                                quality_flags,
+                                snap["source_hash"],
+                                time.time(),
+                                time.time(),
+                            ),
+                        )
+                        completed_cache_hits += 1
+                    else:
+                        stale_units_count += 1
                 continue
 
             cache_key = self._get_cache_key(
-                unit.source_text, source_lang, target_lang, unit.context
+                snap["source_text"], source_lang, target_lang, snap["context"]
             )
             if cache_key in dedup_map:
                 dedup_map[cache_key].append(unit.id)
@@ -175,11 +254,11 @@ class TranslationPipeline:
                 dedup_map[cache_key] = [unit.id]
                 pending_requests.append(
                     TranslationRequest(
-                        id=unit.id,  # using the first unit's ID as the request ID
-                        source_text=unit.source_text,
+                        id=unit.id,  # using first unit's ID as the request ID
+                        source_text=snap["source_text"],
                         source_lang=source_lang,
                         target_lang=target_lang,
-                        context=unit.context,
+                        context=snap["context"],
                         category="text",
                     )
                 )
@@ -194,9 +273,15 @@ class TranslationPipeline:
             "total": len(units),
             "total_units": len(units),
             "pending_requests": len(pending_requests),
-            "completed": 0,
+            "completed": completed_cache_hits,
             "failed": 0,
+            "stale": stale_units_count,
+            "skipped": skipped_units_count,
         }
+
+        job_status = "created"
+        if len(pending_requests) == 0:
+            job_status = "completed"
 
         # Save job
         with conn:
@@ -206,7 +291,7 @@ class TranslationPipeline:
                     job_id,
                     project_id,
                     json.dumps(settings),
-                    "created",
+                    job_status,
                     json.dumps(counts),
                     time.time(),
                     time.time(),
@@ -232,6 +317,18 @@ class TranslationPipeline:
                                     r.context,
                                 )
                             ],
+                            "snapshots": {
+                                uid: snapshots_by_unit_id[uid]
+                                for uid in dedup_map[
+                                    self._get_cache_key(
+                                        r.source_text,
+                                        r.source_lang,
+                                        r.target_lang,
+                                        r.context,
+                                    )
+                                ]
+                                if uid in snapshots_by_unit_id
+                            },
                         }
                         for r in chunk_reqs
                     ]
@@ -254,14 +351,19 @@ class TranslationPipeline:
     def resume_job(
         self, job_id: str, max_chunks: Optional[int] = None
     ) -> Dict[str, Any]:
-        import json
-
         conn = self.db.connect()
 
         cur = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
         job_row = cur.fetchone()
         if not job_row:
             raise ValueError(f"Job {job_id} not found")
+
+        counts = {}
+        if job_row["counts"]:
+            try:
+                counts = json.loads(job_row["counts"])
+            except Exception:
+                counts = {}
 
         # If all chunks are currently failed and no pending chunks exist,
         # reset failed chunks to pending (attempt=0) so the job can be retried/resumed
@@ -288,11 +390,12 @@ class TranslationPipeline:
         if max_chunks is not None and max_chunks > 0:
             chunks = chunks[:max_chunks]
 
-        with conn:
-            conn.execute(
-                "UPDATE jobs SET status = 'running', updated_at = ? WHERE id = ?",
-                (time.time(), job_id),
-            )
+        if chunks:
+            with conn:
+                conn.execute(
+                    "UPDATE jobs SET status = 'running', updated_at = ? WHERE id = ?",
+                    (time.time(), job_id),
+                )
 
         for chunk in chunks:
             chunk_id = chunk["id"]
@@ -307,17 +410,16 @@ class TranslationPipeline:
                     )
                 continue
 
-            requests = []
-            for r in chunk_data["requests"]:
-                requests.append(
-                    TranslationRequest(
-                        id=r["id"],
-                        source_text=r["source_text"],
-                        source_lang=r["source_lang"],
-                        target_lang=r["target_lang"],
-                        context=r["context"],
-                    )
+            requests = [
+                TranslationRequest(
+                    id=r["id"],
+                    source_text=r["source_text"],
+                    source_lang=r["source_lang"],
+                    target_lang=r["target_lang"],
+                    context=r["context"],
                 )
+                for r in chunk_data["requests"]
+            ]
 
             try:
                 results = self.provider.translate_batch(requests)
@@ -333,14 +435,15 @@ class TranslationPipeline:
                         "All translation requests in chunk failed or errored"
                     )
 
+                chunk_completed_units = 0
+                chunk_failed_units = 0
+                chunk_stale_units = 0
+
                 with conn:
                     for req_data in chunk_data["requests"]:
                         req_id = req_data["id"]
                         res = result_map.get(req_id)
-
-                        from gamelingo.translation.validation import (
-                            validate_translation,
-                        )
+                        req_snapshots = req_data.get("snapshots", {})
 
                         if res and res.target_text and not res.error:
                             issues = validate_translation(
@@ -357,18 +460,99 @@ class TranslationPipeline:
                                 f"{res.provider}/{res.model}",
                             )
 
-                            # 2. write translation records for all dup units, resolving individual provenance
+                            has_errors = any(i.severity == "error" for i in issues)
+                            new_status = (
+                                "failed"
+                                if has_errors
+                                else ("needs_review" if issues else "draft")
+                            )
+                            quality_flags = json.dumps(
+                                [
+                                    {
+                                        "code": i.code,
+                                        "severity": i.severity,
+                                        "message": i.message,
+                                    }
+                                    for i in issues
+                                ]
+                            )
+
+                            # 2. write translation records for all dup units after revalidating snapshot against current DB row
                             for unit_id in req_data["unit_ids"]:
+                                snap = req_snapshots.get(unit_id)
+                                if not snap or not snap.get("source_hash"):
+                                    chunk_stale_units += 1
+                                    continue
+
                                 cur = conn.execute(
-                                    "SELECT source_hash FROM translation_units WHERE id = ?",
+                                    """
+                                    SELECT tu.id, tu.project_id, tu.file_id, tu.source_text, tu.source_hash, tu.status, tu.is_active,
+                                           gf.project_id AS gf_project_id
+                                    FROM translation_units tu
+                                    LEFT JOIN game_files gf ON gf.id = tu.file_id
+                                    WHERE tu.id = ?
+                                    """,
                                     (unit_id,),
                                 )
-                                row = cur.fetchone()
-                                s_hash = (
-                                    row["source_hash"]
-                                    if row and row["source_hash"]
-                                    else None
+                                curr_row = cur.fetchone()
+                                if not curr_row:
+                                    chunk_stale_units += 1
+                                    continue
+
+                                is_active = (
+                                    curr_row["is_active"]
+                                    if curr_row["is_active"] is not None
+                                    else 1
                                 )
+                                db_proj = (
+                                    curr_row["project_id"]
+                                    if (
+                                        curr_row["project_id"]
+                                        and curr_row["project_id"] != "default"
+                                    )
+                                    else (
+                                        curr_row["gf_project_id"]
+                                        or curr_row["project_id"]
+                                        or "default"
+                                    )
+                                )
+
+                                # Revalidate: project, active, text, and hash
+                                if (
+                                    is_active == 0
+                                    or curr_row["status"] == "obsolete"
+                                    or curr_row["source_text"] != snap["source_text"]
+                                    or curr_row["source_hash"] != snap["source_hash"]
+                                    or (
+                                        snap.get("project_id")
+                                        and db_proj != snap["project_id"]
+                                        and curr_row["project_id"] != snap["project_id"]
+                                    )
+                                ):
+                                    chunk_stale_units += 1
+                                    continue
+
+                                # Guarded update: ensures concurrent mutation between SELECT and UPDATE fails closed
+                                cur_up = conn.execute(
+                                    """
+                                    UPDATE translation_units
+                                    SET status = ?
+                                    WHERE id = ?
+                                      AND source_hash = ?
+                                      AND source_text = ?
+                                      AND (is_active = 1 OR is_active IS NULL)
+                                      AND status != 'obsolete'
+                                    """,
+                                    (
+                                        new_status,
+                                        unit_id,
+                                        snap["source_hash"],
+                                        snap["source_text"],
+                                    ),
+                                )
+                                if cur_up.rowcount != 1:
+                                    chunk_stale_units += 1
+                                    continue
 
                                 conn.execute(
                                     """
@@ -383,42 +567,50 @@ class TranslationPipeline:
                                         res.model,
                                         res.target_text,
                                         res.target_text,
-                                        json.dumps(
-                                            [
-                                                {
-                                                    "code": i.code,
-                                                    "severity": i.severity,
-                                                    "message": i.message,
-                                                }
-                                                for i in issues
-                                            ]
-                                        ),
-                                        s_hash,
+                                        quality_flags,
+                                        snap["source_hash"],
                                         time.time(),
                                         time.time(),
                                     ),
                                 )
-                                # Update unit status
-                                has_errors = any(i.severity == "error" for i in issues)
-                                new_status = (
-                                    "failed"
-                                    if has_errors
-                                    else ("needs_review" if issues else "draft")
-                                )
-                                conn.execute(
-                                    "UPDATE translation_units SET status = ? WHERE id = ?",
-                                    (new_status, unit_id),
-                                )
+                                chunk_completed_units += 1
                         else:
                             for unit_id in req_data["unit_ids"]:
-                                conn.execute(
-                                    "UPDATE translation_units SET status = 'failed' WHERE id = ?",
-                                    (unit_id,),
+                                snap = req_snapshots.get(unit_id)
+                                if not snap or not snap.get("source_hash"):
+                                    chunk_stale_units += 1
+                                    continue
+
+                                cur_fail = conn.execute(
+                                    """
+                                    UPDATE translation_units
+                                    SET status = 'failed'
+                                    WHERE id = ?
+                                      AND source_hash = ?
+                                      AND source_text = ?
+                                      AND (is_active = 1 OR is_active IS NULL)
+                                      AND status != 'obsolete'
+                                    """,
+                                    (unit_id, snap["source_hash"], snap["source_text"]),
                                 )
+                                if cur_fail.rowcount == 1:
+                                    chunk_failed_units += 1
+                                else:
+                                    chunk_stale_units += 1
 
                     conn.execute(
                         "UPDATE job_chunks SET status = 'completed', attempt = ?, updated_at = ? WHERE id = ?",
                         (attempt, time.time(), chunk_id),
+                    )
+
+                counts["completed"] = counts.get("completed", 0) + chunk_completed_units
+                counts["failed"] = counts.get("failed", 0) + chunk_failed_units
+                counts["stale"] = counts.get("stale", 0) + chunk_stale_units
+                counts["skipped"] = counts.get("skipped", 0) + chunk_stale_units
+                with conn:
+                    conn.execute(
+                        "UPDATE jobs SET counts = ?, updated_at = ? WHERE id = ?",
+                        (json.dumps(counts), time.time(), job_id),
                     )
             except Exception as e:
                 new_chunk_status = "failed" if attempt >= 3 else "pending"
@@ -449,50 +641,20 @@ class TranslationPipeline:
         else:
             status = "running"
 
-        # Calculate unit counts for progress
-        counts = {}
-        if job_row["counts"]:
-            try:
-                counts = json.loads(job_row["counts"])
-            except Exception:
-                counts = {}
-
-        total_units = counts.get("total", counts.get("total_units", 0))
-
-        cur = conn.execute(
-            """
-            SELECT tu.status, COUNT(*)
-            FROM translation_units tu
-            JOIN game_files gf ON tu.file_id = gf.id
-            WHERE gf.project_id = ?
-            GROUP BY tu.status
-            """,
-            (job_row["project_id"],),
-        )
-        tu_counts = dict(cur.fetchall())
-        completed_units = (
-            tu_counts.get("draft", 0)
-            + tu_counts.get("needs_review", 0)
-            + tu_counts.get("translated", 0)
-        )
-        failed_units = tu_counts.get("failed", 0)
-
-        counts["total"] = total_units
-        counts["total_units"] = total_units
-        counts["completed"] = completed_units
-        counts["failed"] = failed_units
-
         with conn:
             conn.execute(
                 "UPDATE jobs SET status = ?, counts = ?, updated_at = ? WHERE id = ?",
                 (status, json.dumps(counts), time.time(), job_id),
             )
 
+        total_units = counts.get("total", counts.get("total_units", 0))
         return {
             "job_id": job_id,
             "status": status,
             "total": total_units,
-            "completed": completed_units,
-            "failed": failed_units,
+            "completed": counts.get("completed", 0),
+            "failed": counts.get("failed", 0),
+            "stale": counts.get("stale", 0),
+            "skipped": counts.get("skipped", 0),
             "counts": counts,
         }

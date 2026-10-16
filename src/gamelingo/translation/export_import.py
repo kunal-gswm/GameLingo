@@ -328,10 +328,27 @@ class ExportImportService:
                     ]
                 )
 
-                conn.execute(
-                    "UPDATE translation_units SET status = ? WHERE id = ?",
-                    (new_status, unit_id),
+                cur_up = conn.execute(
+                    """
+                    UPDATE translation_units SET status = ?
+                    WHERE id = ?
+                      AND (source_hash = ? OR (? IS NULL AND source_hash IS NULL))
+                      AND source_text = ?
+                      AND (is_active = 1 OR is_active IS NULL)
+                      AND status != 'obsolete'
+                    """,
+                    (
+                        new_status,
+                        unit_id,
+                        unit.get("source_hash"),
+                        unit.get("source_hash"),
+                        unit.get("source_text"),
+                    ),
                 )
+                if cur_up.rowcount == 0:
+                    raise ValueError(
+                        f"Cannot import translation for unit {unit_id}: source changed or unit became inactive concurrently."
+                    )
 
                 # Update only the current-source translation record, or insert one with current source_hash
                 curr_hash = unit.get("source_hash")
