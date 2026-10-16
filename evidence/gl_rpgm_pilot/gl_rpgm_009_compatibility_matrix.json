@@ -1,0 +1,954 @@
+{
+  "metadata": {
+    "harness": "evaluate_rpgmaker_compatibility.py",
+    "git_commit": "4ef9b9035008d9c3433da6cb717924ecca1572c7",
+    "evaluated_at": "2026-10-16 19:44:19",
+    "python_version": "3.12.15 (main, Oct  9 2026, 15:21:55) [MSC v.1944 64 bit (AMD64)]",
+    "total_projects": 5,
+    "passed_projects": 5
+  },
+  "projects": [
+    {
+      "project_id": "mv_commercial_succubi",
+      "project_name": "Do Disciplinary Committee Members Dream of Succubi",
+      "project_path": "D:\\New folder\\[RYuugames] RY-4233960_V1.04\\4233960 V1.04\\Do Disciplinary Committee Members Dream of Succubi",
+      "language": "Japanese",
+      "expected_engine": "RPG Maker MV",
+      "notes": "Commercial Japanese RPG Maker MV (v1.6.1) with www/data layout and 40+ maps",
+      "evaluated_at": "2026-10-16 19:44:07",
+      "stages": {
+        "discovery": {
+          "status": "PASS",
+          "data_dir": "D:\\New folder\\[RYuugames] RY-4233960_V1.04\\4233960 V1.04\\Do Disciplinary Committee Members Dream of Succubi\\www\\data",
+          "relative_data_dir": "www/data",
+          "data_file_count": 555
+        },
+        "engine_detection": {
+          "status": "PASS",
+          "detected_engine": "RPG Maker MV",
+          "confidence": 1.0,
+          "reason": "Found rpg_core.js (MV runtime)",
+          "indicators": {
+            "has_rmmz_core_js": false,
+            "has_rpg_core_js": true,
+            "has_package_json": true
+          }
+        },
+        "project_opening": {
+          "status": "PASS",
+          "game_title": "Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]",
+          "currency_unit": "￥",
+          "term_categories": [
+            "basic",
+            "commands",
+            "params",
+            "messages"
+          ],
+          "has_utf8_bom": false
+        },
+        "extraction": {
+          "status": "PASS",
+          "total_units": 66405,
+          "elapsed_seconds": 2.0425,
+          "throughput_units_per_second": 32510.9,
+          "breakdown_by_file_category": {
+            "System.json": 98,
+            "Database": 3903,
+            "MapInfos.json": 531,
+            "Maps": 40382,
+            "CommonEvents.json": 21491,
+            "Other": 0
+          },
+          "breakdown_by_command_type": {
+            "Code 101 Speaker": 0,
+            "Code 401 Show Text": 56775,
+            "Code 102 Choice List": 2413,
+            "Code 402 When Choice": 2413,
+            "Code 405 Scrolling Text": 0,
+            "Code 320/324/325 Actor Edit": 0,
+            "Database / System Text": 4804
+          },
+          "warnings_count": 0,
+          "warnings": []
+        },
+        "locator_integrity": {
+          "status": "PASS",
+          "total_tested": 66405,
+          "matches": 66405,
+          "mismatches": 0,
+          "exceptions": 0,
+          "resolution_rate_percent": 100.0,
+          "exhaustive": true,
+          "sample_errors": []
+        },
+        "token_integrity": {
+          "status": "PASS",
+          "units_with_tokens": 40670,
+          "total_tokens": 53417,
+          "unique_token_prefixes": [
+            "% ",
+            "%1",
+            "%2",
+            "%3",
+            "%7",
+            "\\!",
+            "\\.",
+            "\\<",
+            "\\>",
+            "\\C",
+            "\\E",
+            "\\F",
+            "\\G",
+            "\\I",
+            "\\N",
+            "\\S",
+            "\\T",
+            "\\U",
+            "\\V",
+            "\\W",
+            "\\\\",
+            "\\^",
+            "\\f",
+            "\\n",
+            "\\o",
+            "\\p",
+            "\\r",
+            "\\s",
+            "\\{",
+            "\\|",
+            "\\}"
+          ],
+          "validator_rejection_verified": true
+        },
+        "conditional_structures": {
+          "status": "PASS",
+          "code_111_count": 8533,
+          "code_411_else_count": 3637,
+          "code_412_end_count": 8533,
+          "units_inside_branches": 54282,
+          "sample_branch_units": [
+            {
+              "location": "CommonEvents.json[6].list[21]",
+              "code": 101,
+              "parameters": [
+                "",
+                0
+              ]
+            },
+            {
+              "location": "CommonEvents.json[6].list[22]",
+              "code": 401,
+              "parameters": [
+                "\\n<\\n[1]>Gah, I feel the urge to go to the Pleasure District stirring in me.\\!"
+              ]
+            },
+            {
+              "location": "CommonEvents.json[6].list[23]",
+              "code": 401,
+              "parameters": [
+                "I n-need to go there and find a client!"
+              ]
+            }
+          ]
+        },
+        "patch_planning": {
+          "status": "PASS",
+          "units_planned": 25,
+          "affected_files": [
+            "www/data/Actors.json"
+          ],
+          "validation_errors": []
+        },
+        "failure_handling": {
+          "status": "PASS",
+          "stale_source_rejected": true,
+          "invalid_locator_rejected": true,
+          "malformed_json_caught_safely": true
+        },
+        "restoration": {
+          "status": "PASS",
+          "file_tested": "www/data/System.json",
+          "original_sha256": "c046f2f054380d983d3dd1d04a8b0de9320f7f766b226aea37b7e0430ec9620d",
+          "patched_sha256": "db7b912d78a1afb95a39ffa8c70593a2c0ca0ec261f0d9ba163981ca3c9f5921",
+          "restored_sha256": "c046f2f054380d983d3dd1d04a8b0de9320f7f766b226aea37b7e0430ec9620d",
+          "byte_exact_match": true
+        }
+      },
+      "plugin_audit": {
+        "plugins_js_present": true,
+        "total_plugins_registered": 218,
+        "active_plugins_count": 210,
+        "active_plugin_names": [
+          "Community_Basic",
+          "SAN_Imp_ColorCache",
+          "RestoreMenuAfterCommon",
+          "TkoolMV_PluginCommandBook",
+          "YEP_BattleEngineCore",
+          "MKR_MultiCommonEffect",
+          "gameEnd",
+          "polyfill_min",
+          "Trb_TextColor",
+          "YEP_CoreEngine",
+          "MW_WhiteFade",
+          "MW_StateDisableLog",
+          "MW_ItemVariables",
+          "MW_BattleCommandPosition",
+          "MW_BattleLogIcon"
+        ],
+        "detected_plugin_families": [
+          "Galv Scripts",
+          "Moghunter (Atelier RGSS)",
+          "Mokusei Penguin (MPP)",
+          "TRP Skit Suite",
+          "Yanfly Engine Plugins (YEP)"
+        ],
+        "event_command_356_count": 2127,
+        "event_command_357_count": 0,
+        "items_and_events_with_notes": 2977,
+        "standard_vs_plugin_boundary": "Standard RPG Maker MV/MZ core text (system, database, maps, common events, troops, choices, scrolling text) is 100% extracted and patchable. Custom strings embedded inside plugin parameters (plugins.js), plugin commands (356/357), or custom XML-like note tags are reserved for specialized plugin extensions."
+      },
+      "metrics": {
+        "total_extracted_units": 66405,
+        "extraction_time_seconds": 2.0425,
+        "extraction_throughput_ups": 32510.9,
+        "locators_tested": 66405,
+        "locators_matched": 66405,
+        "locator_resolution_rate": 100.0,
+        "units_with_tokens": 40670,
+        "conditional_branch_commands": 8533,
+        "units_inside_branches": 54282,
+        "stages_passed": 10,
+        "stages_applicable": 10
+      },
+      "status": "PASS"
+    },
+    {
+      "project_id": "mz_sample_nannnimo",
+      "project_name": "Official MZ Sample (Nannnimo / Karakuri Town)",
+      "project_path": "E:\\gamelingo_mz_sample_candidate\\sample_game",
+      "language": "Japanese",
+      "expected_engine": "RPG Maker MZ",
+      "notes": "Official Kadokawa RPG Maker MZ v1.8.0 sample game, canonical clean schema",
+      "evaluated_at": "2026-10-16 19:44:15",
+      "stages": {
+        "discovery": {
+          "status": "PASS",
+          "data_dir": "E:\\gamelingo_mz_sample_candidate\\sample_game\\data",
+          "relative_data_dir": "data",
+          "data_file_count": 20
+        },
+        "engine_detection": {
+          "status": "PASS",
+          "detected_engine": "RPG Maker MZ",
+          "confidence": 1.0,
+          "reason": "Found rmmz_core.js (MZ runtime)",
+          "indicators": {
+            "has_rmmz_core_js": true,
+            "has_rpg_core_js": false,
+            "has_package_json": true
+          }
+        },
+        "project_opening": {
+          "status": "PASS",
+          "game_title": "なんにも起きない村からの脱出",
+          "currency_unit": "Ｇ",
+          "term_categories": [
+            "basic",
+            "commands",
+            "params",
+            "messages"
+          ],
+          "has_utf8_bom": false
+        },
+        "extraction": {
+          "status": "PASS",
+          "total_units": 1143,
+          "elapsed_seconds": 0.0229,
+          "throughput_units_per_second": 49964.2,
+          "breakdown_by_file_category": {
+            "System.json": 99,
+            "Database": 821,
+            "MapInfos.json": 6,
+            "Maps": 213,
+            "CommonEvents.json": 4,
+            "Other": 0
+          },
+          "breakdown_by_command_type": {
+            "Code 101 Speaker": 0,
+            "Code 401 Show Text": 144,
+            "Code 102 Choice List": 32,
+            "Code 402 When Choice": 32,
+            "Code 405 Scrolling Text": 9,
+            "Code 320/324/325 Actor Edit": 0,
+            "Database / System Text": 926
+          },
+          "warnings_count": 0,
+          "warnings": []
+        },
+        "locator_integrity": {
+          "status": "PASS",
+          "total_tested": 1143,
+          "matches": 1143,
+          "mismatches": 0,
+          "exceptions": 0,
+          "resolution_rate_percent": 100.0,
+          "exhaustive": true,
+          "sample_errors": []
+        },
+        "token_integrity": {
+          "status": "PASS",
+          "units_with_tokens": 238,
+          "total_tokens": 395,
+          "unique_token_prefixes": [
+            "%1",
+            "%2",
+            "%3",
+            "\\C",
+            "\\G"
+          ],
+          "validator_rejection_verified": true
+        },
+        "conditional_structures": {
+          "status": "PASS",
+          "code_111_count": 36,
+          "code_411_else_count": 5,
+          "code_412_end_count": 36,
+          "units_inside_branches": 11,
+          "sample_branch_units": [
+            {
+              "location": "Map001.json.events[8].pages[2].list[7]",
+              "code": 101,
+              "parameters": [
+                "",
+                0
+              ]
+            },
+            {
+              "location": "Map001.json.events[8].pages[2].list[8]",
+              "code": 401,
+              "parameters": [
+                "おぉ、これじゃこれじゃ……。"
+              ]
+            },
+            {
+              "location": "Map001.json.events[8].pages[2].list[9]",
+              "code": 401,
+              "parameters": [
+                "さて、帰るか……。"
+              ]
+            }
+          ]
+        },
+        "patch_planning": {
+          "status": "PASS",
+          "units_planned": 25,
+          "affected_files": [
+            "data/Armors.json",
+            "data/Actors.json"
+          ],
+          "validation_errors": []
+        },
+        "failure_handling": {
+          "status": "PASS",
+          "stale_source_rejected": true,
+          "invalid_locator_rejected": true,
+          "malformed_json_caught_safely": true
+        },
+        "restoration": {
+          "status": "PASS",
+          "file_tested": "data/System.json",
+          "original_sha256": "028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d",
+          "patched_sha256": "e73391f8a2048d7d5a371b15b9d37a5712316d60942a98cf42ec0ef070bf3cac",
+          "restored_sha256": "028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d",
+          "byte_exact_match": true
+        }
+      },
+      "plugin_audit": {
+        "plugins_js_present": true,
+        "total_plugins_registered": 0,
+        "active_plugins_count": 0,
+        "active_plugin_names": [],
+        "detected_plugin_families": [],
+        "event_command_356_count": 0,
+        "event_command_357_count": 0,
+        "items_and_events_with_notes": 3,
+        "standard_vs_plugin_boundary": "Standard RPG Maker MV/MZ core text (system, database, maps, common events, troops, choices, scrolling text) is 100% extracted and patchable. Custom strings embedded inside plugin parameters (plugins.js), plugin commands (356/357), or custom XML-like note tags are reserved for specialized plugin extensions."
+      },
+      "metrics": {
+        "total_extracted_units": 1143,
+        "extraction_time_seconds": 0.0229,
+        "extraction_throughput_ups": 49964.2,
+        "locators_tested": 1143,
+        "locators_matched": 1143,
+        "locator_resolution_rate": 100.0,
+        "units_with_tokens": 238,
+        "conditional_branch_commands": 36,
+        "units_inside_branches": 11,
+        "stages_passed": 10,
+        "stages_applicable": 10
+      },
+      "status": "PASS"
+    },
+    {
+      "project_id": "mz_indie_playful_parcels",
+      "project_name": "Playful Parcels",
+      "project_path": "D:\\New folder\\Playful Parcels",
+      "language": "English",
+      "expected_engine": "RPG Maker MZ",
+      "notes": "Modern indie RPG Maker MZ project with 8,223 units and heavy conditional branching",
+      "evaluated_at": "2026-10-16 19:44:15",
+      "stages": {
+        "discovery": {
+          "status": "PASS",
+          "data_dir": "D:\\New folder\\Playful Parcels\\data",
+          "relative_data_dir": "data",
+          "data_file_count": 34
+        },
+        "engine_detection": {
+          "status": "PASS",
+          "detected_engine": "RPG Maker MZ",
+          "confidence": 1.0,
+          "reason": "Found rmmz_core.js (MZ runtime)",
+          "indicators": {
+            "has_rmmz_core_js": true,
+            "has_rpg_core_js": false,
+            "has_package_json": true
+          }
+        },
+        "project_opening": {
+          "status": "PASS",
+          "game_title": "Playful Parcels",
+          "currency_unit": "$",
+          "term_categories": [
+            "basic",
+            "commands",
+            "params",
+            "messages"
+          ],
+          "has_utf8_bom": false
+        },
+        "extraction": {
+          "status": "PASS",
+          "total_units": 8223,
+          "elapsed_seconds": 0.0952,
+          "throughput_units_per_second": 86399.2,
+          "breakdown_by_file_category": {
+            "System.json": 99,
+            "Database": 831,
+            "MapInfos.json": 20,
+            "Maps": 7236,
+            "CommonEvents.json": 37,
+            "Other": 0
+          },
+          "breakdown_by_command_type": {
+            "Code 101 Speaker": 2768,
+            "Code 401 Show Text": 4426,
+            "Code 102 Choice List": 33,
+            "Code 402 When Choice": 33,
+            "Code 405 Scrolling Text": 0,
+            "Code 320/324/325 Actor Edit": 0,
+            "Database / System Text": 963
+          },
+          "warnings_count": 0,
+          "warnings": []
+        },
+        "locator_integrity": {
+          "status": "PASS",
+          "total_tested": 8223,
+          "matches": 8223,
+          "mismatches": 0,
+          "exceptions": 0,
+          "resolution_rate_percent": 100.0,
+          "exhaustive": true,
+          "sample_errors": []
+        },
+        "token_integrity": {
+          "status": "PASS",
+          "units_with_tokens": 1429,
+          "total_tokens": 1569,
+          "unique_token_prefixes": [
+            "%1",
+            "%2",
+            "%3",
+            "\\F",
+            "\\G",
+            "\\N"
+          ],
+          "validator_rejection_verified": true
+        },
+        "conditional_structures": {
+          "status": "PASS",
+          "code_111_count": 737,
+          "code_411_else_count": 203,
+          "code_412_end_count": 737,
+          "units_inside_branches": 3753,
+          "sample_branch_units": [
+            {
+              "location": "CommonEvents.json[25].list[6]",
+              "code": 101,
+              "parameters": [
+                "",
+                0
+              ]
+            },
+            {
+              "location": "CommonEvents.json[25].list[7]",
+              "code": 401,
+              "parameters": [
+                "Already Owned!"
+              ]
+            },
+            {
+              "location": "CommonEvents.json[25].list[13]",
+              "code": 101,
+              "parameters": [
+                "",
+                0
+              ]
+            }
+          ]
+        },
+        "patch_planning": {
+          "status": "PASS",
+          "units_planned": 25,
+          "affected_files": [
+            "data/Armors.json",
+            "data/Actors.json"
+          ],
+          "validation_errors": []
+        },
+        "failure_handling": {
+          "status": "PASS",
+          "stale_source_rejected": true,
+          "invalid_locator_rejected": true,
+          "malformed_json_caught_safely": true
+        },
+        "restoration": {
+          "status": "PASS",
+          "file_tested": "data/System.json",
+          "original_sha256": "f0db46f85e8999c6f96d3edf06488ebb6f86caaf1711ba6f9c5ca6e6695bcee3",
+          "patched_sha256": "87ca4872230e359ffc7b7c390dd73e2058b0ee3cfe0322f1b32becdd5440167c",
+          "restored_sha256": "f0db46f85e8999c6f96d3edf06488ebb6f86caaf1711ba6f9c5ca6e6695bcee3",
+          "byte_exact_match": true
+        }
+      },
+      "plugin_audit": {
+        "plugins_js_present": true,
+        "total_plugins_registered": 6,
+        "active_plugins_count": 6,
+        "active_plugin_names": [
+          "ButtonPicture",
+          "VisuMZ_0_CoreEngine",
+          "VisuMZ_1_MessageCore",
+          "EliMZ_Book",
+          "EliMZ_EasingPicture",
+          "CTB_TimersMZ"
+        ],
+        "detected_plugin_families": [
+          "Eli Plugins (Hakuen Studio)"
+        ],
+        "event_command_356_count": 0,
+        "event_command_357_count": 2,
+        "items_and_events_with_notes": 7,
+        "standard_vs_plugin_boundary": "Standard RPG Maker MV/MZ core text (system, database, maps, common events, troops, choices, scrolling text) is 100% extracted and patchable. Custom strings embedded inside plugin parameters (plugins.js), plugin commands (356/357), or custom XML-like note tags are reserved for specialized plugin extensions."
+      },
+      "metrics": {
+        "total_extracted_units": 8223,
+        "extraction_time_seconds": 0.0952,
+        "extraction_throughput_ups": 86399.2,
+        "locators_tested": 8223,
+        "locators_matched": 8223,
+        "locator_resolution_rate": 100.0,
+        "units_with_tokens": 1429,
+        "conditional_branch_commands": 737,
+        "units_inside_branches": 3753,
+        "stages_passed": 10,
+        "stages_applicable": 10
+      },
+      "status": "PASS"
+    },
+    {
+      "project_id": "mz_modded_waifu_trap_house",
+      "project_name": "Waifu Trap House",
+      "project_path": "D:\\New folder\\Waifu Trap House",
+      "language": "English",
+      "expected_engine": "RPG Maker MZ",
+      "notes": "Feature-heavy MZ project modded with Yanfly YEP, EliMZ, Galv, and MYTH Card Game Core",
+      "evaluated_at": "2026-10-16 19:44:15",
+      "stages": {
+        "discovery": {
+          "status": "PASS",
+          "data_dir": "D:\\New folder\\Waifu Trap House\\data",
+          "relative_data_dir": "data",
+          "data_file_count": 68
+        },
+        "engine_detection": {
+          "status": "PASS",
+          "detected_engine": "RPG Maker MZ",
+          "confidence": 1.0,
+          "reason": "Found rmmz_core.js (MZ runtime)",
+          "indicators": {
+            "has_rmmz_core_js": true,
+            "has_rpg_core_js": false,
+            "has_package_json": true
+          }
+        },
+        "project_opening": {
+          "status": "PASS",
+          "game_title": "",
+          "currency_unit": "G",
+          "term_categories": [
+            "basic",
+            "commands",
+            "params",
+            "messages"
+          ],
+          "has_utf8_bom": false
+        },
+        "extraction": {
+          "status": "PASS",
+          "total_units": 6353,
+          "elapsed_seconds": 0.1291,
+          "throughput_units_per_second": 49216.3,
+          "breakdown_by_file_category": {
+            "System.json": 98,
+            "Database": 1012,
+            "MapInfos.json": 54,
+            "Maps": 5055,
+            "CommonEvents.json": 134,
+            "Other": 0
+          },
+          "breakdown_by_command_type": {
+            "Code 101 Speaker": 1817,
+            "Code 401 Show Text": 3169,
+            "Code 102 Choice List": 150,
+            "Code 402 When Choice": 150,
+            "Code 405 Scrolling Text": 0,
+            "Code 320/324/325 Actor Edit": 0,
+            "Database / System Text": 1067
+          },
+          "warnings_count": 0,
+          "warnings": []
+        },
+        "locator_integrity": {
+          "status": "PASS",
+          "total_tested": 6353,
+          "matches": 6353,
+          "mismatches": 0,
+          "exceptions": 0,
+          "resolution_rate_percent": 100.0,
+          "exhaustive": true,
+          "sample_errors": []
+        },
+        "token_integrity": {
+          "status": "PASS",
+          "units_with_tokens": 1362,
+          "total_tokens": 1506,
+          "unique_token_prefixes": [
+            "%1",
+            "%2",
+            "%3",
+            "\\C",
+            "\\F",
+            "\\G",
+            "\\N",
+            "\\V"
+          ],
+          "validator_rejection_verified": true
+        },
+        "conditional_structures": {
+          "status": "PASS",
+          "code_111_count": 459,
+          "code_411_else_count": 145,
+          "code_412_end_count": 459,
+          "units_inside_branches": 2577,
+          "sample_branch_units": [
+            {
+              "location": "CommonEvents.json[1].list[4]",
+              "code": 101,
+              "parameters": [
+                "",
+                0
+              ]
+            },
+            {
+              "location": "CommonEvents.json[1].list[5]",
+              "code": 401,
+              "parameters": [
+                "Safe!"
+              ]
+            },
+            {
+              "location": "CommonEvents.json[2].list[4]",
+              "code": 101,
+              "parameters": [
+                "",
+                0
+              ]
+            }
+          ]
+        },
+        "patch_planning": {
+          "status": "PASS",
+          "units_planned": 25,
+          "affected_files": [
+            "data/Armors.json",
+            "data/Actors.json"
+          ],
+          "validation_errors": []
+        },
+        "failure_handling": {
+          "status": "PASS",
+          "stale_source_rejected": true,
+          "invalid_locator_rejected": true,
+          "malformed_json_caught_safely": true
+        },
+        "restoration": {
+          "status": "PASS",
+          "file_tested": "data/System.json",
+          "original_sha256": "b173a3fbf1cef93caa91748851637912ca22b617cd696a7d4613fa30a9d04d46",
+          "patched_sha256": "860a28f476ec3c3e8cd9c5e5a3d412441a516a4380dbd58c6be54fade2c7665e",
+          "restored_sha256": "b173a3fbf1cef93caa91748851637912ca22b617cd696a7d4613fa30a9d04d46",
+          "byte_exact_match": true
+        }
+      },
+      "plugin_audit": {
+        "plugins_js_present": true,
+        "total_plugins_registered": 17,
+        "active_plugins_count": 11,
+        "active_plugin_names": [
+          "VisuMZ_0_CoreEngine",
+          "VisuMZ_1_OptionsCore",
+          "VisuMZ_1_EventsMoveCore",
+          "VisuMZ_2_QTE_TriggerSys",
+          "VisuMZ_4_DiceRollsRngSeeds",
+          "VisuMZ_4_VisualFogs",
+          "CGMZ_Core",
+          "ScreenZoom",
+          "Galv_ChoicePictures",
+          "ButtonPicture",
+          "HC_Achievements"
+        ],
+        "detected_plugin_families": [
+          "Galv Scripts"
+        ],
+        "event_command_356_count": 0,
+        "event_command_357_count": 66,
+        "items_and_events_with_notes": 5,
+        "standard_vs_plugin_boundary": "Standard RPG Maker MV/MZ core text (system, database, maps, common events, troops, choices, scrolling text) is 100% extracted and patchable. Custom strings embedded inside plugin parameters (plugins.js), plugin commands (356/357), or custom XML-like note tags are reserved for specialized plugin extensions."
+      },
+      "metrics": {
+        "total_extracted_units": 6353,
+        "extraction_time_seconds": 0.1291,
+        "extraction_throughput_ups": 49216.3,
+        "locators_tested": 6353,
+        "locators_matched": 6353,
+        "locator_resolution_rate": 100.0,
+        "units_with_tokens": 1362,
+        "conditional_branch_commands": 459,
+        "units_inside_branches": 2577,
+        "stages_passed": 10,
+        "stages_applicable": 10
+      },
+      "status": "PASS"
+    },
+    {
+      "project_id": "mz_commercial_fallen_gf",
+      "project_name": "Fallen GF (Full Ver.)",
+      "project_path": "E:\\gamelingo_rpgm_test_games\\FALLEN GF",
+      "language": "Japanese",
+      "expected_engine": "RPG Maker MZ",
+      "notes": "High-volume commercial MZ release with 385 maps, 344 data files, and TRP Skit portrait plugins",
+      "evaluated_at": "2026-10-16 19:44:16",
+      "stages": {
+        "discovery": {
+          "status": "PASS",
+          "data_dir": "E:\\gamelingo_rpgm_test_games\\FALLEN GF\\data",
+          "relative_data_dir": "data",
+          "data_file_count": 344
+        },
+        "engine_detection": {
+          "status": "PASS",
+          "detected_engine": "RPG Maker MZ",
+          "confidence": 1.0,
+          "reason": "Found rmmz_core.js (MZ runtime)",
+          "indicators": {
+            "has_rmmz_core_js": true,
+            "has_rpg_core_js": false,
+            "has_package_json": true
+          }
+        },
+        "project_opening": {
+          "status": "PASS",
+          "game_title": "Fallen GF full ver.",
+          "currency_unit": "Ｇ",
+          "term_categories": [
+            "basic",
+            "commands",
+            "params",
+            "messages"
+          ],
+          "has_utf8_bom": false
+        },
+        "extraction": {
+          "status": "PASS",
+          "total_units": 37595,
+          "elapsed_seconds": 0.8123,
+          "throughput_units_per_second": 46284.4,
+          "breakdown_by_file_category": {
+            "System.json": 99,
+            "Database": 810,
+            "MapInfos.json": 330,
+            "Maps": 33433,
+            "CommonEvents.json": 2923,
+            "Other": 0
+          },
+          "breakdown_by_command_type": {
+            "Code 101 Speaker": 7488,
+            "Code 401 Show Text": 25693,
+            "Code 102 Choice List": 1534,
+            "Code 402 When Choice": 1534,
+            "Code 405 Scrolling Text": 0,
+            "Code 320/324/325 Actor Edit": 0,
+            "Database / System Text": 1346
+          },
+          "warnings_count": 0,
+          "warnings": []
+        },
+        "locator_integrity": {
+          "status": "PASS",
+          "total_tested": 37595,
+          "matches": 37595,
+          "mismatches": 0,
+          "exceptions": 0,
+          "resolution_rate_percent": 100.0,
+          "exhaustive": true,
+          "sample_errors": []
+        },
+        "token_integrity": {
+          "status": "PASS",
+          "units_with_tokens": 5474,
+          "total_tokens": 9546,
+          "unique_token_prefixes": [
+            "% ",
+            "%1",
+            "%2",
+            "%3",
+            "\\>",
+            "\\G",
+            "\\N",
+            "\\S",
+            "\\\\",
+            "\\c",
+            "\\n",
+            "\\s"
+          ],
+          "validator_rejection_verified": true
+        },
+        "conditional_structures": {
+          "status": "PASS",
+          "code_111_count": 5152,
+          "code_411_else_count": 1129,
+          "code_412_end_count": 5152,
+          "units_inside_branches": 12938,
+          "sample_branch_units": [
+            {
+              "location": "CommonEvents.json[8].list[29]",
+              "code": 101,
+              "parameters": [
+                "",
+                0
+              ]
+            },
+            {
+              "location": "CommonEvents.json[8].list[30]",
+              "code": 401,
+              "parameters": [
+                "Go outside? (Return to the World Map)"
+              ]
+            },
+            {
+              "location": "CommonEvents.json[8].list[31]",
+              "code": 102,
+              "parameters": [
+                [
+                  "Yes",
+                  "No"
+                ],
+                1
+              ]
+            }
+          ]
+        },
+        "patch_planning": {
+          "status": "PASS",
+          "units_planned": 25,
+          "affected_files": [
+            "data/Armors.json",
+            "data/Actors.json"
+          ],
+          "validation_errors": []
+        },
+        "failure_handling": {
+          "status": "PASS",
+          "stale_source_rejected": true,
+          "invalid_locator_rejected": true,
+          "malformed_json_caught_safely": true
+        },
+        "restoration": {
+          "status": "PASS",
+          "file_tested": "data/System.json",
+          "original_sha256": "4429f1736e4f05e5ea9871b566131836ff6a318f0f7c5b48fccb1073c5d05c98",
+          "patched_sha256": "9fbf66dddd031e33e3bb1c4d2ff82c3540bd99e35acd95ce28f5e4361c4d04a7",
+          "restored_sha256": "4429f1736e4f05e5ea9871b566131836ff6a318f0f7c5b48fccb1073c5d05c98",
+          "byte_exact_match": true
+        }
+      },
+      "plugin_audit": {
+        "plugins_js_present": true,
+        "total_plugins_registered": 40,
+        "active_plugins_count": 40,
+        "active_plugin_names": [
+          "H2A_SkipTitle",
+          "PluginCommonBase",
+          "TitleItemEraser",
+          "AnotherNewGame",
+          "MessageSkip",
+          "PictureCallCommon",
+          "Keke_LoopBalloon",
+          "TRP_SpriteSheets",
+          "Fs",
+          "FastMZ",
+          "MouseWheelExtend",
+          "MenuCallCommonMZ",
+          "MapNameExtend",
+          "Mano_InputConfig",
+          "MessageSelectPicture"
+        ],
+        "detected_plugin_families": [
+          "Moghunter (Atelier RGSS)",
+          "Mokusei Penguin (MPP)",
+          "TRP Skit Suite"
+        ],
+        "event_command_356_count": 0,
+        "event_command_357_count": 3197,
+        "items_and_events_with_notes": 7,
+        "standard_vs_plugin_boundary": "Standard RPG Maker MV/MZ core text (system, database, maps, common events, troops, choices, scrolling text) is 100% extracted and patchable. Custom strings embedded inside plugin parameters (plugins.js), plugin commands (356/357), or custom XML-like note tags are reserved for specialized plugin extensions."
+      },
+      "metrics": {
+        "total_extracted_units": 37595,
+        "extraction_time_seconds": 0.8123,
+        "extraction_throughput_ups": 46284.4,
+        "locators_tested": 37595,
+        "locators_matched": 37595,
+        "locator_resolution_rate": 100.0,
+        "units_with_tokens": 5474,
+        "conditional_branch_commands": 5152,
+        "units_inside_branches": 12938,
+        "stages_passed": 10,
+        "stages_applicable": 10
+      },
+      "status": "PASS"
+    }
+  ]
+}
