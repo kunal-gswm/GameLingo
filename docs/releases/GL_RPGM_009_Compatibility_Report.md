@@ -1,9 +1,9 @@
-# GL-RPGM-009A: RPG Maker MV/MZ Real-Game Compatibility Matrix
+# GL-RPGM-009A.2: RPG Maker MV/MZ Real-Game Compatibility Matrix
 
 **Repository:** `kunal-gswm/GameLingo`  
 **Application Baseline Commit:** `4ef9b9035008d9c3433da6cb717924ecca1572c7`  
-**Harness Source Commit:** `8a23f72ef9fd2dabe2df053140b0a9535fa4656e`  
-**Harness Version:** `GL-RPGM-009A.1`  
+**Harness Source Commit:** `ecea8df31fcff36ebcd38192d5b79f1dd6fb9341`  
+**Harness Version:** `GL-RPGM-009A.2`  
 **Date:** October 16, 2026  
 **Status:** **VERIFIED & CALIBRATED**  
 
@@ -11,17 +11,17 @@
 
 ## Executive Summary
 
-Milestone **GL-RPGM-009A** establishes a calibrated empirical compatibility evaluation across GameLingo's RPG Maker MV and MZ localization workflow. Evaluating five distinct real-world game projects (spanning official Kadokawa samples, commercial Japanese visual novels, indie Western titles, and heavily modded plugin ecosystems), the evaluation independently assesses ten discrete stages of the localization lifecycle on read-only original directories and isolated disposable copies.
+Milestone **GL-RPGM-009A.2** establishes a calibrated empirical compatibility evaluation across GameLingo's RPG Maker MV and MZ localization workflow. Evaluating five distinct real-world game projects (spanning official Kadokawa samples, commercial Japanese visual novels, indie Western titles, and heavily modded plugin ecosystems), the evaluation independently assesses ten discrete stages of the localization lifecycle on read-only original directories and isolated disposable copies.
 
 ### Key Calibrated Metrics
 
 - **Project-Level Core Workflow Success Rate:** **5/5 (100.0%)**
 - **Locator Validation Rate:** **119,719 / 119,719 (100.0000%)** (100.0% exhaustive AST resolution across all five projects)
 - **Total Real-World Translatable Units Extracted:** **119,719 units** across 5 projects
-- **Conditional Branch Structural Coverage:** **14,917** `code: 111` commands and **73,561** nested units enumerated across 5 projects
-- **Representative Branch Patch Validation:** **35 units** actually patched across maps and common events, confirming **100% parameter immutability** and **100% byte-exact restoration**
+- **Conditional Branch Structural Coverage:** **14,917** `code: 111` commands and **73,561 qualifying branch command nodes** enumerated across 5 projects
+- **Representative Branch Patch Validation:** **35 units** actually patched across maps and common events, confirming **recursive allowlisted diff compliance**, **100% parameter immutability**, and **100% byte-exact restoration**
 - **Restoration & Recovery Fidelity:** **100.0% byte-for-byte SHA-256 match** verified across multi-file disposable patch-and-restore cycles in all five projects
-- **Third-Party Plugin Isolation:** Core engine text operates at 100% compatibility; plugin commands (`code: 356/357`) and parameters are classified as **UNSUPPORTED / OUT OF CORE ENGINE SCOPE**
+- **Third-Party Plugin Scope:** Standard-schema core extraction and patch safety verified across 5 project datasets; third-party plugin commands (`code: 356/357`), custom plugin parameters, and plugin-defined note fields are explicitly **UNTESTED / OUT OF CORE ENGINE SCOPE** (with native runtime verified only for Pilot 6B Map 7).
 
 ---
 
@@ -75,11 +75,11 @@ Detailed yield breakdown across file categories and RPG Maker event command code
 
 | Project Identifier | System | Database | Maps | CommonEvents | MapInfos | Total Units | Extraction Time | Throughput |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `mv_commercial_succubi` | 98 | 3,903 | 40,382 | 21,491 | 531 | **66,405** | 1.876s | 35,389 units/s |
-| `mz_sample_nannnimo` | 99 | 821 | 213 | 4 | 6 | **1,143** | 0.022s | 50,762 units/s |
-| `mz_indie_playful_parcels` | 99 | 831 | 7,236 | 37 | 20 | **8,223** | 0.115s | 71,350 units/s |
-| `mz_modded_waifu_trap_house` | 98 | 1,012 | 5,055 | 134 | 54 | **6,353** | 0.125s | 50,877 units/s |
-| `mz_commercial_fallen_gf` | 99 | 810 | 33,433 | 2,923 | 330 | **37,595** | 0.965s | 38,955 units/s |
+| `mv_commercial_succubi` | 98 | 3,903 | 40,382 | 21,491 | 531 | **66,405** | 12.312s | 5,394 units/s |
+| `mz_sample_nannnimo` | 99 | 821 | 213 | 4 | 6 | **1,143** | 0.248s | 4,607 units/s |
+| `mz_indie_playful_parcels` | 99 | 831 | 7,236 | 37 | 20 | **8,223** | 0.444s | 18,535 units/s |
+| `mz_modded_waifu_trap_house` | 98 | 1,012 | 5,055 | 134 | 54 | **6,353** | 0.924s | 6,877 units/s |
+| `mz_commercial_fallen_gf` | 99 | 810 | 33,433 | 2,923 | 330 | **37,595** | 4.503s | 8,349 units/s |
 
 ### Event Command Code Distribution
 
@@ -97,16 +97,16 @@ Detailed yield breakdown across file categories and RPG Maker event command code
 
 All five projects feature event command `111` (Conditional Branch). The table below distinguishes units counted inside conditional structures from units actually patched during representative validation:
 
-| Project Identifier | Code 111 (If) | Code 411 (Else) | Code 412 (End) | Units Counted in Branches | Units Patched in Validation | Command Types Tested | Immutability Verified | Byte-Exact Restore |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `mv_commercial_succubi` | 8,533 | 3,637 | 8,533 | 54,282 | **6** | `code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **100% Immutable** | **100% Exact** |
-| `mz_sample_nannnimo` | 36 | 5 | 36 | 11 | **2** | `code_401_if` | **100% Immutable** | **100% Exact** |
-| `mz_indie_playful_parcels` | 737 | 203 | 737 | 3,753 | **9** | `code_101_speaker, code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **100% Immutable** | **100% Exact** |
-| `mz_modded_waifu_trap_house` | 459 | 145 | 459 | 2,577 | **10** | `code_101_speaker, code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **100% Immutable** | **100% Exact** |
-| `mz_commercial_fallen_gf` | 5,152 | 1,129 | 5,152 | 12,938 | **8** | `code_101_speaker, code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **100% Immutable** | **100% Exact** |
+| Project Identifier | Code 111 (If) | Code 411 (Else) | Code 412 (End) | Qualifying Branch Command Nodes | Representative Units Patched | Command Types Tested | Allowlisted Diff | Immutability Verified | Byte-Exact Restore |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `mv_commercial_succubi` | 8,533 | 3,637 | 8,533 | 54,282 | **6** | `code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **PASS (0 violations)** | **100% Immutable** | **100% Exact** |
+| `mz_sample_nannnimo` | 36 | 5 | 36 | 11 | **2** | `code_401_if` | **PASS (0 violations)** | **100% Immutable** | **100% Exact** |
+| `mz_indie_playful_parcels` | 737 | 203 | 737 | 3,753 | **9** | `code_101_speaker, code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **PASS (0 violations)** | **100% Immutable** | **100% Exact** |
+| `mz_modded_waifu_trap_house` | 459 | 145 | 459 | 2,577 | **10** | `code_101_speaker, code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **PASS (0 violations)** | **100% Immutable** | **100% Exact** |
+| `mz_commercial_fallen_gf` | 5,152 | 1,129 | 5,152 | 12,938 | **8** | `code_101_speaker, code_401_else, code_401_if, code_402_choice, nested_depth_ge_2` | **PASS (0 violations)** | **100% Immutable** | **100% Exact** |
 
-> [!NOTE] Distinction: Structural Count vs. Representative Patch Testing
-> Across the 5 real projects, **73,561 translatable units** reside inside conditional branches (54,282 in Succubi, 11 in MZ Sample, 3,753 in Playful Parcels, 2,577 in Waifu Trap House, 12,938 in Fallen GF). > Rather than falsely claiming all 73,561 units were modified, the evaluation executed representative patch validation on **35 targeted units** across maps and common events. > In every case, deep AST inspection proved that only the targeted dialogue/speaker string changed; condition codes, comparator arguments, switch/variable IDs, branch markers, indents, and event sequences remained 100% byte-for-byte immutable.
+> [!NOTE] Distinction: Counted Branch Command Nodes vs. Representative Patch Testing
+> Across the 5 real projects, **73,561 qualifying branch command nodes** (event command opcodes 101, 401, 102, 402, 405, 320, 324, 325) reside inside conditional branches (54,282 in Succubi, 11 in MZ Sample, 3,753 in Playful Parcels, 2,577 in Waifu Trap House, 12,938 in Fallen GF). > Rather than claiming all 73,561 command nodes were modified, the evaluation executed representative patch validation on **35 targeted units** across maps and common events. > For each patched unit, an allowlisted recursive JSON AST diff check proved that only the targeted text/speaker parameter path changed to the exact expected translated value; all condition codes, comparator arguments, switch/variable IDs, branch markers, indents, and event sequences remained 100% byte-for-byte immutable.
 
 > [!IMPORTANT] Runtime Boundary
 > Representative branch patching confirms structural safety, locator validity, and rollback fidelity. > Live native runtime execution of conditional branches within NW.js gameplay sessions was verified on Map 7 in GL-RPGM-PILOT-6B, and is not claimed for every conditional branch type across all projects.
@@ -117,18 +117,18 @@ All five projects feature event command `111` (Conditional Branch). The table be
 
 The evaluation evaluated plugin environments across all titles to delineate core engine support from plugin limitations:
 
-| Project Identifier | Registered Plugins | Active Plugins | Detected Plugin Suites | Code 356 (MV Cmd) | Code 357 (MZ Cmd) | Database Notes | Core Engine Support |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `mv_commercial_succubi` | 218 | 210 | Galv Scripts, Moghunter (Atelier RGSS), Mokusei Penguin (MPP), TRP Skit Suite, Yanfly Engine Plugins (YEP) | 2,127 | 0 | 2,977 | **100% Core PASS** |
-| `mz_sample_nannnimo` | 0 | 0 | None | 0 | 0 | 3 | **100% Core PASS** |
-| `mz_indie_playful_parcels` | 6 | 6 | Eli Plugins (Hakuen Studio) | 0 | 2 | 7 | **100% Core PASS** |
-| `mz_modded_waifu_trap_house` | 17 | 11 | Galv Scripts | 0 | 66 | 5 | **100% Core PASS** |
-| `mz_commercial_fallen_gf` | 40 | 40 | Moghunter (Atelier RGSS), Mokusei Penguin (MPP), TRP Skit Suite | 0 | 3,197 | 7 | **100% Core PASS** |
+| Project Identifier | Registered Plugins | Active Plugins | Detected Plugin Suites | Code 356 (MV Cmd) | Code 357 (MZ Cmd) | Database Notes | Standard Schema Extraction & Patch | Plugin Runtime Interoperability |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `mv_commercial_succubi` | 218 | 210 | Galv Scripts, Moghunter (Atelier RGSS), Mokusei Penguin (MPP), TRP Skit Suite, Yanfly Engine Plugins (YEP) | 2,127 | 0 | 2,977 | **PASS (Standard Core)** | UNTESTED (Out of Scope) |
+| `mz_sample_nannnimo` | 0 | 0 | None | 0 | 0 | 3 | **PASS (Standard Core)** | UNTESTED (Out of Scope) |
+| `mz_indie_playful_parcels` | 6 | 6 | Eli Plugins (Hakuen Studio) | 0 | 2 | 7 | **PASS (Standard Core)** | VERIFIED (Pilot 6B Map 7; others UNTESTED) |
+| `mz_modded_waifu_trap_house` | 17 | 11 | Galv Scripts | 0 | 66 | 5 | **PASS (Standard Core)** | UNTESTED (Out of Scope) |
+| `mz_commercial_fallen_gf` | 40 | 40 | Moghunter (Atelier RGSS), Mokusei Penguin (MPP), TRP Skit Suite | 0 | 3,197 | 7 | **PASS (Standard Core)** | UNTESTED (Out of Scope) |
 
-> [!WARNING] Plugin Support Policy: Unsupported / Out of Core Scope
-> - **Core Engine Compatibility (100% Verified):** Built-in dialogue, choices, scrolling text, database records, map displays, system terms, and conditional branch structures operate with 100% stability regardless of plugin presence.
-> - **Third-Party Plugin Commands (Out of Scope):** Event commands `356` (MV) and `357` (MZ) carry arbitrary third-party plugin instructions (e.g. camera shakes, screen zooms, skit portrait changes). GameLingo intentionally isolates standard dialogue from arbitrary plugin parameters.
-> - **Database Note Tags:** Note fields often contain formula scripts or metadata tags (e.g. `<Help: ...>`). These are safely preserved unmodified to protect game logic stability.
+> [!WARNING] Calibrated Plugin Policy: Standard Schema Verified; Custom Plugins Untested
+> - **What Was Tested (Standard Core Schema):** Extraction, locator integrity, stratified dry-run planning, representative branch patching, and byte-exact restoration operate reliably across all 5 evaluated datasets containing third-party plugin suites.
+> - **Third-Party Plugin Runtime Interoperability:** Native runtime execution of third-party plugins is **UNTESTED**, except for the specific Map 7 conditional branch / dialogue execution verified in Pilot 6B.
+> - **Excluded Scope (Unsupported):** Custom plugin parameters in `plugins.js`, arbitrary plugin commands (`code: 356/357`), arbitrary script executions (`code: 355`), and plugin-defined metadata in database note tags (e.g. formula scripts, `<Help: ...>`) are intentionally excluded from localization translation units to prevent game script corruption.
 
 ---
 
