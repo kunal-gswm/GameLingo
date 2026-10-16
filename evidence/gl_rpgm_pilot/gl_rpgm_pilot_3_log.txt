@@ -1,0 +1,80 @@
+[2026-10-16 11:34:24] ==============================================================================
+[2026-10-16 11:34:24] GL-RPGM-PILOT-3: Japanese-to-English Interactive Gameplay Acceptance
+[2026-10-16 11:34:24] ==============================================================================
+[2026-10-16 11:34:24] 
+[Step 1] Verifying Disposable Environment Safety & Ownership...
+[2026-10-16 11:34:24] Ownership Marker Verified: run_id=run_20261016_003918_6db4980c owner=GameLingo-GL040-Pilot
+[2026-10-16 11:34:24] 
+[Step 2] Computing Baseline SHA-256 for Target Candidate Files...
+[2026-10-16 11:34:24]   CommonEvents.json   : b6a35b141c50ac7db419e17442586d623b5710ca85d78717101032f7561e60ee
+[2026-10-16 11:34:24]   Skills.json         : 3c2c7b7ddecc6f2301f4e7ffe1e7e3787fa04250b4525a38e4d2d05899fd317b
+[2026-10-16 11:34:24]   Actors.json         : 7ef6fcf5ae44ed827d34f358fc60f8045308b70a142b5d522ee3c3abd753ddb5
+[2026-10-16 11:34:24] 
+[Step 3] Extracting Units using RPGMakerMVMZAdapter...
+[2026-10-16 11:34:25]   Extracted from CommonEvents.json : 21491 units
+[2026-10-16 11:34:25]   Extracted from Skills.json       : 1729 units
+[2026-10-16 11:34:25]   Extracted from Actors.json       : 835 units
+[2026-10-16 11:34:25] 
+[Step 4] Selecting 18 Genuine Japanese Units for Verification...
+[2026-10-16 11:34:25] Selected 18 target units.
+[2026-10-16 11:34:25] Running Argos Machine Translation baseline...
+[2026-10-16 11:34:33] Argos NMT completed in 8.56s
+[2026-10-16 11:34:33] Applying Human Review, Token Validation, and Approval...
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[650]              | '\\>フェードインが完了しましたか？' -> '\\>Did the screen fade-in complete?' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[654]              | '\\>『フェードイン処理のし忘れ』とご報告ください。' -> "\\>Please report: 'Forgot fade-in processing.'" [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[658]              | '\\>黒い画像ピクチャの消去のし忘れの可能性があります。' -> '\\>The black picture image may not have been cleared.' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[660]              | '\\>次の数字を選んで、暗転が解除された番号を報告してください。' -> '\\>Select the next number and report which number cleared the blackout.' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[662].choices[4]   | '解除された場合はこちら' -> 'Select here if resolved' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[662].choices[5]   | '解除されなかった場合はこちら' -> 'Select here if unresolved' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[679].when         | '解除された場合はこちら' -> 'Select here if resolved' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[681]              | '\\>『ピクチャ[番号]の消去し忘れ』とご報告ください。' -> "\\>Please report: 'Forgot to clear picture [Number].'" [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[682]              | '\\>\\}例）ピクチャ1の消し忘れ\u3000ピクチャ99の消し忘れ' -> '\\>\\}e.g. Forgot picture 1, forgot picture 99' [Tokens: 2, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[684].when         | '解除されなかった場合はこちら' -> 'Select here if unresolved' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[686]              | '\\>フェードインアイテムを使っても直らなかった旨をご報告ください。' -> '\\>Please report that using the fade-in item did not resolve the issue.' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[687]              | '\\>（可能ならセーブデータを送って頂けると助かります）' -> '\\>(If possible, providing your save data would be very helpful.)' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[702]              | '\\>透明化状態が解除されました。' -> '\\>Invisibility state has been cleared.' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   CommonEvents.json  | [452].list[713]              | '\\>すり抜け状態が解除されました。' -> '\\>Through state has been cleared.' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   Skills.json        | [695].description            | '視界が制限され、敵に攻撃を当てにくい状態。\n\\}\\C[16]«効果»\\C[0][命中率-60%]' -> 'Vision is restricted, making it difficult to hit enemies.\n\\}\\C[16]«Effect»\\C[0] [Hit Rate -60%]' [Tokens: 3, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   Skills.json        | [698].description            | '爆音スピーカーによって行動不能になっている状態。\n\\}\\C[16]«効果»\\C[0][行動不能]' -> 'Incapacitated by the blast of high-volume speakers.\n\\}\\C[16]«Effect»\\C[0] [Incapacitated]' [Tokens: 3, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   Actors.json        | [286].nickname               | '上書き注意' -> 'Caution: Do Not Overwrite' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33]   Actors.json        | [287].name                   | '▲消さないように' -> '▲ Do Not Delete' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 11:34:33] 
+[Step 5] Creating Patch Plan and Executing Dry-Run...
+[2026-10-16 11:34:33] Plan ID: cd18fcc8-dec9-4173-a3f2-10a0582fe82c | Total edits: 18
+[2026-10-16 11:34:36] Dry-run report status: preview | errors: []
+[2026-10-16 11:34:36] Dry-run verified: 0 filesystem mutations detected.
+[2026-10-16 11:34:36] 
+[Step 6] Executing Patch Plan (execute=True, overwrite=True)...
+[2026-10-16 11:34:40] Apply report status: success | files modified: 3
+[2026-10-16 11:34:40] Backup created: 2bf2fcb9-d3b0-4cef-a88f-a7feffae575e
+[2026-10-16 11:34:42] All 18 locators successfully verified on patched files.
+[2026-10-16 11:34:42] 
+[Step 7] Launching Native Game Runtime for Visual Verification...
+[2026-10-16 11:34:42] Launched native NW.js process PID: 20200
+[2026-10-16 11:34:47] Skipping 3 splash screens to arrive at Load Game Screen...
+[2026-10-16 11:34:58] Loading save file into Map 118...
+[2026-10-16 11:35:01] Opening In-Game Main Menu (ESC)...
+[2026-10-16 11:35:03] Entering Items Menu (RETURN)...
+[2026-10-16 11:35:04] Selecting Key Items tab (RIGHT x 3)...
+[2026-10-16 11:35:06] Entering item list and selecting Item 111 [System] Fade in...
+[2026-10-16 11:35:07] Activating Item 111 to trigger Common Event 452...
+[2026-10-16 11:35:11] Captured Scene 1 (Dialogue 1): True -> gl_rpgm_pilot_3_dialogue_1.png
+[2026-10-16 11:35:11] Selecting 'No' (DOWN -> RETURN) to trigger blackout troubleshooting...
+[2026-10-16 11:35:13] Advancing Message 1 (RETURN)...
+[2026-10-16 11:35:14] Finishing typing of Message 2 (RETURN)...
+[2026-10-16 11:35:17] Scrolling down choices: DOWN x 4 to highlight Choice 4 ('Select here if resolved')...
+[2026-10-16 11:35:20] Captured Scene 2 (Dialogue 2 & Choices): True -> gl_rpgm_pilot_3_dialogue_2_choices.png
+[2026-10-16 11:35:20] Confirming selection of 'Select here if resolved' (RETURN)...
+[2026-10-16 11:35:23] Captured Scene 3 (Branch Resolution): True -> gl_rpgm_pilot_3_branch_resolution.png
+[2026-10-16 11:35:23] Terminating native game process...
+[2026-10-16 11:35:24] 
+[Step 8] Executing Rollback & Hash Restoration Verification...
+[2026-10-16 11:35:24] Restore report status: success | files restored: 3
+[2026-10-16 11:35:24] MATCH (100.0%): CommonEvents.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 11:35:24] MATCH (100.0%): Skills.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 11:35:24] MATCH (100.0%): Actors.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 11:35:24] Saved evidence JSON to E:\GameLingo\evidence\gl_rpgm_pilot\gl_rpgm_pilot_3_evidence.json
+[2026-10-16 11:35:24] 
+==============================================================================
+[2026-10-16 11:35:24] GL-RPGM-PILOT-3 INTERACTIVE GAMEPLAY VERIFICATION COMPLETE: ALL GATES PASSED
+[2026-10-16 11:35:24] ==============================================================================

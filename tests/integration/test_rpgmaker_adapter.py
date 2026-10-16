@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from gamelingo.adapters.rpgmaker_mv_mz import RPGMakerMVMZAdapter
@@ -7,11 +8,11 @@ def test_detect():
     adapter = RPGMakerMVMZAdapter()
     fixture_path = Path("tests/fixtures/rpgmaker_mv_mz")
 
-    # Should detect successfully
+    # Fixture contains data/System.json without runtime JS, so it detects as ambiguous family
     is_match, version, conf = adapter.detect(fixture_path)
     assert is_match is True
     assert "RPG Maker MV/MZ" in version
-    assert conf == 1.0
+    assert conf == 0.70
 
     # Should not detect invalid dir
     invalid_path = Path("tests/fixtures/does_not_exist")
@@ -74,6 +75,30 @@ def test_extract():
     # Verify UnknownData.json is ignored
     unknown_units = [u for u in units if u.file_id == "UnknownData.json"]
     assert len(unknown_units) == 0
+
+    # Verify System.json terms.basic, terms.commands, terms.messages
+    system_basic = [
+        u
+        for u in units
+        if u.file_id == "System.json" and u.locator.startswith("terms.basic")
+    ]
+    assert len(system_basic) == 10
+    assert system_basic[0].source_text == "Level"
+
+    system_commands = [
+        u
+        for u in units
+        if u.file_id == "System.json" and u.locator.startswith("terms.commands")
+    ]
+    assert len(system_commands) == 6
+    assert system_commands[0].source_text == "Fight"
+
+    # Verify token extraction in tokens_json
+    actor_damage_unit = next(
+        u for u in units if u.locator == "terms.messages.actorDamage"
+    )
+    assert actor_damage_unit.source_text == "%1 took %2 damage!"
+    assert json.loads(actor_damage_unit.tokens_json) == ["%1", "%2"]
 
 
 def test_extract_map_infos_regression(tmp_path: Path):

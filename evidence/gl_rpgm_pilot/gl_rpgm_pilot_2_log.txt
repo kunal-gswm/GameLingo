@@ -1,0 +1,71 @@
+[2026-10-16 01:24:41] ============================================================================
+[2026-10-16 01:24:41] GL-RPGM-PILOT-2: Interactive Runtime Acceptance Verification
+[2026-10-16 01:24:41] ============================================================================
+[2026-10-16 01:24:41] 
+[Step 1] Verifying Disposable Environment Safety & Ownership...
+[2026-10-16 01:24:41] Ownership Marker Verified: {'pilot_owner': 'GameLingo-GL040-Pilot', 'run_id': 'run_20261016_003918_6db4980c', 'status': 'completed', 'created_at': '2026-10-16 00:39:18', 'pilot_root': 'E:\\gamelingo_rpgm_pilot', 'metadata': {'game_title': 'Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]', 'engine': 'RPG Maker MV', 'engine_version': 'unknown'}, 'completed_at': '2026-10-16 00:40:09'} for run_20261016_003918_6db4980c
+[2026-10-16 01:24:41] 
+[Step 2] Computing Baseline SHA-256 for Target Candidate Files...
+[2026-10-16 01:24:41]   System.json   : c046f2f054380d983d3dd1d04a8b0de9320f7f766b226aea37b7e0430ec9620d
+[2026-10-16 01:24:41]   Actors.json   : 7ef6fcf5ae44ed827d34f358fc60f8045308b70a142b5d522ee3c3abd753ddb5
+[2026-10-16 01:24:41]   Map122.json   : a634f261aaf26b621235b584376c43acb0ec2b853769f7e7cb29096aebeb11b7
+[2026-10-16 01:24:41]   Map123.json   : d6a43c33ba1f211f0c097dc7cb812296babdca7c9eb1a763022481b306915846
+[2026-10-16 01:24:41] 
+[Step 3] Extracting Units using RPGMakerMVMZAdapter...
+[2026-10-16 01:24:41]   Extracted from System.json : 98 units
+[2026-10-16 01:24:41]   Extracted from Actors.json : 835 units
+[2026-10-16 01:24:41]   Extracted from Map122.json : 7 units
+[2026-10-16 01:24:41]   Extracted from Map123.json : 18 units
+[2026-10-16 01:24:41] 
+[Step 4] Selecting 11 Representative Runtime Units for Verification...
+[2026-10-16 01:24:41] Selected 11 target units.
+[2026-10-16 01:24:41] Running Argos Machine Translation...
+[2026-10-16 01:24:48] Argos NMT completed in 7.01s
+[2026-10-16 01:24:48] Applying Human Review, Token Validation, and Approval...
+[2026-10-16 01:24:48]   System.json  | terms.messages.loadMessage | 'Load which file?' -> 'Select Save File to Load [GameLingo]' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   Actors.json  | [1].name                  | 'Iroha Himeno' -> 'Iroha Himeno [TL]' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   System.json  | terms.commands[9]         | 'Save' -> 'Save Data [TL]' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   System.json  | terms.commands[10]        | 'End Game' -> 'Quit Game [TL]' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   System.json  | terms.commands[11]        | 'Options' -> 'Settings [TL]' [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   System.json  | terms.commands[4]         | '\\I[2324]Item' -> '\\I[2324]Items [TL]' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   System.json  | terms.commands[12]        | '\\I[2775]Weapons' -> '\\I[2775]Weaponry' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   System.json  | terms.commands[13]        | '\\I[2776]Armor' -> '\\I[2776]Protective Gear' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   System.json  | terms.commands[14]        | '\\I[2777]Key Items' -> '\\I[2777]Special Items' [Tokens: 1, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   Map122.json  | displayName               | "2F Girls' Bathroom" -> "2F Girls' Restroom [TL]" [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48]   Map123.json  | displayName               | "2F Girls' Bathroom" -> "2F Girls' Restroom [TL]" [Tokens: 0, Errs: 0, Warns: 0]
+[2026-10-16 01:24:48] 
+[Step 5] Creating Patch Plan and Executing Dry-Run...
+[2026-10-16 01:24:48] Plan ID: b122cc82-20e9-499c-ae46-1365247dd2a2 | Total edits: 11
+[2026-10-16 01:24:48] Dry-run report status: preview | errors: []
+[2026-10-16 01:24:48] Dry-run verified: 0 filesystem mutations detected.
+[2026-10-16 01:24:48] 
+[Step 6] Executing Patch Plan (execute=True, overwrite=True)...
+[2026-10-16 01:24:48] Apply report status: success | files modified: 4
+[2026-10-16 01:24:48] Backup created: 4bd45670-37f4-4a73-bb54-808837df6550
+[2026-10-16 01:24:48] All 11 locators successfully verified on patched files.
+[2026-10-16 01:24:48] 
+[Step 7] Launching Native Game Runtime for Visual Verification...
+[2026-10-16 01:24:48] Launched native NW.js process PID: 23844
+[2026-10-16 01:24:53] Skipping 3 splash screens to arrive at Load Game Screen...
+[2026-10-16 01:25:03] Captured Scene 1 (Load Screen): True -> gl_rpgm_pilot_2_load_screen.png
+[2026-10-16 01:25:03] Loading save file 1 into Map 118...
+[2026-10-16 01:25:06] Opening In-Game Main Menu (ESC)...
+[2026-10-16 01:25:08] Captured Scene 2 (Main Menu): True -> gl_rpgm_pilot_2_main_menu.png
+[2026-10-16 01:25:08] Entering Items Sub-Menu (Enter)...
+[2026-10-16 01:25:10] Captured Scene 3 (Items Menu): True -> gl_rpgm_pilot_2_items_menu.png
+[2026-10-16 01:25:10] Closing menus and walking to 2F Girls' Restroom...
+[2026-10-16 01:25:12] Navigating to Bathroom (18 steps right, 2 steps down)...
+[2026-10-16 01:25:19] Captured Scene 4 (Bathroom Banner): True -> gl_rpgm_pilot_2_bathroom_banner.png
+[2026-10-16 01:25:19] Terminating native game process...
+[2026-10-16 01:25:21] 
+[Step 8] Executing Rollback & Hash Restoration Verification...
+[2026-10-16 01:25:21] Restore report status: success | files restored: 4
+[2026-10-16 01:25:21] MATCH (100.0%): System.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 01:25:21] MATCH (100.0%): Actors.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 01:25:21] MATCH (100.0%): Map122.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 01:25:21] MATCH (100.0%): Map123.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 01:25:21] Saved evidence JSON to E:\GameLingo\evidence\gl_rpgm_pilot\gl_rpgm_pilot_2_evidence.json
+[2026-10-16 01:25:21] 
+============================================================================
+[2026-10-16 01:25:21] GL-RPGM-PILOT-2 INTERACTIVE RUNTIME VERIFICATION COMPLETE: ALL GATES PASSED
+[2026-10-16 01:25:21] ============================================================================

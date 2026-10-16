@@ -1,0 +1,75 @@
+[2026-10-16 12:47:20] ==============================================================================
+[2026-10-16 12:47:20] GL-RPGM-PILOT-4: Independent RPG Maker MZ Acceptance Verification
+[2026-10-16 12:47:20] ==============================================================================
+[2026-10-16 12:47:20] 
+[Step 1] Verifying Disposable Environment Safety & Ownership...
+[2026-10-16 12:47:20] Ownership Marker Verified: run_id=run_20261016_120957_213b8e2d owner=GameLingo-GL040-Pilot
+[2026-10-16 12:47:20] 
+[Step 2] Computing Baseline SHA-256 for Target Candidate Files...
+[2026-10-16 12:47:20]   System.json         : f0db46f85e8999c6f96d3edf06488ebb6f86caaf1711ba6f9c5ca6e6695bcee3
+[2026-10-16 12:47:20]   Map001.json         : 77fbb014d406d858ddd509d6790c6e9c78d8f2eceefa74e48a20c989c01449e3
+[2026-10-16 12:47:20]   Actors.json         : fe214b15ccbd76fb600dcf65dc09cbc9553ae1095c4dacf51d9e03815399594b
+[2026-10-16 12:47:20]   Skills.json         : 0f1d7d72b3bca2b3e33dd2976217b49838bb0c51584a821b9df534e7acf11617
+[2026-10-16 12:47:20] 
+[Step 3] Extracting Units using RPGMakerMVMZAdapter...
+[2026-10-16 12:47:20]   Extracted from System.json       : 99 units
+[2026-10-16 12:47:20]   Extracted from Map001.json       : 62 units
+[2026-10-16 12:47:20]   Extracted from Actors.json       : 6 units
+[2026-10-16 12:47:20]   Extracted from Skills.json       : 428 units
+[2026-10-16 12:47:20] 
+[Step 4] Selecting 17 Representative MZ Units for Acceptance...
+[2026-10-16 12:47:20] Selected 17 target units.
+[2026-10-16 12:47:20] Running Argos Translation baseline...
+[2026-10-16 12:47:24] Argos NMT completed in 3.80s
+[2026-10-16 12:47:24] Applying Human Review, Token Validation, and Approval...
+[2026-10-16 12:47:24]   System.json    | gameTitle                    | 'Playful Parcels' -> 'Playful Parcels [MZ-TL]' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   System.json    | terms.messages.loadMessage   | 'Which file would you like to load?' -> 'Select a shift file to resume:' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   System.json    | terms.commands[18]           | 'New Game' -> 'Start Shift' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   System.json    | terms.commands[19]           | 'Continue' -> 'Resume Shift' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   System.json    | terms.commands[11]           | 'Options' -> 'Game Settings' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   System.json    | terms.basic[1]               | 'Lv' -> 'Rank' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   System.json    | terms.basic[2]               | 'HP' -> 'Vitality' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   System.json    | terms.basic[4]               | 'MP' -> 'Stamina' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   Map001.json    | displayName                  | 'Warehouse' -> 'Fulfillment Warehouse' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   Actors.json    | [1].name                     | 'Player' -> 'Lead Specialist' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   Actors.json    | [2].name                     | 'Hinata' -> 'Hinata (Associate)' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   Actors.json    | [3].name                     | 'Kitagawa' -> 'Kitagawa (Associate)' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   Actors.json    | [6].name                     | 'Takayama' -> 'Supervisor Takayama' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   Skills.json    | [1].name                     | 'Attack' -> 'Swift Strike' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   Skills.json    | [1].message1                 | '%1 attacks!' -> '%1 delivers a swift strike!' [Tokens: ['%1'], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   Skills.json    | [2].name                     | 'Guard' -> 'Defensive Stance' [Tokens: [], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24]   Skills.json    | [2].message1                 | '%1 guards.' -> '%1 takes defensive stance.' [Tokens: ['%1'], Errs: 0, Warns: 0]
+[2026-10-16 12:47:24] 
+[Step 5] Creating Patch Plan and Executing Dry-Run...
+[2026-10-16 12:47:24] Plan ID: f336a8cf-5b4e-45e5-910b-b9c187ad420c | Total edits: 17
+[2026-10-16 12:47:24] Dry-run report status: preview | errors: []
+[2026-10-16 12:47:24] Dry-run verified: 0 filesystem mutations detected.
+[2026-10-16 12:47:24] 
+[Step 6] Executing Patch Plan (execute=True, overwrite=True)...
+[2026-10-16 12:47:24] Apply report status: success | files modified: 4
+[2026-10-16 12:47:24] Backup created: 2128261b-1e8d-4cc5-8477-4dc40244cfd9
+[2026-10-16 12:47:25] All 17 locators successfully verified on patched files.
+[2026-10-16 12:47:25] 
+[Step 7] Launching Native Game Runtime for Visual Verification...
+[2026-10-16 12:47:25] Launched native NW.js process PID: 26220
+[2026-10-16 12:47:30] Capturing Scene 1: Title Screen...
+[2026-10-16 12:47:30] Captured Scene 1 (Title Screen): True -> gl_rpgm_pilot_4_title_screen.png
+[2026-10-16 12:47:30] Opening Load Screen (RETURN)...
+[2026-10-16 12:47:33] Captured Scene 2 (Load Screen): True -> gl_rpgm_pilot_4_load_screen.png
+[2026-10-16 12:47:33] Loading File 1 into Map001 (RETURN)...
+[2026-10-16 12:47:37] Captured Scene 3 (Map Arrival Banner): True -> gl_rpgm_pilot_4_map_banner.png
+[2026-10-16 12:47:37] Opening In-Game Menu (X key)...
+[2026-10-16 12:47:40] Captured Scene 4 (In-Game Menu): True -> gl_rpgm_pilot_4_menu_status.png
+[2026-10-16 12:47:40] Terminating native NW.js game process...
+[2026-10-16 12:47:41] 
+[Step 8] Executing Rollback & Hash Restoration Verification...
+[2026-10-16 12:47:41] Restore report status: success | files restored: 4
+[2026-10-16 12:47:41] MATCH (100.0%): System.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 12:47:41] MATCH (100.0%): Map001.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 12:47:41] MATCH (100.0%): Actors.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 12:47:41] MATCH (100.0%): Skills.json restored SHA-256 matches baseline perfectly.
+[2026-10-16 12:47:41] Saved evidence JSON to E:\GameLingo\evidence\gl_rpgm_pilot\gl_rpgm_pilot_4_evidence.json
+[2026-10-16 12:47:41] 
+==============================================================================
+[2026-10-16 12:47:41] GL-RPGM-PILOT-4 MZ ACCEPTANCE VERIFICATION COMPLETE: ALL GATES PASSED
+[2026-10-16 12:47:41] ==============================================================================

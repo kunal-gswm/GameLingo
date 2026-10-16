@@ -1,0 +1,220 @@
+[2026-10-16 00:37:25] ================================================================================
+[2026-10-16 00:37:25] GL-RPGM-PILOT: REAL-GAME ACCEPTANCE VERIFICATION START
+[2026-10-16 00:37:25] ================================================================================
+[2026-10-16 00:37:25] Original Game Path : D:\New folder\[RYuugames] RY-4233960_V1.04\4233960 V1.04\Do Disciplinary Committee Members Dream of Succubi
+[2026-10-16 00:37:25] Configured Pilot Root: E:\gamelingo_rpgm_pilot
+[2026-10-16 00:37:25] Project Evidence Dir: E:\GameLingo\evidence\gl_rpgm_pilot
+[2026-10-16 00:37:25] 
+[Step 1] Qualifying Original Game Fixture (Read-Only)...
+[2026-10-16 00:37:25] Adapter Detection: detected=True, engine='RPG Maker MV', confidence=1.0
+[2026-10-16 00:37:25] System.json Game Title: Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]
+[2026-10-16 00:37:25] Game Qualified: Engine=RPG Maker MV vunknown, NW.js=True, DataFiles=555
+[2026-10-16 00:37:25] Computing baseline SHA-256 hashes of original critical files...
+[2026-10-16 00:37:25] Hashed 556 critical files in original game.
+[2026-10-16 00:37:25] 
+[Step 2] Creating Isolated Disposable Working Directory...
+[2026-10-16 00:37:25] Disposable run directory created: E:\gamelingo_rpgm_pilot\run_20261016_003725_ed9d907c
+[2026-10-16 00:37:25] Ownership marker verified: status='in_progress'
+[2026-10-16 00:37:25] 
+[Step 3] Copying game fixture to disposable directory...
+[2026-10-16 00:37:40] Copied game to E:\gamelingo_rpgm_pilot\run_20261016_003725_ed9d907c\game in 14.92s
+[2026-10-16 00:37:40] Verifying 100% SHA-256 hash match for copied critical files...
+[2026-10-16 00:37:50] Verified: All 556 critical files match baseline SHA-256 hashes 100%.
+[2026-10-16 00:37:50] Verifying original game fixture was not modified...
+[2026-10-16 00:37:50] Safety confirmation: Original fixture completely untouched and pristine.
+[2026-10-16 00:37:50] 
+[Step 4] Executing Schema-Aware Extraction Audit on Disposable Copy...
+[2026-10-16 00:37:53] Extraction Completed: 66405 units across 342 files in 3.04s (21837.6 units/s)
+[2026-10-16 00:37:53] Adapter Warnings: 0
+[2026-10-16 00:37:53]   - Maps          : 40382 units
+[2026-10-16 00:37:53]   - CommonEvents  : 21491 units
+[2026-10-16 00:37:53]   - Actors        :   835 units
+[2026-10-16 00:37:53]   - Classes       :    10 units
+[2026-10-16 00:37:53]   - Skills        :  1729 units
+[2026-10-16 00:37:53]   - Items         :   503 units
+[2026-10-16 00:37:53]   - Weapons       :    25 units
+[2026-10-16 00:37:53]   - Armors        :   259 units
+[2026-10-16 00:37:53]   - Enemies       :   123 units
+[2026-10-16 00:37:53]   - Troops        :   236 units
+[2026-10-16 00:37:53]   - States        :   183 units
+[2026-10-16 00:37:53]   - Animations    :     0 units
+[2026-10-16 00:37:53]   - Tilesets      :     0 units
+[2026-10-16 00:37:53]   - System        :    98 units
+[2026-10-16 00:37:53]   - Other         :   531 units
+[2026-10-16 00:37:53] 
+[Step 5] Auditing Stratified Sample of 100 Translation Units...
+[2026-10-16 00:37:53] 100-Unit Stratified Audit Result: 100 / 100 passed (100% = True)
+[2026-10-16 00:37:53] 
+[Step 6] Selecting and Translating 25 Representative Units with Argos...
+[2026-10-16 00:37:53] Selected 24 representative units for translation & patching:
+[2026-10-16 00:37:53]    1. [CommonEvents.json] [452].list[650]                     -> \>フェードインが完了しましたか？
+[2026-10-16 00:37:53]    2. [CommonEvents.json] [452].list[654]                     -> \>『フェードイン処理のし忘れ』とご報告ください。
+[2026-10-16 00:37:53]    3. [CommonEvents.json] [452].list[658]                     -> \>黒い画像ピクチャの消去のし忘れの可能性があります。
+[2026-10-16 00:37:53]    4. [CommonEvents.json] [452].list[686]                     -> \>フェードインアイテムを使っても直らなかった旨をご報告ください。
+[2026-10-16 00:37:53]    5. [Map375.json] events[2].pages[0].list[18].choices[0] -> 1段階目
+[2026-10-16 00:37:53]    6. [Map375.json] events[2].pages[0].list[18].choices[1] -> 2段階目
+[2026-10-16 00:37:53]    7. [Map375.json] events[2].pages[0].list[18].choices[2] -> 3段階目
+[2026-10-16 00:37:53]    8. [Map375.json] events[2].pages[0].list[18].choices[3] -> 4段階目
+[2026-10-16 00:37:53]    9. [Map375.json] events[2].pages[0].list[19].when    -> 1段階目
+[2026-10-16 00:37:53]   10. [Actors.json] [286].nickname                      -> 上書き注意
+[2026-10-16 00:37:53]   11. [Actors.json] [289].nickname                      -> 上書き注意
+[2026-10-16 00:37:53]   12. [Actors.json] [292].nickname                      -> 上書き注意
+[2026-10-16 00:37:53]   13. [Actors.json] [295].nickname                      -> 上書き注意
+[2026-10-16 00:37:53]   14. [Actors.json] [298].nickname                      -> 上書き注意
+[2026-10-16 00:37:53]   15. [Map065.json] events[1].pages[1].list[6]          -> \>\C[27][EV.\V[59]-\V[52]] Night of the Succubus\C[0]
+[2026-10-16 00:37:53]   16. [Map065.json] events[1].pages[1].list[8]          -> \>\C[16][Req 1] Main story event\C[0]
+[2026-10-16 00:37:53]   17. [Map065.json] events[1].pages[1].list[9]          -> \>\C[16][Req 2]────\C[0]
+[2026-10-16 00:37:53]   18. [Map065.json] events[1].pages[2].list[7]          -> \>\C[27][EV.\V[59]-\V[52]] Night of the Succubus\C[0]
+[2026-10-16 00:37:53]   19. [Map065.json] events[2].pages[1].list[6]          -> \>\C[27][EV.\V[59]-\V[52]] Kaneobara's Slave\C[0]
+[2026-10-16 00:37:53]   20. [System.json] gameTitle                           -> Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]
+[2026-10-16 00:37:53]   21. [System.json] terms.messages.actionFailure        -> %1 didn't work!
+[2026-10-16 00:37:53]   22. [System.json] terms.messages.actorDamage          -> %1 took %2 damage!
+[2026-10-16 00:37:53]   23. [System.json] terms.messages.actorDrain           -> %1's %2 had %3 points stolen!
+[2026-10-16 00:37:53]   24. [System.json] terms.messages.actorGain            -> %1's %2 increased by %3 points!
+[2026-10-16 00:38:06] Argos translated 24 units in 13.25s
+[2026-10-16 00:38:06] Safety Validation: 0 errors, 4 warnings, 24 approved.
+[2026-10-16 00:38:06] 
+[Step 7] Generating Patch Plan...
+[2026-10-16 00:38:07] Plan created: 24 valid edits, 0 rejected edits.
+[2026-10-16 00:38:07] Target files to patch: ['www/data/Actors.json', 'www/data/CommonEvents.json', 'www/data/Map065.json', 'www/data/Map375.json', 'www/data/System.json']
+[2026-10-16 00:38:07] 
+Executing Patch Plan DRY-RUN (execute=False)...
+[2026-10-16 00:38:09] Dry-run report status: preview
+[2026-10-16 00:38:09] Dry-run filesystem isolation verified: Files unmodified = True
+[2026-10-16 00:38:09] 
+Executing Patch Plan APPLY (execute=True, overwrite=True)...
+[2026-10-16 00:38:12] Apply report status: success, backup_id='e16cf439-577b-4f5e-98e1-d4039f1ec790'
+[2026-10-16 00:38:13] JSON Integrity of all modified files: valid = True
+[2026-10-16 00:38:13] 
+Executing Patch Plan ROLLBACK / RESTORE...
+[2026-10-16 00:38:13] Restore report status: success
+[2026-10-16 00:38:13] Checking byte-for-byte restoration against original baseline...
+[2026-10-16 00:38:13] Rollback byte-for-byte exact match verified: True (100.0%)
+[2026-10-16 00:38:13] 
+Re-applying patch for native game runtime launch...
+[2026-10-16 00:38:16] Re-apply report status: success
+[2026-10-16 00:38:16] 
+[Step 8] Launching Native Game Runtime (Game.exe in Disposable Copy)...
+[2026-10-16 00:38:16] Spawned Game.exe with PID 6352. Waiting 4 seconds for window initialization...
+[2026-10-16 00:38:20] Process status after 4 seconds: poll=None (None = healthy and running)
+[2026-10-16 00:38:20] Window search & capture: success=False, HWND=None, Title='None'
+[2026-10-16 00:38:20] Terminating Game.exe process tree (PID 6352)...
+[2026-10-16 00:38:22] Process terminated cleanly.
+[2026-10-16 00:38:22] 
+[Step 9] Finalizing Evidence & Verdict...
+[2026-10-16 00:38:22] Marked disposable run directory completed: E:\gamelingo_rpgm_pilot\run_20261016_003725_ed9d907c
+[2026-10-16 00:38:22] 
+FINAL VERDICT: PARTIAL
+[2026-10-16 00:38:22] Saved complete JSON evidence to: E:\GameLingo\evidence\gl_rpgm_pilot\gl_rpgm_pilot_evidence.json
+[2026-10-16 00:38:22] Pilot execution complete.
+[2026-10-16 00:39:18] ================================================================================
+[2026-10-16 00:39:18] GL-RPGM-PILOT: REAL-GAME ACCEPTANCE VERIFICATION START
+[2026-10-16 00:39:18] ================================================================================
+[2026-10-16 00:39:18] Original Game Path : D:\New folder\[RYuugames] RY-4233960_V1.04\4233960 V1.04\Do Disciplinary Committee Members Dream of Succubi
+[2026-10-16 00:39:18] Configured Pilot Root: E:\gamelingo_rpgm_pilot
+[2026-10-16 00:39:18] Project Evidence Dir: E:\GameLingo\evidence\gl_rpgm_pilot
+[2026-10-16 00:39:18] 
+[Step 1] Qualifying Original Game Fixture (Read-Only)...
+[2026-10-16 00:39:18] Adapter Detection: detected=True, engine='RPG Maker MV', confidence=1.0
+[2026-10-16 00:39:18] System.json Game Title: Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]
+[2026-10-16 00:39:18] Game Qualified: Engine=RPG Maker MV vunknown, NW.js=True, DataFiles=555
+[2026-10-16 00:39:18] Computing baseline SHA-256 hashes of original critical files...
+[2026-10-16 00:39:18] Hashed 556 critical files in original game.
+[2026-10-16 00:39:18] 
+[Step 2] Creating Isolated Disposable Working Directory...
+[2026-10-16 00:39:18] Disposable run directory created: E:\gamelingo_rpgm_pilot\run_20261016_003918_6db4980c
+[2026-10-16 00:39:18] Ownership marker verified: status='in_progress'
+[2026-10-16 00:39:18] 
+[Step 3] Copying game fixture to disposable directory...
+[2026-10-16 00:39:31] Copied game to E:\gamelingo_rpgm_pilot\run_20261016_003918_6db4980c\game in 12.63s
+[2026-10-16 00:39:31] Verifying 100% SHA-256 hash match for copied critical files...
+[2026-10-16 00:39:41] Verified: All 556 critical files match baseline SHA-256 hashes 100%.
+[2026-10-16 00:39:41] Verifying original game fixture was not modified...
+[2026-10-16 00:39:41] Safety confirmation: Original fixture completely untouched and pristine.
+[2026-10-16 00:39:41] 
+[Step 4] Executing Schema-Aware Extraction Audit on Disposable Copy...
+[2026-10-16 00:39:43] Extraction Completed: 66405 units across 342 files in 2.35s (28299.7 units/s)
+[2026-10-16 00:39:43] Adapter Warnings: 0
+[2026-10-16 00:39:43]   - Maps          : 40382 units
+[2026-10-16 00:39:43]   - CommonEvents  : 21491 units
+[2026-10-16 00:39:43]   - Actors        :   835 units
+[2026-10-16 00:39:43]   - Classes       :    10 units
+[2026-10-16 00:39:43]   - Skills        :  1729 units
+[2026-10-16 00:39:43]   - Items         :   503 units
+[2026-10-16 00:39:43]   - Weapons       :    25 units
+[2026-10-16 00:39:43]   - Armors        :   259 units
+[2026-10-16 00:39:43]   - Enemies       :   123 units
+[2026-10-16 00:39:43]   - Troops        :   236 units
+[2026-10-16 00:39:43]   - States        :   183 units
+[2026-10-16 00:39:43]   - Animations    :     0 units
+[2026-10-16 00:39:43]   - Tilesets      :     0 units
+[2026-10-16 00:39:43]   - System        :    98 units
+[2026-10-16 00:39:43]   - Other         :   531 units
+[2026-10-16 00:39:43] 
+[Step 5] Auditing Stratified Sample of 100 Translation Units...
+[2026-10-16 00:39:44] 100-Unit Stratified Audit Result: 100 / 100 passed (100% = True)
+[2026-10-16 00:39:44] 
+[Step 6] Selecting and Translating 25 Representative Units with Argos...
+[2026-10-16 00:39:44] Selected 24 representative units for translation & patching:
+[2026-10-16 00:39:44]    1. [CommonEvents.json] [452].list[650]                     -> \>フェードインが完了しましたか？
+[2026-10-16 00:39:44]    2. [CommonEvents.json] [452].list[654]                     -> \>『フェードイン処理のし忘れ』とご報告ください。
+[2026-10-16 00:39:44]    3. [CommonEvents.json] [452].list[658]                     -> \>黒い画像ピクチャの消去のし忘れの可能性があります。
+[2026-10-16 00:39:44]    4. [CommonEvents.json] [452].list[686]                     -> \>フェードインアイテムを使っても直らなかった旨をご報告ください。
+[2026-10-16 00:39:44]    5. [Map375.json] events[2].pages[0].list[18].choices[0] -> 1段階目
+[2026-10-16 00:39:44]    6. [Map375.json] events[2].pages[0].list[18].choices[1] -> 2段階目
+[2026-10-16 00:39:44]    7. [Map375.json] events[2].pages[0].list[18].choices[2] -> 3段階目
+[2026-10-16 00:39:44]    8. [Map375.json] events[2].pages[0].list[18].choices[3] -> 4段階目
+[2026-10-16 00:39:44]    9. [Map375.json] events[2].pages[0].list[19].when    -> 1段階目
+[2026-10-16 00:39:44]   10. [Actors.json] [286].nickname                      -> 上書き注意
+[2026-10-16 00:39:44]   11. [Actors.json] [289].nickname                      -> 上書き注意
+[2026-10-16 00:39:44]   12. [Actors.json] [292].nickname                      -> 上書き注意
+[2026-10-16 00:39:44]   13. [Actors.json] [295].nickname                      -> 上書き注意
+[2026-10-16 00:39:44]   14. [Actors.json] [298].nickname                      -> 上書き注意
+[2026-10-16 00:39:44]   15. [Map065.json] events[1].pages[1].list[6]          -> \>\C[27][EV.\V[59]-\V[52]] Night of the Succubus\C[0]
+[2026-10-16 00:39:44]   16. [Map065.json] events[1].pages[1].list[8]          -> \>\C[16][Req 1] Main story event\C[0]
+[2026-10-16 00:39:44]   17. [Map065.json] events[1].pages[1].list[9]          -> \>\C[16][Req 2]────\C[0]
+[2026-10-16 00:39:44]   18. [Map065.json] events[1].pages[2].list[7]          -> \>\C[27][EV.\V[59]-\V[52]] Night of the Succubus\C[0]
+[2026-10-16 00:39:44]   19. [Map065.json] events[2].pages[1].list[6]          -> \>\C[27][EV.\V[59]-\V[52]] Kaneobara's Slave\C[0]
+[2026-10-16 00:39:44]   20. [System.json] gameTitle                           -> Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]
+[2026-10-16 00:39:44]   21. [System.json] terms.messages.actionFailure        -> %1 didn't work!
+[2026-10-16 00:39:44]   22. [System.json] terms.messages.actorDamage          -> %1 took %2 damage!
+[2026-10-16 00:39:44]   23. [System.json] terms.messages.actorDrain           -> %1's %2 had %3 points stolen!
+[2026-10-16 00:39:44]   24. [System.json] terms.messages.actorGain            -> %1's %2 increased by %3 points!
+[2026-10-16 00:39:55] Argos translated 24 units in 10.87s
+[2026-10-16 00:39:55] Safety Validation: 0 errors, 4 warnings, 24 approved.
+[2026-10-16 00:39:55] 
+[Step 7] Generating Patch Plan...
+[2026-10-16 00:39:55] Plan created: 24 valid edits, 0 rejected edits.
+[2026-10-16 00:39:55] Target files to patch: ['www/data/Actors.json', 'www/data/CommonEvents.json', 'www/data/Map065.json', 'www/data/Map375.json', 'www/data/System.json']
+[2026-10-16 00:39:55] 
+Executing Patch Plan DRY-RUN (execute=False)...
+[2026-10-16 00:39:56] Dry-run report status: preview
+[2026-10-16 00:39:56] Dry-run filesystem isolation verified: Files unmodified = True
+[2026-10-16 00:39:56] 
+Executing Patch Plan APPLY (execute=True, overwrite=True)...
+[2026-10-16 00:39:59] Apply report status: success, backup_id='fa644a75-d6da-4fa9-80ee-d677e707f928'
+[2026-10-16 00:39:59] JSON Integrity of all modified files: valid = True
+[2026-10-16 00:39:59] 
+Executing Patch Plan ROLLBACK / RESTORE...
+[2026-10-16 00:39:59] Restore report status: success
+[2026-10-16 00:39:59] Checking byte-for-byte restoration against original baseline...
+[2026-10-16 00:39:59] Rollback byte-for-byte exact match verified: True (100.0%)
+[2026-10-16 00:39:59] 
+Re-applying patch for native game runtime launch...
+[2026-10-16 00:40:02] Re-apply report status: success
+[2026-10-16 00:40:02] 
+[Step 8] Launching Native Game Runtime (Game.exe in Disposable Copy)...
+[2026-10-16 00:40:02] Spawned Game.exe with PID 20588. Polling for window initialization...
+[2026-10-16 00:40:08] Process status: poll=None (None = healthy and running)
+[2026-10-16 00:40:08] Window search & capture: success=True, HWND=395170, Title='Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]'
+[2026-10-16 00:40:08] Screenshot verified: size=11192 bytes, sha256=39bc5ef4c123f8aceb69917d0c989b0cd7f42b2d604de11a2102589358594319
+[2026-10-16 00:40:08] Mirrored screenshot to brain artifact directory: C:\Users\amvbl\.gemini\antigravity\brain\7571864e-483c-4cf2-aba4-7a69942cfe31\gl_rpgm_evidence\gl_rpgm_pilot_runtime_window.png
+[2026-10-16 00:40:08] Terminating Game.exe process tree (PID 20588)...
+[2026-10-16 00:40:09] Process terminated cleanly.
+[2026-10-16 00:40:09] 
+[Step 9] Finalizing Evidence & Verdict...
+[2026-10-16 00:40:09] Marked disposable run directory completed: E:\gamelingo_rpgm_pilot\run_20261016_003918_6db4980c
+[2026-10-16 00:40:09] 
+FINAL VERDICT: PARTIAL
+[2026-10-16 00:40:09] Saved complete JSON evidence to: E:\GameLingo\evidence\gl_rpgm_pilot\gl_rpgm_pilot_evidence.json
+[2026-10-16 00:40:09] Pilot execution complete.

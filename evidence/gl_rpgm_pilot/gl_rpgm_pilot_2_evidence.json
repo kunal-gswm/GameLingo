@@ -1,0 +1,221 @@
+{
+  "milestone": "GL-RPGM-PILOT-2",
+  "timestamp": "2026-10-16T01:24:41Z",
+  "disposable_game": "E:\\gamelingo_rpgm_pilot\\run_20261016_003918_6db4980c\\game",
+  "steps": {
+    "safety": {
+      "run_id": "run_20261016_003918_6db4980c",
+      "ownership_marker_valid": {
+        "pilot_owner": "GameLingo-GL040-Pilot",
+        "run_id": "run_20261016_003918_6db4980c",
+        "status": "completed",
+        "created_at": "2026-10-16 00:39:18",
+        "pilot_root": "E:\\gamelingo_rpgm_pilot",
+        "metadata": {
+          "game_title": "Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]",
+          "engine": "RPG Maker MV",
+          "engine_version": "unknown"
+        },
+        "completed_at": "2026-10-16 00:40:09"
+      },
+      "disposable_path": "E:\\gamelingo_rpgm_pilot\\run_20261016_003918_6db4980c"
+    },
+    "baseline_hashes": {
+      "System.json": "c046f2f054380d983d3dd1d04a8b0de9320f7f766b226aea37b7e0430ec9620d",
+      "Actors.json": "7ef6fcf5ae44ed827d34f358fc60f8045308b70a142b5d522ee3c3abd753ddb5",
+      "Map122.json": "a634f261aaf26b621235b584376c43acb0ec2b853769f7e7cb29096aebeb11b7",
+      "Map123.json": "d6a43c33ba1f211f0c097dc7cb812296babdca7c9eb1a763022481b306915846"
+    },
+    "dry_run": {
+      "status": "preview",
+      "errors": [],
+      "mutations_detected": false
+    },
+    "apply": {
+      "status": "success",
+      "backup_id": "4bd45670-37f4-4a73-bb54-808837df6550",
+      "files_modified": [
+        "www/data/System.json",
+        "www/data/Actors.json",
+        "www/data/Map122.json",
+        "www/data/Map123.json"
+      ]
+    }
+  },
+  "units": [
+    {
+      "unit_id": "System.json::terms.messages.loadMessage",
+      "file_id": "System.json",
+      "locator": "terms.messages.loadMessage",
+      "source_text": "Load which file?",
+      "argos_draft": "?",
+      "reviewed_target": "Select Save File to Load [GameLingo]",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Actors.json::[1].name",
+      "file_id": "Actors.json",
+      "locator": "[1].name",
+      "source_text": "Iroha Himeno",
+      "argos_draft": "Iroha Himeno",
+      "reviewed_target": "Iroha Himeno [TL]",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[9]",
+      "file_id": "System.json",
+      "locator": "terms.commands[9]",
+      "source_text": "Save",
+      "argos_draft": "Save",
+      "reviewed_target": "Save Data [TL]",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[10]",
+      "file_id": "System.json",
+      "locator": "terms.commands[10]",
+      "source_text": "End Game",
+      "argos_draft": "End Game",
+      "reviewed_target": "Quit Game [TL]",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[11]",
+      "file_id": "System.json",
+      "locator": "terms.commands[11]",
+      "source_text": "Options",
+      "argos_draft": "Options",
+      "reviewed_target": "Settings [TL]",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[4]",
+      "file_id": "System.json",
+      "locator": "terms.commands[4]",
+      "source_text": "\\I[2324]Item",
+      "argos_draft": "\\I[2324]Item",
+      "reviewed_target": "\\I[2324]Items [TL]",
+      "tokens": [
+        "\\I[2324]"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[12]",
+      "file_id": "System.json",
+      "locator": "terms.commands[12]",
+      "source_text": "\\I[2775]Weapons",
+      "argos_draft": "\\I[2775]Weapons",
+      "reviewed_target": "\\I[2775]Weaponry",
+      "tokens": [
+        "\\I[2775]"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[13]",
+      "file_id": "System.json",
+      "locator": "terms.commands[13]",
+      "source_text": "\\I[2776]Armor",
+      "argos_draft": "\\I[2776]Armor",
+      "reviewed_target": "\\I[2776]Protective Gear",
+      "tokens": [
+        "\\I[2776]"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[14]",
+      "file_id": "System.json",
+      "locator": "terms.commands[14]",
+      "source_text": "\\I[2777]Key Items",
+      "argos_draft": "\\I[2777]",
+      "reviewed_target": "\\I[2777]Special Items",
+      "tokens": [
+        "\\I[2777]"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map122.json::displayName",
+      "file_id": "Map122.json",
+      "locator": "displayName",
+      "source_text": "2F Girls' Bathroom",
+      "argos_draft": "2F Girls' Bathroom",
+      "reviewed_target": "2F Girls' Restroom [TL]",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map123.json::displayName",
+      "file_id": "Map123.json",
+      "locator": "displayName",
+      "source_text": "2F Girls' Bathroom",
+      "argos_draft": "2F Girls' Bathroom",
+      "reviewed_target": "2F Girls' Restroom [TL]",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    }
+  ],
+  "screenshots": {
+    "scene_1_load_screen": {
+      "file": "gl_rpgm_pilot_2_load_screen.png",
+      "verified_strings": [
+        "Select Save File to Load [GameLingo]"
+      ]
+    },
+    "scene_2_main_menu": {
+      "file": "gl_rpgm_pilot_2_main_menu.png",
+      "verified_strings": [
+        "Iroha Himeno [TL]",
+        "Settings [TL]",
+        "Save Data [TL]",
+        "Quit Game [TL]"
+      ]
+    },
+    "scene_3_items_menu": {
+      "file": "gl_rpgm_pilot_2_items_menu.png",
+      "verified_strings": [
+        "\\I[2324]Items [TL]",
+        "\\I[2775]Weaponry",
+        "\\I[2776]Protective Gear",
+        "\\I[2777]Special Items"
+      ]
+    },
+    "scene_4_bathroom_banner": {
+      "file": "gl_rpgm_pilot_2_bathroom_banner.png",
+      "verified_strings": [
+        "2F Girls' Restroom [TL]"
+      ]
+    }
+  },
+  "rollback_verified": true,
+  "overall_status": "PASSED"
+}

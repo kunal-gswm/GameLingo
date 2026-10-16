@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 # Matches:
 # %1..%9, %s, %d, %i, %f, %.2f, %02d, %(name)s (printf style and index style)
@@ -18,9 +18,34 @@ PLACEHOLDER_REGEX = re.compile(
     r"|(\[[a-zA-Z0-9_.\s!:]+\])"  # Ren'Py interpolation: [player_name], [points], [flag!t], [_gl_unlocked]
     r"|(\\[A-Za-z]+(?:\[\d+\])?)"  # \N[1], \G, \C[5], etc.
     r"|(\\\\)"  # Literal backslash
-    r"|(\\[!><|.^])"  # special short codes in RPG maker like \!, \>, \<, \|, \., \^
+    r"|(\\[!><|.^${}])"  # special short codes in RPG maker like \!, \>, \<, \|, \., \^, \$, \{, \}
     r"|(\\[\"'nrt])"  # Escaped quotes, newlines, tabs
 )
+
+# RPG Maker-specific escape sequences and format placeholders
+# Parameterized: \V[n], \N[n], \P[n], \C[n], \I[n], \FS[n], \PX[n], \PY[n], \OC[n], \OW[n]
+# Single-character: \G, \$, \{, \}, \\, \., \|, \!, \>, \<, \^
+RPGM_ESCAPE_REGEX = re.compile(
+    r"\\(?:"
+    r"(?:[VNPvnpCIci]|FS|fs|PX|px|PY|py|OC|oc|OW|ow)\s*\[\d+\]"
+    r"|[Gg\$\{\}\\\.\|\!><\^]"
+    r")"
+)
+
+RPGM_PLACEHOLDER_REGEX = re.compile(
+    r"(%(?:\(\w+\))?[-+0 #]*\d*(?:\.\d+)?[hlL]?[diouxXeEfFgGcrs%]|%[1-9])"  # format placeholders & %1..%9
+    r"|(\\\\)"  # Literal backslash \\ (MUST precede single backslash codes)
+    r"|(\\[A-Za-z]+(?:\s*\[[^\]\r\n]*\]|\s*<[^>\r\n]*>)?)"  # \V[1], \NC[2], \fn<Arial>, \G, \FS[24], \PX[100], etc.
+    r"|(\\[Gg\$\{\}\.\|\!><\^])"  # special single-character codes (\$, \{, \}, \., \|, \!, \>, \<, \^)
+    r"|(\\[\"'nrt])"  # escaped quotes, newlines, tabs
+)
+
+
+def extract_rpgmaker_tokens(text: str) -> List[str]:
+    """Extracts all RPG Maker escape sequences and format placeholders from text."""
+    if not text:
+        return []
+    return [m.group(0) for m in RPGM_PLACEHOLDER_REGEX.finditer(text)]
 
 
 class MaskingError(Exception):
@@ -32,7 +57,11 @@ class MaskingError(Exception):
 class PlaceholderProtector:
     """Protects game variables and placeholders during translation."""
 
-    def __init__(self, sentinel_style: str = "default"):
+    def __init__(
+        self,
+        sentinel_style: str = "default",
+        regex: Optional[re.Pattern] = None,
+    ):
         """
         sentinel_style:
           - "default": "XXXTOKEN{counter}XXX" (canonical format, backward compatible)
@@ -43,6 +72,7 @@ class PlaceholderProtector:
         self.counter = 0
         self.token_map: Dict[str, str] = {}
         self.token_order: List[str] = []
+        self.regex = regex or PLACEHOLDER_REGEX
 
     def _generate_sentinel(self) -> str:
         if self.sentinel_style == "bracket":
@@ -74,7 +104,7 @@ class PlaceholderProtector:
             self.token_order.append(sentinel)
             return sentinel
 
-        return PLACEHOLDER_REGEX.sub(repl, text)
+        return self.regex.sub(repl, text)
 
     def restore(self, translated_text: str) -> str:
         """

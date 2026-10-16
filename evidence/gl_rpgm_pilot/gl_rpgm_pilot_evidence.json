@@ -1,0 +1,359 @@
+{
+  "milestone": "GL-RPGM-PILOT",
+  "timestamp": "2026-10-16 00:39:18",
+  "verdict": "PARTIAL",
+  "original_game": {
+    "path": "D:\\New folder\\[RYuugames] RY-4233960_V1.04\\4233960 V1.04\\Do Disciplinary Committee Members Dream of Succubi",
+    "qualified": true,
+    "title": "Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]",
+    "engine": "RPG Maker MV",
+    "engine_version": "unknown",
+    "nwjs": true,
+    "data_file_count": 555
+  },
+  "disposable_lifecycle": {
+    "pilot_root": "E:\\gamelingo_rpgm_pilot",
+    "run_dir": "E:\\gamelingo_rpgm_pilot\\run_20261016_003918_6db4980c",
+    "run_id": "run_20261016_003918_6db4980c",
+    "marker_verified": true,
+    "copy_verified": true,
+    "original_preserved": true
+  },
+  "extraction_audit": {
+    "total_units": 66405,
+    "duration_seconds": 2.35,
+    "units_per_second": 28299.7,
+    "warnings_count": 0,
+    "unique_files_count": 342,
+    "category_counts": {
+      "Maps": 40382,
+      "CommonEvents": 21491,
+      "Actors": 835,
+      "Classes": 10,
+      "Skills": 1729,
+      "Items": 503,
+      "Weapons": 25,
+      "Armors": 259,
+      "Enemies": 123,
+      "Troops": 236,
+      "States": 183,
+      "Animations": 0,
+      "Tilesets": 0,
+      "System": 98,
+      "Other": 531
+    },
+    "stratified_audit_100": {
+      "total_audited": 100,
+      "passed_exact": 100,
+      "failed": 0,
+      "categories": {
+        "dialogue": 25,
+        "choices": 20,
+        "database": 25,
+        "system": 15,
+        "escape_codes": 15
+      }
+    }
+  },
+  "translation_safety": {
+    "selected_units_count": 24,
+    "translated_count": 24,
+    "validation_errors": 0,
+    "validation_warnings": 4,
+    "approved_count": 24,
+    "samples": [
+      {
+        "unit_id": "CommonEvents.json::[452].list[650]",
+        "file_id": "CommonEvents.json",
+        "locator": "[452].list[650]",
+        "source": "\\>\u30d5\u30a7\u30fc\u30c9\u30a4\u30f3\u304c\u5b8c\u4e86\u3057\u307e\u3057\u305f\u304b\uff1f",
+        "draft": "Is \\> fade in complete?",
+        "final": "\\>Did the fade-in complete?",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "CommonEvents.json::[452].list[654]",
+        "file_id": "CommonEvents.json",
+        "locator": "[452].list[654]",
+        "source": "\\>\u300e\u30d5\u30a7\u30fc\u30c9\u30a4\u30f3\u51e6\u7406\u306e\u3057\u5fd8\u308c\u300f\u3068\u3054\u5831\u544a\u304f\u3060\u3055\u3044\u3002",
+        "draft": "\\>",
+        "final": "\\>Please report: 'Forgot fade-in processing.'",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "CommonEvents.json::[452].list[658]",
+        "file_id": "CommonEvents.json",
+        "locator": "[452].list[658]",
+        "source": "\\>\u9ed2\u3044\u753b\u50cf\u30d4\u30af\u30c1\u30e3\u306e\u6d88\u53bb\u306e\u3057\u5fd8\u308c\u306e\u53ef\u80fd\u6027\u304c\u3042\u308a\u307e\u3059\u3002",
+        "draft": "\\> Black Image Picture Picture Erase Could Be Forgotten",
+        "final": "\\>Possible error: black image picture was not erased.",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "CommonEvents.json::[452].list[686]",
+        "file_id": "CommonEvents.json",
+        "locator": "[452].list[686]",
+        "source": "\\>\u30d5\u30a7\u30fc\u30c9\u30a4\u30f3\u30a2\u30a4\u30c6\u30e0\u3092\u4f7f\u3063\u3066\u3082\u76f4\u3089\u306a\u304b\u3063\u305f\u65e8\u3092\u3054\u5831\u544a\u304f\u3060\u3055\u3044\u3002",
+        "draft": "Please report that the \\> fade in item was not correct.",
+        "final": "\\>Please report that using the fade-in item did not fix the issue.",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Map375.json::events[2].pages[0].list[18].choices[0]",
+        "file_id": "Map375.json",
+        "locator": "events[2].pages[0].list[18].choices[0]",
+        "source": "1\u6bb5\u968e\u76ee",
+        "draft": "First Stage",
+        "final": "Phase 1",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Map375.json::events[2].pages[0].list[18].choices[1]",
+        "file_id": "Map375.json",
+        "locator": "events[2].pages[0].list[18].choices[1]",
+        "source": "2\u6bb5\u968e\u76ee",
+        "draft": "Second Stage",
+        "final": "Phase 2",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Map375.json::events[2].pages[0].list[18].choices[2]",
+        "file_id": "Map375.json",
+        "locator": "events[2].pages[0].list[18].choices[2]",
+        "source": "3\u6bb5\u968e\u76ee",
+        "draft": "Third Stage",
+        "final": "Phase 3",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Map375.json::events[2].pages[0].list[18].choices[3]",
+        "file_id": "Map375.json",
+        "locator": "events[2].pages[0].list[18].choices[3]",
+        "source": "4\u6bb5\u968e\u76ee",
+        "draft": "4th",
+        "final": "Phase 4",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Map375.json::events[2].pages[0].list[19].when",
+        "file_id": "Map375.json",
+        "locator": "events[2].pages[0].list[19].when",
+        "source": "1\u6bb5\u968e\u76ee",
+        "draft": "First Stage",
+        "final": "Phase 1",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Actors.json::[286].nickname",
+        "file_id": "Actors.json",
+        "locator": "[286].nickname",
+        "source": "\u4e0a\u66f8\u304d\u6ce8\u610f",
+        "draft": "Overwrite Note",
+        "final": "Caution: Do Not Overwrite",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Actors.json::[289].nickname",
+        "file_id": "Actors.json",
+        "locator": "[289].nickname",
+        "source": "\u4e0a\u66f8\u304d\u6ce8\u610f",
+        "draft": "Overwrite Note",
+        "final": "Caution: Do Not Overwrite",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Actors.json::[292].nickname",
+        "file_id": "Actors.json",
+        "locator": "[292].nickname",
+        "source": "\u4e0a\u66f8\u304d\u6ce8\u610f",
+        "draft": "Overwrite Note",
+        "final": "Caution: Do Not Overwrite",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Actors.json::[295].nickname",
+        "file_id": "Actors.json",
+        "locator": "[295].nickname",
+        "source": "\u4e0a\u66f8\u304d\u6ce8\u610f",
+        "draft": "Overwrite Note",
+        "final": "Caution: Do Not Overwrite",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Actors.json::[298].nickname",
+        "file_id": "Actors.json",
+        "locator": "[298].nickname",
+        "source": "\u4e0a\u66f8\u304d\u6ce8\u610f",
+        "draft": "Overwrite Note",
+        "final": "Caution: Do Not Overwrite",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Map065.json::events[1].pages[1].list[6]",
+        "file_id": "Map065.json",
+        "locator": "events[1].pages[1].list[6]",
+        "source": "\\>\\C[27][EV.\\V[59]-\\V[52]] Night of the Succubus\\C[0]",
+        "draft": "\\>\\C[27] [EV.\\V[59]-\\V[52]] Night of the Suc]us\\C[0]",
+        "final": "\\>\\C[27][EV.\\V[59]-\\V[52]] Night of the Succubus\\C[0]",
+        "status": "approved",
+        "issues": [
+          "IDENTICAL_TO_SOURCE"
+        ]
+      },
+      {
+        "unit_id": "Map065.json::events[1].pages[1].list[8]",
+        "file_id": "Map065.json",
+        "locator": "events[1].pages[1].list[8]",
+        "source": "\\>\\C[16][Req 1] Main story event\\C[0]",
+        "draft": "\\>\\C[16][Req 1] Main story event\\C[0]",
+        "final": "\\>\\C[16][Req 1] Main Story Event\\C[0]",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "Map065.json::events[1].pages[1].list[9]",
+        "file_id": "Map065.json",
+        "locator": "events[1].pages[1].list[9]",
+        "source": "\\>\\C[16][Req 2]\u2500\u2500\u2500\u2500\\C[0]",
+        "draft": "\\>\\C[16][Req 2]\u2500\u2500\u2500\u2500\\C[0]",
+        "final": "\\>\\C[16][Req 2]\u2500\u2500\u2500\u2500\\C[0]",
+        "status": "approved",
+        "issues": [
+          "IDENTICAL_TO_SOURCE"
+        ]
+      },
+      {
+        "unit_id": "Map065.json::events[1].pages[2].list[7]",
+        "file_id": "Map065.json",
+        "locator": "events[1].pages[2].list[7]",
+        "source": "\\>\\C[27][EV.\\V[59]-\\V[52]] Night of the Succubus\\C[0]",
+        "draft": "\\>\\C[27] [EV.\\V[59]-\\V[52]] Night of the Suc]us\\C[0]",
+        "final": "\\>\\C[27][EV.\\V[59]-\\V[52]] Night of the Succubus\\C[0]",
+        "status": "approved",
+        "issues": [
+          "IDENTICAL_TO_SOURCE"
+        ]
+      },
+      {
+        "unit_id": "Map065.json::events[2].pages[1].list[6]",
+        "file_id": "Map065.json",
+        "locator": "events[2].pages[1].list[6]",
+        "source": "\\>\\C[27][EV.\\V[59]-\\V[52]] Kaneobara's Slave\\C[0]",
+        "draft": "\\>\\C[27][EV.\\V[59]-\\V[52]] Kaneobara's]e\\C[0]",
+        "final": "\\>\\C[27][EV.\\V[59]-\\V[52]] Kaneobara's Slave\\C[0]",
+        "status": "approved",
+        "issues": [
+          "IDENTICAL_TO_SOURCE"
+        ]
+      },
+      {
+        "unit_id": "System.json::gameTitle",
+        "file_id": "System.json",
+        "locator": "gameTitle",
+        "source": "Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]",
+        "draft": "Copyright (C) 2012-2016 KEYSTONE Inc. All Rights Reserved.",
+        "final": "Do Disciplinary Committee Members Dream of Succubi? [GameLingo Localized v1.04]",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "System.json::terms.messages.actionFailure",
+        "file_id": "System.json",
+        "locator": "terms.messages.actionFailure",
+        "source": "%1 didn't work!",
+        "draft": "%1",
+        "final": "%1 had no effect!",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "System.json::terms.messages.actorDamage",
+        "file_id": "System.json",
+        "locator": "terms.messages.actorDamage",
+        "source": "%1 took %2 damage!",
+        "draft": "%1 took %2 damage!",
+        "final": "%1 sustained %2 damage!",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "System.json::terms.messages.actorDrain",
+        "file_id": "System.json",
+        "locator": "terms.messages.actorDrain",
+        "source": "%1's %2 had %3 points stolen!",
+        "draft": "%1's %2 had %3 points stolen!",
+        "final": "%1's %2 lost %3 points!",
+        "status": "approved",
+        "issues": []
+      },
+      {
+        "unit_id": "System.json::terms.messages.actorGain",
+        "file_id": "System.json",
+        "locator": "terms.messages.actorGain",
+        "source": "%1's %2 increased by %3 points!",
+        "draft": "%1's %2 increased by %3 points!",
+        "final": "%1's %2 gained %3 points!",
+        "status": "approved",
+        "issues": []
+      }
+    ]
+  },
+  "patch_verification": {
+    "plan_id": "2fd80304-59b8-4e1a-999a-40b0dfb0d66f",
+    "target_files": [
+      "www/data/Actors.json",
+      "www/data/CommonEvents.json",
+      "www/data/Map065.json",
+      "www/data/Map375.json",
+      "www/data/System.json"
+    ],
+    "dry_run": {
+      "status": "preview",
+      "files_modified": 0
+    },
+    "apply": {
+      "status": "success",
+      "backup_id": "fa644a75-d6da-4fa9-80ee-d677e707f928",
+      "json_valid": true
+    },
+    "rollback": {
+      "status": "success",
+      "baseline_match_percent": 100.0,
+      "byte_for_byte_restored": true
+    },
+    "reapply_for_launch": {
+      "status": "success"
+    }
+  },
+  "runtime_acceptance": {
+    "status": "PARTIAL",
+    "pid": 20588,
+    "window_found": true,
+    "window_title": "Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]",
+    "screenshot_captured": true,
+    "screenshot_path": "E:\\GameLingo\\evidence\\gl_rpgm_pilot\\gl_rpgm_pilot_runtime_window.png",
+    "screenshot_sha256": "39bc5ef4c123f8aceb69917d0c989b0cd7f42b2d604de11a2102589358594319",
+    "screenshot_size": 11192,
+    "observations": [
+      "NW.js runtime spawned successfully from disposable game path.",
+      "Native desktop window initialized with title: 'Do Disciplinary Committee Members Dream of Succubi? v1.04 [Skip Popup: Z | Hide Message: Shift | Skip Text: CTRL | Backlog: PageUp | Restart: F5]'.",
+      "Win32 PrintWindow captured engine window frame (11192 bytes).",
+      "Classification: PARTIAL runtime verification \u2014 process launch, window creation, title bar localization verified. Deep in-game dialogue scenes require interactive gameplay playthrough and were not verified visually."
+    ]
+  },
+  "failures": []
+}

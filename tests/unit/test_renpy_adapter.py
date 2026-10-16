@@ -383,30 +383,34 @@ def test_detect_adapter_registry_resolves_correct_engines(tmp_path: Path):
     Test detect_adapter against RPG Maker MV (www/data/System.json),
     RPG Maker MZ (data/System.json), Ren'Py, and an unrelated directory.
     """
-    # 1. RPG Maker MV
+    # 1. RPG Maker MV (packaged www layout with rpg_core.js)
     mv_dir = tmp_path / "rpg_mv"
     mv_dir.mkdir()
     (mv_dir / "www" / "data").mkdir(parents=True)
     with open(mv_dir / "www" / "data" / "System.json", "w", encoding="utf-8") as f:
         json.dump({"gameTitle": "MV Game", "versionId": 123}, f)
+    (mv_dir / "www" / "js").mkdir(parents=True)
+    (mv_dir / "www" / "js" / "rpg_core.js").write_text("// MV core", encoding="utf-8")
 
     adapter, desc, conf = detect_adapter(mv_dir)
     assert adapter is not None
     assert adapter.adapter_id == "rpgmaker_mv_mz"
-    assert "RPG Maker MV/MZ" in desc
+    assert "RPG Maker MV" in desc
     assert conf == 1.0
 
-    # 2. RPG Maker MZ
+    # 2. RPG Maker MZ (root data layout with rmmz_core.js)
     mz_dir = tmp_path / "rpg_mz"
     mz_dir.mkdir()
     (mz_dir / "data").mkdir()
     with open(mz_dir / "data" / "System.json", "w", encoding="utf-8") as f:
         json.dump({"gameTitle": "MZ Game", "versionId": 456}, f)
+    (mz_dir / "js").mkdir(parents=True)
+    (mz_dir / "js" / "rmmz_core.js").write_text("// MZ core", encoding="utf-8")
 
     adapter, desc, conf = detect_adapter(mz_dir)
     assert adapter is not None
     assert adapter.adapter_id == "rpgmaker_mv_mz"
-    assert "RPG Maker MV/MZ" in desc
+    assert "RPG Maker MZ" in desc
     assert conf == 1.0
 
     # 3. Ren'Py

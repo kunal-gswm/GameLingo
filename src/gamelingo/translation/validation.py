@@ -3,7 +3,10 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import List, Optional
 
-from gamelingo.translation.placeholders import PLACEHOLDER_REGEX
+from gamelingo.translation.placeholders import (
+    PLACEHOLDER_REGEX,
+    RPGM_PLACEHOLDER_REGEX,
+)
 
 JP_CHAR_REGEX = re.compile(r"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]")
 SENTINEL_LEAK_REGEX = re.compile(r"(XXXTOKEN\d*XXX?|\[T\d+\]|\{T\d+\})", re.IGNORECASE)
@@ -20,6 +23,8 @@ def validate_translation(
     source_text: str,
     target_text: str,
     is_passthrough: Optional[bool] = None,
+    adapter_id: Optional[str] = None,
+    expected_tokens: Optional[List[str]] = None,
 ) -> List[ValidationIssue]:
     issues: List[ValidationIssue] = []
 
@@ -83,8 +88,16 @@ def validate_translation(
             )
 
     # 6. Placeholders and formatting tags inventory and multiplicity comparison
-    source_tokens = [m.group(0) for m in PLACEHOLDER_REGEX.finditer(source_text)]
-    target_tokens = [m.group(0) for m in PLACEHOLDER_REGEX.finditer(target_text)]
+    token_regex = (
+        RPGM_PLACEHOLDER_REGEX if adapter_id == "rpgmaker_mv_mz" else PLACEHOLDER_REGEX
+    )
+    if expected_tokens is not None and (
+        adapter_id == "rpgmaker_mv_mz" or expected_tokens
+    ):
+        source_tokens = list(expected_tokens)
+    else:
+        source_tokens = [m.group(0) for m in token_regex.finditer(source_text)]
+    target_tokens = [m.group(0) for m in token_regex.finditer(target_text)]
 
     source_counts = Counter(source_tokens)
     target_counts = Counter(target_tokens)
@@ -125,57 +138,63 @@ def validate_translation(
 
     # 7. Unsafe interpolation syntax:
     # Check for unescaped square brackets in target that are not matched by PLACEHOLDER_REGEX
-    # or that introduce unexpected interpolation in Ren'Py dialogue
-    unescaped_target = re.sub(r"\[\[", "  ", target_text)
-    for m in re.finditer(r"\[([^\]]+)\]", unescaped_target):
-        matched_str = f"[{m.group(1)}]"
-        if matched_str not in source_counts:
-            if not any(
-                i.code == "UNEXPECTED_PLACEHOLDER" and matched_str in i.message
-                for i in issues
-            ):
-                issues.append(
-                    ValidationIssue(
-                        "UNSAFE_INTERPOLATION",
-                        "error",
-                        f"Unsafe unescaped square bracket in translation: '{matched_str}'",
+    # or that introduce unexpected interpolation in Ren'Py dialogue.
+    # CRITICAL: In RPG Maker MV/MZ, square brackets [...] are ordinary text and MUST NOT be flagged!
+    if adapter_id != "rpgmaker_mv_mz":
+        unescaped_target = re.sub(r"\[\[", "  ", target_text)
+        for m in re.finditer(r"\[([^\]]+)\]", unescaped_target):
+            matched_str = f"[{m.group(1)}]"
+            if matched_str not in source_counts:
+                if not any(
+                    i.code == "UNEXPECTED_PLACEHOLDER" and matched_str in i.message
+                    for i in issues
+                ):
+                    issues.append(
+                        ValidationIssue(
+                            "UNSAFE_INTERPOLATION",
+                            "error",
+                            f"Unsafe unescaped square bracket in translation: '{matched_str}'",
+                        )
                     )
-                )
 
     # 8. Malformed markup: check for unbalanced brackets or braces
-    clean_brackets = re.sub(r"\[\[", "", target_text)
-    clean_braces = re.sub(r"\{\{", "", target_text)
-    if clean_brackets.count("[") != clean_brackets.count("]"):
-        issues.append(
-            ValidationIssue(
-                "MALFORMED_MARKUP",
-                "error",
-                "Unbalanced square brackets in translation output.",
-            )
-        )
-    if clean_braces.count("{") != clean_braces.count("}"):
-        issues.append(
-            ValidationIssue(
-                "MALFORMED_MARKUP",
-                "error",
-                "Unbalanced curly braces in translation output.",
-            )
-        )
-
-    # Check for unclosed text tags (e.g. {b} without {/b}, {color} without {/color})
-    for tag_name in ("b", "i", "u", "s", "color", "size", "font"):
-        open_tags = len(
-            re.findall(rf"\{{{tag_name}(?:=[^}}]+)?\}}", target_text, re.IGNORECASE)
-        )
-        close_tags = len(re.findall(rf"\{{/{tag_name}\}}", target_text, re.IGNORECASE))
-        if open_tags != close_tags:
+    # In RPG Maker, square brackets and braces can be ordinary text or font codes (\{, \})
+    if adapter_id != "rpgmaker_mv_mz":
+        clean_brackets = re.sub(r"\[\[", "", target_text)
+        clean_braces = re.sub(r"\{\{", "", target_text)
+        if clean_brackets.count("[") != clean_brackets.count("]"):
             issues.append(
                 ValidationIssue(
                     "MALFORMED_MARKUP",
                     "error",
-                    f"Mismatched text tags: '{{{tag_name}}}' ({open_tags}) vs '{{/{tag_name}}}' ({close_tags})",
+                    "Unbalanced square brackets in translation output.",
                 )
             )
+        if clean_braces.count("{") != clean_braces.count("}"):
+            issues.append(
+                ValidationIssue(
+                    "MALFORMED_MARKUP",
+                    "error",
+                    "Unbalanced curly braces in translation output.",
+                )
+            )
+
+        # Check for unclosed text tags (e.g. {b} without {/b}, {color} without {/color})
+        for tag_name in ("b", "i", "u", "s", "color", "size", "font"):
+            open_tags = len(
+                re.findall(rf"\{{{tag_name}(?:=[^}}]+)?\}}", target_text, re.IGNORECASE)
+            )
+            close_tags = len(
+                re.findall(rf"\{{/{tag_name}\}}", target_text, re.IGNORECASE)
+            )
+            if open_tags != close_tags:
+                issues.append(
+                    ValidationIssue(
+                        "MALFORMED_MARKUP",
+                        "error",
+                        f"Mismatched text tags: '{{{tag_name}}}' ({open_tags}) vs '{{/{tag_name}}}' ({close_tags})",
+                    )
+                )
 
     # 9. Newline structure preservation
     source_newlines = source_text.count("\n")

@@ -1,0 +1,280 @@
+{
+  "milestone": "GL-RPGM-PILOT-4",
+  "engine": "RPG Maker MZ",
+  "game_title": "Playful Parcels",
+  "timestamp": "2026-10-16T12:47:20Z",
+  "disposable_game": "E:\\gamelingo_rpgm_pilot\\run_20261016_120957_213b8e2d\\game",
+  "steps": {
+    "safety": {
+      "run_id": "run_20261016_120957_213b8e2d",
+      "ownership_marker_valid": true,
+      "disposable_path": "E:\\gamelingo_rpgm_pilot\\run_20261016_120957_213b8e2d",
+      "original_game_protected": "D:\\New folder\\Playful Parcels"
+    },
+    "baseline_hashes": {
+      "System.json": "f0db46f85e8999c6f96d3edf06488ebb6f86caaf1711ba6f9c5ca6e6695bcee3",
+      "Map001.json": "77fbb014d406d858ddd509d6790c6e9c78d8f2eceefa74e48a20c989c01449e3",
+      "Actors.json": "fe214b15ccbd76fb600dcf65dc09cbc9553ae1095c4dacf51d9e03815399594b",
+      "Skills.json": "0f1d7d72b3bca2b3e33dd2976217b49838bb0c51584a821b9df534e7acf11617"
+    },
+    "dry_run": {
+      "status": "preview",
+      "errors": [],
+      "mutations_detected": false
+    },
+    "apply": {
+      "status": "success",
+      "backup_id": "2128261b-1e8d-4cc5-8477-4dc40244cfd9",
+      "files_modified": [
+        "data/System.json",
+        "data/Map001.json",
+        "data/Actors.json",
+        "data/Skills.json"
+      ]
+    }
+  },
+  "units": [
+    {
+      "unit_id": "System.json::gameTitle",
+      "file_id": "System.json",
+      "locator": "gameTitle",
+      "source_text": "Playful Parcels",
+      "argos_draft": "Playful Parcels",
+      "reviewed_target": "Playful Parcels [MZ-TL]",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.messages.loadMessage",
+      "file_id": "System.json",
+      "locator": "terms.messages.loadMessage",
+      "source_text": "Which file would you like to load?",
+      "argos_draft": "Which file would you like to load?",
+      "reviewed_target": "Select a shift file to resume:",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[18]",
+      "file_id": "System.json",
+      "locator": "terms.commands[18]",
+      "source_text": "New Game",
+      "argos_draft": "New Game",
+      "reviewed_target": "Start Shift",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[19]",
+      "file_id": "System.json",
+      "locator": "terms.commands[19]",
+      "source_text": "Continue",
+      "argos_draft": "Continue",
+      "reviewed_target": "Resume Shift",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[11]",
+      "file_id": "System.json",
+      "locator": "terms.commands[11]",
+      "source_text": "Options",
+      "argos_draft": "Options",
+      "reviewed_target": "Game Settings",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.basic[1]",
+      "file_id": "System.json",
+      "locator": "terms.basic[1]",
+      "source_text": "Lv",
+      "argos_draft": "Lv",
+      "reviewed_target": "Rank",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.basic[2]",
+      "file_id": "System.json",
+      "locator": "terms.basic[2]",
+      "source_text": "HP",
+      "argos_draft": "HP",
+      "reviewed_target": "Vitality",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.basic[4]",
+      "file_id": "System.json",
+      "locator": "terms.basic[4]",
+      "source_text": "MP",
+      "argos_draft": "MP",
+      "reviewed_target": "Stamina",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map001.json::displayName",
+      "file_id": "Map001.json",
+      "locator": "displayName",
+      "source_text": "Warehouse",
+      "argos_draft": "Warehouse",
+      "reviewed_target": "Fulfillment Warehouse",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Actors.json::[1].name",
+      "file_id": "Actors.json",
+      "locator": "[1].name",
+      "source_text": "Player",
+      "argos_draft": "Player",
+      "reviewed_target": "Lead Specialist",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Actors.json::[2].name",
+      "file_id": "Actors.json",
+      "locator": "[2].name",
+      "source_text": "Hinata",
+      "argos_draft": "Hinata",
+      "reviewed_target": "Hinata (Associate)",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Actors.json::[3].name",
+      "file_id": "Actors.json",
+      "locator": "[3].name",
+      "source_text": "Kitagawa",
+      "argos_draft": "Kitagawa",
+      "reviewed_target": "Kitagawa (Associate)",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Actors.json::[6].name",
+      "file_id": "Actors.json",
+      "locator": "[6].name",
+      "source_text": "Takayama",
+      "argos_draft": "Takayama",
+      "reviewed_target": "Supervisor Takayama",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Skills.json::[1].name",
+      "file_id": "Skills.json",
+      "locator": "[1].name",
+      "source_text": "Attack",
+      "argos_draft": "Attack",
+      "reviewed_target": "Swift Strike",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Skills.json::[1].message1",
+      "file_id": "Skills.json",
+      "locator": "[1].message1",
+      "source_text": "%1 attacks!",
+      "argos_draft": "%1 attacks!",
+      "reviewed_target": "%1 delivers a swift strike!",
+      "tokens": [
+        "%1"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Skills.json::[2].name",
+      "file_id": "Skills.json",
+      "locator": "[2].name",
+      "source_text": "Guard",
+      "argos_draft": "Guard",
+      "reviewed_target": "Defensive Stance",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Skills.json::[2].message1",
+      "file_id": "Skills.json",
+      "locator": "[2].message1",
+      "source_text": "%1 guards.",
+      "argos_draft": "%1 guards.",
+      "reviewed_target": "%1 takes defensive stance.",
+      "tokens": [
+        "%1"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    }
+  ],
+  "screenshots": {
+    "scene_1_title_screen": {
+      "file": "gl_rpgm_pilot_4_title_screen.png",
+      "verified_elements": [
+        "Title Bar / Window: Playful Parcels",
+        "Title Command: Start Shift (terms.commands[18])",
+        "Title Command: Resume Shift (terms.commands[19])",
+        "Title Command: Game Settings (terms.commands[11])"
+      ]
+    },
+    "scene_2_load_screen": {
+      "file": "gl_rpgm_pilot_4_load_screen.png",
+      "verified_elements": [
+        "Header Prompt: Select a shift file to resume: (terms.messages.loadMessage)"
+      ]
+    },
+    "scene_3_map_banner": {
+      "file": "gl_rpgm_pilot_4_map_banner.png",
+      "verified_elements": [
+        "Arrival Banner: Fulfillment Warehouse (Map001.json displayName)"
+      ]
+    },
+    "scene_4_menu_status": {
+      "file": "gl_rpgm_pilot_4_menu_status.png",
+      "verified_elements": [
+        "Actor Name: Lead Specialist (Actors.json [1].name)",
+        "Stat Label: Rank (System.json terms.basic[1])",
+        "Stat Label: Vitality (System.json terms.basic[2])",
+        "Stat Label: Stamina (System.json terms.basic[4])"
+      ]
+    }
+  },
+  "rollback_verified": true,
+  "overall_status": "PASSED"
+}

@@ -34,18 +34,41 @@ def _apply_rpgmaker_locator(data: Any, locator: str, new_value: Any) -> None:
     try:
         while i < len(tokens):
             t = tokens[i]
-            if i == len(tokens) - 1 and t == "when":
-                curr["parameters"][1] = new_value
-                return
-            if i == len(tokens) - 2 and t == "choices":
-                curr["parameters"][0][tokens[i + 1]] = new_value
-                return
+            if isinstance(curr, dict) and "code" in curr:
+                if i == len(tokens) - 1:
+                    if t == "when" and curr.get("code") == 402:
+                        curr["parameters"][1] = new_value
+                        return
+                    if t == "speaker" and curr.get("code") == 101:
+                        while len(curr["parameters"]) <= 4:
+                            curr["parameters"].append("")
+                        curr["parameters"][4] = new_value
+                        return
+                    if t == "name" and curr.get("code") == 320:
+                        curr["parameters"][1] = new_value
+                        return
+                    if t == "nickname" and curr.get("code") == 324:
+                        curr["parameters"][1] = new_value
+                        return
+                    if t == "profile" and curr.get("code") == 325:
+                        curr["parameters"][1] = new_value
+                        return
+                    if t == "when":
+                        curr["parameters"][1] = new_value
+                        return
+                if i == len(tokens) - 2 and t == "choices" and curr.get("code") == 102:
+                    curr["parameters"][0][tokens[i + 1]] = new_value
+                    return
 
             parent = curr
             curr = curr[t]
 
             if i == len(tokens) - 1:
-                if isinstance(curr, dict) and "code" in curr and curr["code"] == 401:
+                if (
+                    isinstance(curr, dict)
+                    and "code" in curr
+                    and curr.get("code") in (401, 405)
+                ):
                     curr["parameters"][0] = new_value
                     return
                 parent[t] = new_value
@@ -199,7 +222,7 @@ def apply_plan(
         else:
             for fp, file_edits in edits_by_file.items():
                 target_file = source_root_resolved / fp
-                with open(target_file, "r", encoding="utf-8") as f:
+                with open(target_file, "r", encoding="utf-8-sig") as f:
                     data = json.load(f)
 
                 already_applied = True
@@ -336,7 +359,14 @@ def apply_plan(
         else:
             for fp, file_edits in edits_by_file.items():
                 target_file = source_root_resolved / fp
-                with open(target_file, "r", encoding="utf-8") as f:
+                has_bom = False
+                try:
+                    with open(target_file, "rb") as f_raw:
+                        has_bom = f_raw.read(3) == b"\xef\xbb\xbf"
+                except Exception:
+                    has_bom = False
+
+                with open(target_file, "r", encoding="utf-8-sig") as f:
                     data = json.load(f)
 
                 all_applied = True
@@ -369,17 +399,22 @@ def apply_plan(
                 tmp_file = Path(tmp_path_str)
                 staged_files[fp] = tmp_file
 
-                with open(tmp_file, "w", encoding="utf-8") as f:
+                write_encoding = "utf-8-sig" if has_bom else "utf-8"
+                with open(tmp_file, "w", encoding=write_encoding) as f:
                     json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
 
                 # Verify staged
-                with open(tmp_file, "r", encoding="utf-8") as f:
+                with open(tmp_file, "r", encoding="utf-8-sig") as f:
                     staged_data = json.load(f)
 
                 for edit in file_edits:
-                    assert _resolve_rpgmaker_locator(
-                        staged_data, edit.get("locator")
-                    ) == edit.get("translated_text")
+                    loc = edit.get("locator")
+                    expected_tl = edit.get("translated_text")
+                    resolved_tl = _resolve_rpgmaker_locator(staged_data, loc)
+                    if resolved_tl != expected_tl:
+                        raise ValueError(
+                            f"Staging verification mismatch for {fp}::{loc}: expected {expected_tl!r}, found {resolved_tl!r}"
+                        )
 
         if report["status"] == "failed":
             return report
@@ -427,7 +462,7 @@ def apply_plan(
                                         f"Post-write verification failed: {orig} not found in {fp}"
                                     )
                     else:
-                        with open(target_file, "r", encoding="utf-8") as f:
+                        with open(target_file, "r", encoding="utf-8-sig") as f:
                             data = json.load(f)
                         for edit in edits_by_file[fp]:
                             if _resolve_rpgmaker_locator(

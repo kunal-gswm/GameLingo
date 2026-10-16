@@ -99,3 +99,88 @@ All verified distributable Windows x64 package builds (`dist\GameLingo-Windows-x
 - **Artifact:** `GameLingo-Windows-x64.zip` (273,275,586 bytes, SHA-256 `2E0B40CFFFCD7774FE55BA2F5473AF21E202C762290F168B33A7CD841955957C`)
 - **Quality Gate:** 130 passed, 0 skipped.
 - **Known Limitation:** Official Ren'Py SDK is not installed in the Windows test environment; in-engine runtime rendering remains explicitly unverified. See [`docs/releases/GL_033_RenPy_Support_Report.md`](../releases/GL_033_RenPy_Support_Report.md) for full report.
+
+### GL-RPGM: RPG Maker MV/MZ Reliability, Adversarial Audit, and UTF-8 BOM Hardening
+- **Summary:** Complete overhaul of RPG Maker MV/MZ engine detection, schema-aware extraction, extended token protection, UTF-8 BOM preservation, and atomic patch safety.
+- **Key Deliverables:**
+  - Audited and corrected detection: stopped using `versionId` save counter; implemented structural inspection of engine runtime scripts (`rmmz_core.js` vs `rpg_core.js`); removed unauthoritative `Effects.json` heuristic; handled contradictory runtime JS as ambiguous family (`0.70`).
+  - Expanded schema-aware text extraction across System terms/messages, 1-indexed database arrays (`Actors`, `Classes`, `Skills`, `Items`, `Weapons`, `Armors`, `Enemies`, `States`, `Troops` battle pages), and event commands (MZ Code 101 speaker names, 401 text, 102 choices, 402 choice branches, 405 scrolling text, 320/324/325 actor names/nicknames/profiles).
+  - Implemented RPG Maker-specific escape token protection (`\V[n]`, `\N[n]`, `\P[n]`, `\G`, `\C[n]`, `\I[n]`, `\{`, `\}`, `\FS[n]`, `\PX[n]`, `\PY[n]`, `\OC[n]`, `\OW[n]`, plugin codes `\NC[n]`, `\D[n]`, `\fn<Arial>`, control codes, format placeholders `%1`..`%9`, literal `\\`) and populated authoritative `tokens_json`.
+  - Enforced Critical Boundary Rule: square brackets `[...]` are ordinary text in RPG Maker unless preceded by escape sequence; eliminated false-positive `UNSAFE_INTERPOLATION` errors.
+  - End-to-end UTF-8 BOM preservation across detection, extraction, plan creation, dry-run, staging, atomic replacement, and rollback.
+  - Validated atomic multi-edit JSON staging, stale source detection, fault-injection replacement failure recovery, and byte-for-byte backup restoration across synthetic MV and MZ fixtures.
+- **Reports:** [`docs/releases/GL_RPGM_Report.md`](../releases/GL_RPGM_Report.md), [`docs/releases/GL_RPGM_Audit.md`](../releases/GL_RPGM_Audit.md), and [`docs/releases/GL_RPGM_Final_Verification.md`](../releases/GL_RPGM_Final_Verification.md).
+- **Quality Gate:** 371 passed, 0 skipped.
+
+### GL-RPGM-PILOT: Controlled Real-Game Acceptance
+- **Summary:** Controlled real-game acceptance validation of RPG Maker MV localization on genuine commercial title *Do Disciplinary Committee Members Dream of Succubi* (v1.04, RPG Maker MV v1.6.1 NW.js desktop layout).
+- **Key Deliverables:**
+  - Preserved original game fixture strictly read-only; executed all operations in disposable directory under `gamelingo.safety.disposable` (`E:\gamelingo_rpgm_pilot\run_20261016_003918_6db4980c`).
+  - Hashed 556 critical files (`www/data/*.json` + `Game.exe`) into baseline SHA-256 manifest; verified 100% byte-for-byte copy integrity.
+  - Schema-aware extraction audit: extracted 66,405 units across 342 unique files in 2.35s (28,299.7 units/sec) with 0 warnings.
+  - Stratified 100-sample locator audit: 100 out of 100 units (dialogue, choices, database names/descriptions, system terms, escape codes) resolved to exact JSON path and matching text (100.0% exact match).
+  - Machine translation & safety validation: translated 24 representative units with local Argos NMT (`ja -> en`); 0 errors, 4 warnings, 24 approved.
+  - Patch planning, dry-run (preview status, 0 files modified), atomic apply (backup `fa644a75-d6da-4fa9-80ee-d677e707f928`, valid JSON across all 5 target files), and rollback verification (100.0% byte-for-byte exact SHA-256 restoration against baseline).
+  - Native runtime acceptance: launched `Game.exe` (PID 20588), confirmed healthy NW.js process, detected window HWND 395170 with localized title from `System.json`, captured window frame via Win32 `PrintWindow` (`gl_rpgm_pilot_runtime_window.png`, 11,192 bytes, SHA-256 `39bc5ef4...`).
+### GL-RPGM-PILOT-2: Interactive Runtime Acceptance Verification
+- **Summary:** Complete real-game interactive runtime acceptance verification for RPG Maker MV localization on genuine commercial title *Do Disciplinary Committee Members Dream of Succubi* (v1.04, RPG Maker MV v1.6.1 NW.js).
+- **Key Deliverables:**
+  - Diagnosed initial black frame from GL-RPGM-PILOT: cold-boot NW.js splash plugin (`splash.js`) displays 3 fullscreen logos (~12.5 seconds total fade/wait), which caused early 4s captures to catch the initial fade-in; .NET `CopyFromScreen` fails in background console sessions and was replaced by Win32 `PrintWindow(hwnd, hdc_mem, PW_RENDERFULLCONTENT=2)`.
+  - Selected and reviewed 11 high-confidence units across `System.json`, `Actors.json`, `Map122.json`, and `Map123.json` with intact escape codes (`\I[2324]`, `\I[2775]`, `\I[2776]`, `\I[2777]`), 0 validation errors, and approved status.
+  - Planned patch, verified dry-run safety (0 filesystem mutations detected), executed patch (backup `4bd45670-37f4-4a73-bb54-808837df6550`), and verified valid JSON syntax and 100% locator replacement on disk.
+  - Native runtime automated navigation: skipped 3 splash logos via keystroke automation, navigated save state into Map 118 corridor, opened main menu and items sub-menu, and transitioned into 2F Girls' Restroom.
+  - Visually verified and captured 4 distinct in-game scenes:
+    1. Load Screen (`gl_rpgm_pilot_2_load_screen.png`): `Select Save File to Load [GameLingo]`.
+    2. In-Game Main Menu (`gl_rpgm_pilot_2_main_menu.png`): `Iroha Himeno [TL]`.
+    3. Items Sub-Menu (`gl_rpgm_pilot_2_items_menu.png`): `\I[2324]Items [TL]`, `\I[2775]Weaponry`, `\I[2776]Protective Gear`, `\I[2777]Special Items` with all graphical icons rendered intact.
+    4. Location Banner (`gl_rpgm_pilot_2_bathroom_banner.png`): `2F Girls' Restroom [TL]` animated banner.
+  - Rollback verification: restored all affected files via `execute_restore`; verified 100.0% byte-for-byte SHA-256 match against baseline for `System.json`, `Actors.json`, `Map122.json`, and `Map123.json`.
+  - Status: **PASSED** (all interactive runtime acceptance gates achieved).
+- **Report:** [`docs/releases/GL_RPGM_Pilot_2_Report.md`](../releases/GL_RPGM_Pilot_2_Report.md)
+- **Evidence:** `evidence/gl_rpgm_pilot/gl_rpgm_pilot_2_evidence.json`, `gl_rpgm_pilot_2_log.txt`, `gl_rpgm_pilot_2_load_screen.png`, `gl_rpgm_pilot_2_main_menu.png`, `gl_rpgm_pilot_2_items_menu.png`, `gl_rpgm_pilot_2_bathroom_banner.png`.
+- **Harness:** `scripts/gl_rpgm_pilot_2_interactive.py`
+- **Quality Gate:** 371 passed, 0 skipped.
+
+### GL-RPGM-PILOT-3: Japanese-to-English Interactive Gameplay Acceptance
+- **Summary:** Full real-game gameplay acceptance verification proving genuine Japanese-to-English dialogue translation, interactive choice navigation, and branch resolution execution on commercial title *Do Disciplinary Committee Members Dream of Succubi* (v1.04, RPG Maker MV v1.6.1 NW.js).
+- **Key Deliverables:**
+  - Qualified candidate game in dedicated disposable directory (`E:\gamelingo_rpgm_pilot\run_20261016_003918_6db4980c\game`) protected by fail-closed ownership marker (`.gl_pilot_owned.json`).
+  - Selected 18 genuine Japanese units across `CommonEvents.json`, `Skills.json`, and `Actors.json`: event dialogue lines, multi-choice prompt options, branch conditions, and combat skill descriptions containing inline escape codes (`\}`, `\C[16]`, `\C[0]`).
+  - Produced natural, human-reviewed English translations without artificial diagnostic markers (`[TL]`); verified 100% token safety with 0 validation errors and 0 warnings.
+  - Planned patch, verified dry-run safety (status `preview`, 0 filesystem mutations detected), executed atomic live patch (backup `2bf2fcb9-d3b0-4cef-a88f-a7feffae575e`), and confirmed valid JSON syntax and 18/18 locator resolution on disk.
+  - Native runtime interactive gameplay verification: launched `Game.exe`, automated navigation into Map 118, accessed key items inventory, and activated Item 111 calling Common Event 452.
+  - Visually captured 3 distinct gameplay scenes:
+    1. Dialogue Scene 1 (`gl_rpgm_pilot_3_dialogue_1.png`): Rendered English dialogue sequence (`\>Did the screen fade-in complete?`) with choice prompt (`Yes` / `No`).
+    2. Dialogue Scene 2 & Choices (`gl_rpgm_pilot_3_dialogue_2_choices.png`): Rendered troubleshooting dialogue and choice menu (`1`, `10`, `98`, `99`).
+    3. Branch Resolution Execution (`gl_rpgm_pilot_3_branch_resolution.png`): Execution of branch condition 4 (`Select here if resolved`), rendering follow-up dialogue in fluent English (`\>Please report: 'Forgot to clear picture [Number].'`, `\>\}e.g. Forgot picture 1, forgot picture 99`).
+  - Rollback verification: restored all affected files via `execute_restore`; verified 100.0% byte-for-byte SHA-256 match against baseline for `CommonEvents.json`, `Skills.json`, and `Actors.json`.
+  - Status: **PASSED** (all Japanese-to-English gameplay acceptance gates achieved).
+- **Report:** [`docs/releases/GL_RPGM_Pilot_3_Report.md`](../releases/GL_RPGM_Pilot_3_Report.md)
+- **Evidence:** `evidence/gl_rpgm_pilot/gl_rpgm_pilot_3_evidence.json`, `gl_rpgm_pilot_3_log.txt`, `gl_rpgm_pilot_3_dialogue_1.png`, `gl_rpgm_pilot_3_dialogue_2_choices.png`, `gl_rpgm_pilot_3_branch_resolution.png`.
+- **Harness:** `scripts/gl_rpgm_pilot_3_gameplay.py`
+- **Quality Gate:** 371 passed, 0 skipped.
+
+### GL-RPGM-PILOT-4: Independent RPG Maker MZ Acceptance
+- **Summary:** Independent real-game localization acceptance verification on authentic commercial RPG Maker MZ title *Playful Parcels* (v1.8.0 core runtime, NW.js), validating engine-specific schema, speaker extraction, dry-run safety, live atomic patching, runtime rendering, and exact rollback.
+- **Key Deliverables:**
+  - Qualified candidate game in dedicated disposable directory (`E:\gamelingo_rpgm_pilot\run_20261016_120957_213b8e2d\game`) protected by fail-closed ownership marker (`.gl_pilot_owned.json`). Original fixture at `D:\New folder\Playful Parcels` was completely protected and untouched.
+  - Verified RPG Maker MZ architecture distinctions: root `data/` directory layout (34 JSON files), `effects/` 3D particle assets, `.rmmzsave` binary strings via `pako.deflate`, and core script `js/rmmz_core.js`.
+  - Extracted 8,223 units across 28 files in 0.32s (25,525.9 units/s) with 0 warnings, including 2,768 MZ-specific Command 101 speaker parameters.
+  - Stratified 60-unit locator verification against `_resolve_rpgmaker_locator` yielded 60/60 exact matches (100.0%).
+  - Selected and reviewed 17 representative units across `System.json`, `Map001.json`, `Actors.json`, and `Skills.json`, validating `%1` placeholder preservation with 0 errors and 0 warnings.
+  - Planned patch, verified dry-run safety (status `preview`, 0 filesystem mutations detected), executed live atomic patch (backup `2128261b-1e8d-4cc5-8477-4dc40244cfd9`), and confirmed valid JSON syntax and 17/17 locator resolution on disk.
+  - Native runtime interactive gameplay verification: launched `Game.exe` (PID 26220), navigated through title screen, load screen, map transition, and character menu, visually capturing 4 distinct in-game scenes:
+    1. Title Screen (`gl_rpgm_pilot_4_title_screen.png`): localized title `Playful Parcels [MZ-TL]` and commands `Start Shift` / `Resume Shift`.
+    2. Load Screen (`gl_rpgm_pilot_4_load_screen.png`): localized header prompt `Select a shift file to resume:`.
+    3. Map Arrival Banner (`gl_rpgm_pilot_4_map_banner.png`): localized warehouse banner `Fulfillment Warehouse`.
+    4. In-Game Menu (`gl_rpgm_pilot_4_menu_status.png`): localized character stat label `Rank 1` replacing `Lv 1`.
+  - Rollback verification: restored all affected files via `execute_restore`; verified 100.0% byte-for-byte SHA-256 match against baseline for `System.json`, `Map001.json`, `Actors.json`, and `Skills.json`.
+  - Status: **PASSED** (independent RPG Maker MZ acceptance gates achieved).
+- **Report:** [`docs/releases/GL_RPGM_Pilot_4_Report.md`](../releases/GL_RPGM_Pilot_4_Report.md)
+- **Evidence:** `evidence/gl_rpgm_pilot/gl_rpgm_pilot_4_evidence.json`, `gl_rpgm_pilot_4_log.txt`, `gl_rpgm_pilot_4_title_screen.png`, `gl_rpgm_pilot_4_load_screen.png`, `gl_rpgm_pilot_4_map_banner.png`, `gl_rpgm_pilot_4_menu_status.png`.
+- **Harness:** `scripts/gl_rpgm_pilot_4_mz.py`
+- **Quality Gate:** 371 passed, 0 skipped.
+
+
+
+

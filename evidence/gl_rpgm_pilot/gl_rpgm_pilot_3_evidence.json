@@ -1,0 +1,314 @@
+{
+  "milestone": "GL-RPGM-PILOT-3",
+  "timestamp": "2026-10-16T11:34:24Z",
+  "disposable_game": "E:\\gamelingo_rpgm_pilot\\run_20261016_003918_6db4980c\\game",
+  "steps": {
+    "safety": {
+      "run_id": "run_20261016_003918_6db4980c",
+      "ownership_marker_valid": true,
+      "disposable_path": "E:\\gamelingo_rpgm_pilot\\run_20261016_003918_6db4980c"
+    },
+    "baseline_hashes": {
+      "CommonEvents.json": "b6a35b141c50ac7db419e17442586d623b5710ca85d78717101032f7561e60ee",
+      "Skills.json": "3c2c7b7ddecc6f2301f4e7ffe1e7e3787fa04250b4525a38e4d2d05899fd317b",
+      "Actors.json": "7ef6fcf5ae44ed827d34f358fc60f8045308b70a142b5d522ee3c3abd753ddb5"
+    },
+    "dry_run": {
+      "status": "preview",
+      "errors": [],
+      "mutations_detected": false
+    },
+    "apply": {
+      "status": "success",
+      "backup_id": "2bf2fcb9-d3b0-4cef-a88f-a7feffae575e",
+      "files_modified": [
+        "www/data/CommonEvents.json",
+        "www/data/Skills.json",
+        "www/data/Actors.json"
+      ]
+    }
+  },
+  "units": [
+    {
+      "unit_id": "CommonEvents.json::[452].list[650]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[650]",
+      "source_text": "\\>フェードインが完了しましたか？",
+      "argos_draft": "Is \\> fade in complete?",
+      "reviewed_target": "\\>Did the screen fade-in complete?",
+      "tokens": [
+        "\\>"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[654]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[654]",
+      "source_text": "\\>『フェードイン処理のし忘れ』とご報告ください。",
+      "argos_draft": "\\>",
+      "reviewed_target": "\\>Please report: 'Forgot fade-in processing.'",
+      "tokens": [
+        "\\>"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[658]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[658]",
+      "source_text": "\\>黒い画像ピクチャの消去のし忘れの可能性があります。",
+      "argos_draft": "\\> Black Image Picture Picture Erase Could Be Forgotten",
+      "reviewed_target": "\\>The black picture image may not have been cleared.",
+      "tokens": [
+        "\\>"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[660]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[660]",
+      "source_text": "\\>次の数字を選んで、暗転が解除された番号を報告してください。",
+      "argos_draft": "\\>Please select the following numbers and report the number that has been uninterrupted.",
+      "reviewed_target": "\\>Select the next number and report which number cleared the blackout.",
+      "tokens": [
+        "\\>"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[662].choices[4]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[662].choices[4]",
+      "source_text": "解除された場合はこちら",
+      "argos_draft": "Click here to cancel",
+      "reviewed_target": "Select here if resolved",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[662].choices[5]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[662].choices[5]",
+      "source_text": "解除されなかった場合はこちら",
+      "argos_draft": "If it is not canceled, click here",
+      "reviewed_target": "Select here if unresolved",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[679].when",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[679].when",
+      "source_text": "解除された場合はこちら",
+      "argos_draft": "Click here to cancel",
+      "reviewed_target": "Select here if resolved",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[681]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[681]",
+      "source_text": "\\>『ピクチャ[番号]の消去し忘れ』とご報告ください。",
+      "argos_draft": "Please report that \\> \"Don't forget to delete the number\"",
+      "reviewed_target": "\\>Please report: 'Forgot to clear picture [Number].'",
+      "tokens": [
+        "\\>"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[682]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[682]",
+      "source_text": "\\>\\}例）ピクチャ1の消し忘れ　ピクチャ99の消し忘れ",
+      "argos_draft": "\\>\\}Example)Forgot to cancel Picture 1Forgot to cancel Picture 99",
+      "reviewed_target": "\\>\\}e.g. Forgot picture 1, forgot picture 99",
+      "tokens": [
+        "\\>",
+        "\\}"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[684].when",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[684].when",
+      "source_text": "解除されなかった場合はこちら",
+      "argos_draft": "If it is not canceled, click here",
+      "reviewed_target": "Select here if unresolved",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[686]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[686]",
+      "source_text": "\\>フェードインアイテムを使っても直らなかった旨をご報告ください。",
+      "argos_draft": "Please report that the \\> fade in item was not correct.",
+      "reviewed_target": "\\>Please report that using the fade-in item did not resolve the issue.",
+      "tokens": [
+        "\\>"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[687]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[687]",
+      "source_text": "\\>（可能ならセーブデータを送って頂けると助かります）",
+      "argos_draft": "\\>",
+      "reviewed_target": "\\>(If possible, providing your save data would be very helpful.)",
+      "tokens": [
+        "\\>"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[702]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[702]",
+      "source_text": "\\>透明化状態が解除されました。",
+      "argos_draft": "\\>",
+      "reviewed_target": "\\>Invisibility state has been cleared.",
+      "tokens": [
+        "\\>"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "CommonEvents.json::[452].list[713]",
+      "file_id": "CommonEvents.json",
+      "locator": "[452].list[713]",
+      "source_text": "\\>すり抜け状態が解除されました。",
+      "argos_draft": "\\> has been released.",
+      "reviewed_target": "\\>Through state has been cleared.",
+      "tokens": [
+        "\\>"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Skills.json::[695].description",
+      "file_id": "Skills.json",
+      "locator": "[695].description",
+      "source_text": "視界が制限され、敵に攻撃を当てにくい状態。\n\\}\\C[16]«効果»\\C[0][命中率-60%]",
+      "argos_draft": "A state where visibility is視 and it is difficult to attack the enemy.\n\\}\\C[16] «Ef]» \\C[0] [Life Rate -60%]",
+      "reviewed_target": "Vision is restricted, making it difficult to hit enemies.\n\\}\\C[16]«Effect»\\C[0] [Hit Rate -60%]",
+      "tokens": [
+        "\\}",
+        "\\C[16]",
+        "\\C[0]"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Skills.json::[698].description",
+      "file_id": "Skills.json",
+      "locator": "[698].description",
+      "source_text": "爆音スピーカーによって行動不能になっている状態。\n\\}\\C[16]«効果»\\C[0][行動不能]",
+      "argos_draft": "A state that is unbehaviorable by a音 speaker.\n\\}\\C[16] «Ef]ive» \\C[0] [Unbehaviorable]",
+      "reviewed_target": "Incapacitated by the blast of high-volume speakers.\n\\}\\C[16]«Effect»\\C[0] [Incapacitated]",
+      "tokens": [
+        "\\}",
+        "\\C[16]",
+        "\\C[0]"
+      ],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Actors.json::[286].nickname",
+      "file_id": "Actors.json",
+      "locator": "[286].nickname",
+      "source_text": "上書き注意",
+      "argos_draft": "Overwrite Note",
+      "reviewed_target": "Caution: Do Not Overwrite",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Actors.json::[287].name",
+      "file_id": "Actors.json",
+      "locator": "[287].name",
+      "source_text": "▲消さないように",
+      "argos_draft": "▲Do notさ",
+      "reviewed_target": "▲ Do Not Delete",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    }
+  ],
+  "screenshots": {
+    "scene_1_dialogue_1": {
+      "file": "gl_rpgm_pilot_3_dialogue_1.png",
+      "verified_strings": [
+        "\\>Did the screen fade-in complete?"
+      ],
+      "verified_choices": [
+        "Yes",
+        "No"
+      ]
+    },
+    "scene_2_dialogue_2_choices": {
+      "file": "gl_rpgm_pilot_3_dialogue_2_choices.png",
+      "verified_strings": [
+        "\\>The black picture image may not have been cleared.",
+        "\\>Select the next number and report which number cleared the blackout."
+      ],
+      "verified_choices": [
+        "1",
+        "10",
+        "98",
+        "99",
+        "Select here if resolved",
+        "Select here if unresolved"
+      ]
+    },
+    "scene_3_branch_resolution": {
+      "file": "gl_rpgm_pilot_3_branch_resolution.png",
+      "verified_strings": [
+        "\\>Please report: 'Forgot to clear picture [Number].'",
+        "\\>\\}e.g. Forgot picture 1, forgot picture 99"
+      ]
+    }
+  },
+  "rollback_verified": true,
+  "overall_status": "PASSED"
+}

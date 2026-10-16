@@ -33,15 +33,29 @@ def _resolve_rpgmaker_locator(data: Any, locator: str) -> Any:
     try:
         while i < len(tokens):
             t = tokens[i]
-            if i == len(tokens) - 1 and t == "when":
-                return curr["parameters"][1]
-            if i == len(tokens) - 2 and t == "choices":
-                return curr["parameters"][0][tokens[i + 1]]
+            if isinstance(curr, dict) and "code" in curr:
+                if i == len(tokens) - 1:
+                    if t == "when" and curr.get("code") == 402:
+                        return curr["parameters"][1]
+                    if t == "speaker" and curr.get("code") == 101:
+                        if len(curr.get("parameters", [])) > 4:
+                            return curr["parameters"][4]
+                        return ""
+                    if t == "name" and curr.get("code") == 320:
+                        return curr["parameters"][1]
+                    if t == "nickname" and curr.get("code") == 324:
+                        return curr["parameters"][1]
+                    if t == "profile" and curr.get("code") == 325:
+                        return curr["parameters"][1]
+                    if t == "when":
+                        return curr["parameters"][1]
+                if i == len(tokens) - 2 and t == "choices" and curr.get("code") == 102:
+                    return curr["parameters"][0][tokens[i + 1]]
 
             curr = curr[t]
 
             if i == len(tokens) - 1 and isinstance(curr, dict) and "code" in curr:
-                if curr["code"] == 401:
+                if curr.get("code") in (401, 405):
                     return curr["parameters"][0]
             i += 1
         return curr
@@ -116,6 +130,14 @@ def create_plan(
             if file_path_map
             else unit.file_id
         )
+        if not is_renpy:
+            # Auto-resolve RPG Maker relative path early so edits carry accurate paths
+            if not (source_root_resolved / rel_path).exists():
+                for candidate in [f"data/{unit.file_id}", f"www/data/{unit.file_id}"]:
+                    if (source_root_resolved / candidate).exists():
+                        rel_path = candidate
+                        break
+
         record = record_map.get(unit.id)
         if not record:
             plan["edits"].append(
@@ -158,8 +180,21 @@ def create_plan(
             )
             continue
 
+        # Parse expected tokens from unit.tokens_json if available
+        expected_tokens = None
+        if not is_renpy and unit.tokens_json:
+            try:
+                expected_tokens = json.loads(unit.tokens_json)
+            except (json.JSONDecodeError, TypeError):
+                expected_tokens = None
+
         # Strict acceptance gate: reject translations with safety or placeholder/tag errors
-        val_issues = validate_translation(unit.source_text, translated_text)
+        val_issues = validate_translation(
+            unit.source_text,
+            translated_text,
+            adapter_id=plan.get("adapter_id"),
+            expected_tokens=expected_tokens,
+        )
         error_issues = [issue for issue in val_issues if issue.severity == "error"]
         if error_issues:
             plan["edits"].append(
@@ -270,6 +305,13 @@ def create_plan(
 
         # RPG Maker JSON handling
         target_file = source_root_resolved / rel_path
+        if not target_file.exists():
+            for candidate in [f"data/{unit.file_id}", f"www/data/{unit.file_id}"]:
+                if (source_root_resolved / candidate).exists():
+                    rel_path = candidate
+                    target_file = source_root_resolved / rel_path
+                    break
+
         if not is_safe_path(source_root_resolved, target_file):
             plan["edits"].append(
                 {
@@ -296,7 +338,7 @@ def create_plan(
 
         if unit.file_id not in file_cache:
             try:
-                with open(target_file, "r", encoding="utf-8") as f:
+                with open(target_file, "r", encoding="utf-8-sig") as f:
                     file_cache[unit.file_id] = json.load(f)
                 hash_cache[unit.file_id] = calculate_sha256(target_file)
             except Exception:
@@ -456,7 +498,9 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
             orig = edit.get("original_text")
             trans = edit.get("translated_text")
             if orig is not None and trans is not None:
-                val_issues = validate_translation(orig, trans)
+                val_issues = validate_translation(
+                    orig, trans, adapter_id=plan.get("adapter_id")
+                )
                 error_issues = [iss for iss in val_issues if iss.severity == "error"]
                 if error_issues:
                     err_msg = "; ".join(
@@ -510,7 +554,7 @@ def validate_plan(source_root: Path, plan: Dict[str, Any]) -> bool:
             raise PlanValidationError(f"Source file not found: {file_path}")
 
         try:
-            with open(target_file, "r", encoding="utf-8") as f:
+            with open(target_file, "r", encoding="utf-8-sig") as f:
                 file_data = json.load(f)
             current_val = _resolve_rpgmaker_locator(file_data, locator)
         except Exception:

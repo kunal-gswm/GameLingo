@@ -15,9 +15,12 @@ class ReviewService:
     ) -> List[Dict[str, Any]]:
         """Returns translation units with their latest record, filtered by status."""
         query = """
-            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.status, 
+            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.tokens_json, u.status, 
+                   p.adapter_id,
                    r.final_text as translated_text, r.quality_flags
             FROM translation_units u
+            LEFT JOIN game_files gf ON gf.id = u.file_id
+            LEFT JOIN projects p ON p.id = gf.project_id
             LEFT JOIN translation_records r ON r.unit_id = u.id
         """
         conditions = []
@@ -44,9 +47,12 @@ class ReviewService:
     def get_unit(self, unit_id: str) -> Optional[Dict[str, Any]]:
         conn = self.db.connect()
         query = """
-            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.status, u.source_hash,
+            SELECT u.id, u.file_id, u.locator, u.source_text, u.context, u.tokens_json, u.status, u.source_hash,
+                   p.adapter_id,
                    r.draft_text, r.final_text as translated_text, r.quality_flags, r.provider, r.model
             FROM translation_units u
+            LEFT JOIN game_files gf ON gf.id = u.file_id
+            LEFT JOIN projects p ON p.id = gf.project_id
             LEFT JOIN translation_records r ON r.unit_id = u.id
             WHERE u.id = ?
         """
@@ -60,7 +66,19 @@ class ReviewService:
         if not unit:
             raise ValueError(f"Unit {unit_id} not found")
 
-        issues = validate_translation(unit["source_text"], new_text)
+        expected_tokens = None
+        if unit.get("adapter_id") == "rpgmaker_mv_mz" and unit.get("tokens_json"):
+            try:
+                expected_tokens = json.loads(unit["tokens_json"])
+            except (json.JSONDecodeError, TypeError):
+                expected_tokens = None
+
+        issues = validate_translation(
+            unit["source_text"],
+            new_text,
+            adapter_id=unit.get("adapter_id"),
+            expected_tokens=expected_tokens,
+        )
         has_errors = any(i.severity == "error" for i in issues)
         new_status = "needs_review" if (issues and not has_errors) else "draft"
         if has_errors:
@@ -117,7 +135,19 @@ class ReviewService:
             raise ValueError(f"Unit {unit_id} not found")
 
         text = unit.get("translated_text") or ""
-        issues = validate_translation(unit["source_text"], text)
+        expected_tokens = None
+        if unit.get("adapter_id") == "rpgmaker_mv_mz" and unit.get("tokens_json"):
+            try:
+                expected_tokens = json.loads(unit["tokens_json"])
+            except (json.JSONDecodeError, TypeError):
+                expected_tokens = None
+
+        issues = validate_translation(
+            unit["source_text"],
+            text,
+            adapter_id=unit.get("adapter_id"),
+            expected_tokens=expected_tokens,
+        )
         if any(i.severity == "error" for i in issues):
             raise ValueError(f"Cannot approve unit {unit_id}: has blocking errors.")
 
@@ -146,7 +176,20 @@ class ReviewService:
             if not text:
                 skipped_count += 1
                 continue
-            issues = validate_translation(u["source_text"], text)
+
+            expected_tokens = None
+            if u.get("adapter_id") == "rpgmaker_mv_mz" and u.get("tokens_json"):
+                try:
+                    expected_tokens = json.loads(u["tokens_json"])
+                except (json.JSONDecodeError, TypeError):
+                    expected_tokens = None
+
+            issues = validate_translation(
+                u["source_text"],
+                text,
+                adapter_id=u.get("adapter_id"),
+                expected_tokens=expected_tokens,
+            )
             if any(i.severity == "error" for i in issues):
                 skipped_count += 1
                 continue
