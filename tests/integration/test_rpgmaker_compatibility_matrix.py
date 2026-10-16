@@ -13,7 +13,10 @@ import pytest
 
 from scripts.evaluate_rpgmaker_compatibility import (
     RPGMakerCompatibilityEvaluator,
+    collect_json_diffs,
     generate_markdown_report,
+    resolve_rpgmaker_leaf_path,
+    verify_allowlisted_json_diff,
 )
 
 
@@ -213,13 +216,20 @@ def test_evaluator_synthetic_mz_project(synthetic_mz_project: Path):
     assert stages["token_integrity"]["status"] == "PASS"
     assert stages["token_integrity"]["units_with_tokens"] >= 2
     assert stages["token_integrity"]["all_detected_forms_rejected_on_drop"] is True
+    assert len(stages["token_integrity"]["token_prefix_families_detected"]) > 0
+    assert len(stages["token_integrity"]["token_variants_tested"]) > 0
 
     # Stage 7: Conditional Structures & Branch Patch Validation
     assert stages["conditional_structures"]["status"] == "PASS"
     assert stages["conditional_structures"]["code_111_if_count"] == 1
+    assert stages["conditional_structures"]["qualifying_branch_command_nodes"] > 0
     assert stages["conditional_structures"]["units_inside_branches_counted"] > 0
     # Number patched must be recorded separately and > 0
     assert stages["conditional_structures"]["units_inside_branches_patched"] > 0
+    assert stages["conditional_structures"]["allowlisted_diff_verified"] is True
+    assert (
+        stages["conditional_structures"]["target_locator_post_values_verified"] is True
+    )
     assert stages["conditional_structures"]["conditional_parameters_immutable"] is True
     assert stages["conditional_structures"]["branch_markers_immutable"] is True
     assert stages["conditional_structures"]["command_ordering_immutable"] is True
@@ -352,9 +362,95 @@ def test_sanitized_paths_and_report_generation(
     assert "C:\\Users" not in content
 
     # Check required headings and metrics
-    assert "# GL-RPGM-009A: RPG Maker MV/MZ Real-Game Compatibility Matrix" in content
+    assert "# GL-RPGM-009A.2: RPG Maker MV/MZ Real-Game Compatibility Matrix" in content
     assert "test_commit_sha" in content
     assert "Demo Quest" in content
     assert "100.0%" in content
-    assert "Units Counted in Branches" in content
-    assert "Units Patched in Validation" in content
+    assert "Qualifying Branch Command Nodes" in content
+    assert "Representative Units Patched" in content
+    assert "Allowlisted Diff" in content
+    assert "Standard Schema Extraction & Patch" in content
+
+
+def test_allowlisted_json_diff_verifier():
+    """Focused regression test for allowlisted JSON diff checking and unallowlisted mutation rejection."""
+    import copy
+
+    # Base RPG Maker map structure with conditional branch
+    pre_data = {
+        "events": [
+            None,
+            {
+                "id": 1,
+                "name": "GuardEvent",
+                "pages": [
+                    {
+                        "list": [
+                            {"code": 111, "indent": 0, "parameters": [0, 10, 0]},
+                            {"code": 401, "indent": 1, "parameters": ["Original Text"]},
+                            {"code": 412, "indent": 0, "parameters": []},
+                            {"code": 0, "indent": 0, "parameters": []},
+                        ]
+                    }
+                ],
+            },
+        ]
+    }
+
+    # 1. Valid targeted edit: only target path modified
+    post_data = copy.deepcopy(pre_data)
+    target_path = ("events", 1, "pages", 0, "list", 1, "parameters", 0)
+    post_data["events"][1]["pages"][0]["list"][1]["parameters"][0] = "Translated Text"
+
+    # Verify leaf path resolution matches
+    resolved_leaf = resolve_rpgmaker_leaf_path(pre_data, "events[1].pages[0].list[1]")
+    assert resolved_leaf == target_path
+
+    # Verify raw recursive diff collection
+    raw_diffs = collect_json_diffs(pre_data, post_data)
+    assert len(raw_diffs) == 1
+    assert raw_diffs[0][0] == target_path
+    assert raw_diffs[0][1] == "Original Text"
+    assert raw_diffs[0][2] == "Translated Text"
+
+    ok, violations = verify_allowlisted_json_diff(
+        pre_data, post_data, {target_path: "Translated Text"}
+    )
+    assert ok is True
+    assert violations == []
+
+    # 2. Injected unallowlisted mutation: conditional branch parameter modified
+    mutated_data = copy.deepcopy(post_data)
+    mutated_data["events"][1]["pages"][0]["list"][0]["parameters"][1] = (
+        999  # Changed switch ID
+    )
+    ok_mut, violations_mut = verify_allowlisted_json_diff(
+        pre_data, mutated_data, {target_path: "Translated Text"}
+    )
+    assert ok_mut is False
+    assert any(
+        "Unallowlisted modification" in v and "parameters" in v for v in violations_mut
+    )
+
+    # 3. Value mismatch at allowed path
+    mismatch_data = copy.deepcopy(post_data)
+    mismatch_data["events"][1]["pages"][0]["list"][1]["parameters"][0] = "Wrong Value"
+    ok_mis, violations_mis = verify_allowlisted_json_diff(
+        pre_data, mismatch_data, {target_path: "Translated Text"}
+    )
+    assert ok_mis is False
+    assert any("Value mismatch" in v for v in violations_mis)
+
+    # 4. Expected edit omitted
+    ok_omit, violations_omit = verify_allowlisted_json_diff(
+        pre_data, pre_data, {target_path: "Translated Text"}
+    )
+    assert ok_omit is False
+    assert any("Expected modification" in v for v in violations_omit)
+
+    # 5. Non-collection root safely rejected
+    ok_bad, violations_bad = verify_allowlisted_json_diff(
+        "invalid_root", "invalid_root", {}
+    )
+    assert ok_bad is False
+    assert any("Unsupported non-collection" in v for v in violations_bad)
