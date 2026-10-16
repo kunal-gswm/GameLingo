@@ -102,3 +102,68 @@ def test_export_import_stale_source(db, tmp_path):
     prev = svc.import_csv_preview(csv_file)
     assert prev["invalid"] == 1
     assert "Stale export" in prev["rows"][1]["reason"]
+
+
+def test_export_import_rpgmaker_tokens_and_brackets(db, tmp_path):
+    conn = db.connect()
+    # Update project to rpgmaker_mv_mz
+    conn.execute(
+        "UPDATE projects SET adapter_id = 'rpgmaker_mv_mz' WHERE id = 'default'"
+    )
+    # Insert RPG Maker unit with tokens and brackets
+    conn.execute(
+        "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) "
+        "VALUES ('u_rpgm', 'f1', 'items[1].desc', 'MPを \\V[5] 回復する [常備薬]。', 'item', '[\"\\\\V[5]\"]', 'shash_rpgm', 'untranslated')"
+    )
+    conn.commit()
+
+    svc = ExportImportService(db)
+    csv_file = tmp_path / "rpgm_export.csv"
+    svc.export_csv(csv_file)
+
+    # Translate preserving \V[5] and ordinary square brackets [Medicine] in translated_text
+    import csv
+
+    with open(csv_file, "r", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        fieldnames = reader.fieldnames
+
+    for r in rows:
+        if r["unit_id"] == "u_rpgm":
+            r["translated_text"] = "Restores \\V[5] MP [Medicine]."
+
+    with open(csv_file, "w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    # Preview must NOT fail with UNSAFE_INTERPOLATION
+    prev = svc.import_csv_preview(csv_file)
+    assert prev["invalid"] == 0
+    assert prev["valid_editable"] == 1
+
+    # Apply via convenience method
+    res = svc.import_csv(csv_file)
+    assert res["updated_count"] == 1
+
+    unit = svc.review_service.get_unit("u_rpgm")
+    assert unit["translated_text"] == "Restores \\V[5] MP [Medicine]."
+
+    # Now test fail-closed: missing token \V[5]
+    for r in rows:
+        if r["unit_id"] == "u_rpgm":
+            r["translated_text"] = "Restores MP [Medicine]."
+
+    bad_csv = tmp_path / "rpgm_bad.csv"
+    with open(bad_csv, "w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    bad_prev = svc.import_csv_preview(bad_csv)
+    assert bad_prev["invalid"] == 1
+    assert "Missing placeholder in target: \\V[5]" in bad_prev["rows"][0]["reason"]
+
+    with pytest.raises(ValueError, match="Cannot import CSV: found 1 invalid row"):
+        svc.import_csv(bad_csv)

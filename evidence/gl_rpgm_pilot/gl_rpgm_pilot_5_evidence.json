@@ -1,0 +1,356 @@
+{
+  "milestone": "GL-RPGM-PILOT-5A",
+  "engine": "RPG Maker MZ",
+  "game_title": "なんにも起きない村からの脱出",
+  "candidate_provenance": {
+    "source_url": "https://rpgmakerofficial.com/product/mz/download/dlc/dl_04.html",
+    "download_archive": "https://cdn.tkool.jp/updata/nannnimo.zip",
+    "archive_size_bytes": 98413632,
+    "archive_sha256": "48c5ec13b6a136e7ce1b6f0f9d19d493ed28599b9fea899fa0a78ab356cbf49b",
+    "license_terms": "Permits arbitrary modification and processing by users; permits free redistribution of modified versions; prohibits resale and secondary redistribution of original materials as-is."
+  },
+  "timestamp": "2026-10-16T15:33:32Z",
+  "steps": {
+    "extraction_audit": {
+      "total_units": 1143,
+      "sampled_verified": 50,
+      "sample_count": 50
+    },
+    "dry_run": {
+      "status": "preview",
+      "errors": [],
+      "mutations_detected": false
+    },
+    "apply": {
+      "status": "success",
+      "backup_id": "8c632a1a-0fb4-4a5a-96e3-be78832f84c3",
+      "files_modified": [
+        "data/Map001.json",
+        "data/Map002.json",
+        "data/Map007.json",
+        "data/System.json"
+      ]
+    }
+  },
+  "units": [
+    {
+      "unit_id": "Map001.json::events[2].pages[0].list[1]",
+      "file_id": "Map001.json",
+      "locator": "events[2].pages[0].list[1]",
+      "source_text": "なぜか出られない。",
+      "translated_target": "For some reason, you cannot leave.",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [
+        "Translation is unusually long compared to source."
+      ],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map002.json::events[1].pages[0].list[1]",
+      "file_id": "Map002.json",
+      "locator": "events[1].pages[0].list[1]",
+      "source_text": "　　　　　　　　あなたは　たびびと　です。",
+      "translated_target": "        You are a traveler.",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map002.json::events[1].pages[0].list[2]",
+      "file_id": "Map002.json",
+      "locator": "events[1].pages[0].list[2]",
+      "source_text": "　　　　　　へいわなむらに　たどりつきました。",
+      "translated_target": "      You arrived in a peaceful village.",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map002.json::events[1].pages[0].list[4]",
+      "file_id": "Map002.json",
+      "locator": "events[1].pages[0].list[4]",
+      "source_text": "　　　みんな　やさしくて　ずっといたいとおもいます。",
+      "translated_target": "   Everyone is kind, and you want to stay forever.",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map002.json::events[1].pages[0].list[6]",
+      "file_id": "Map002.json",
+      "locator": "events[1].pages[0].list[6]",
+      "source_text": "　　　　　　　　　ゆっくり　しましょう。",
+      "translated_target": "         Let us take it easy.",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[2].pages[0].list[1]",
+      "file_id": "Map007.json",
+      "locator": "events[2].pages[0].list[1]",
+      "source_text": "おぞましい化け物が眠っている……。",
+      "translated_target": "A hideous monster is asleep...",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[0].list[1]",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[0].list[1]",
+      "source_text": "火をつけますか？",
+      "translated_target": "Will you light the fire?",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[0].list[2].choices[0]",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[0].list[2].choices[0]",
+      "source_text": "はい",
+      "translated_target": "Yes",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[0].list[2].choices[1]",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[0].list[2].choices[1]",
+      "source_text": "いいえ",
+      "translated_target": "No",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[0].list[3].when",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[0].list[3].when",
+      "source_text": "はい",
+      "translated_target": "Yes",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[0].list[26].when",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[0].list[26].when",
+      "source_text": "いいえ",
+      "translated_target": "No",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[1].list[1]",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[1].list[1]",
+      "source_text": "火を消しますか？",
+      "translated_target": "Will you extinguish the fire?",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [
+        "Translation is unusually long compared to source."
+      ],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[1].list[2].choices[0]",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[1].list[2].choices[0]",
+      "source_text": "はい",
+      "translated_target": "Yes",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[1].list[2].choices[1]",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[1].list[2].choices[1]",
+      "source_text": "いいえ",
+      "translated_target": "No",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[1].list[3].when",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[1].list[3].when",
+      "source_text": "はい",
+      "translated_target": "Yes",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "Map007.json::events[6].pages[1].list[6].when",
+      "file_id": "Map007.json",
+      "locator": "events[6].pages[1].list[6].when",
+      "source_text": "いいえ",
+      "translated_target": "No",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::gameTitle",
+      "file_id": "System.json",
+      "locator": "gameTitle",
+      "source_text": "なんにも起きない村からの脱出",
+      "translated_target": "Escape from the Nothing-Happens Village",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.basic[0]",
+      "file_id": "System.json",
+      "locator": "terms.basic[0]",
+      "source_text": "レベル",
+      "translated_target": "Level",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.basic[2]",
+      "file_id": "System.json",
+      "locator": "terms.basic[2]",
+      "source_text": "ＨＰ",
+      "translated_target": "HP",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[11]",
+      "file_id": "System.json",
+      "locator": "terms.commands[11]",
+      "source_text": "オプション",
+      "translated_target": "Options",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[18]",
+      "file_id": "System.json",
+      "locator": "terms.commands[18]",
+      "source_text": "ニューゲーム",
+      "translated_target": "New Game",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.commands[19]",
+      "file_id": "System.json",
+      "locator": "terms.commands[19]",
+      "source_text": "コンティニュー",
+      "translated_target": "Continue",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    },
+    {
+      "unit_id": "System.json::terms.messages.loadMessage",
+      "file_id": "System.json",
+      "locator": "terms.messages.loadMessage",
+      "source_text": "どのファイルをロードしますか？",
+      "translated_target": "Select a file to load:",
+      "tokens": [],
+      "validation_errors": [],
+      "validation_warnings": [],
+      "status": "approved"
+    }
+  ],
+  "screenshots": {
+    "scene_1_title_screen": {
+      "file": "gl_rpgm_pilot_5_title_screen.png",
+      "verified_elements": [
+        "Window Title Bar: Escape from the Nothing-Happens Village (System.json gameTitle)",
+        "Command 18: New Game (System.json terms.commands[18])",
+        "Command 19: Continue (System.json terms.commands[19])",
+        "Command 11: Options (System.json terms.commands[11])"
+      ]
+    },
+    "scene_2_load_screen": {
+      "file": "gl_rpgm_pilot_5_load_screen.png",
+      "verified_elements": [
+        "Header Message: Select a file to load: (System.json terms.messages.loadMessage)"
+      ]
+    },
+    "scene_4_choices": {
+      "file": "gl_rpgm_pilot_5_dialogue_choices.png",
+      "verified_elements": [
+        "Dialogue Prompt: Will you extinguish the fire? (Map007.json Event 6 Page 1)",
+        "Choice Option 0: Yes (Map007.json Event 6 Page 1 choices[0])",
+        "Choice Option 1: No (Map007.json Event 6 Page 1 choices[1])"
+      ]
+    },
+    "scene_5_branch": {
+      "file": "gl_rpgm_pilot_5_branch_resolution.png",
+      "verified_elements": [
+        "Branch Resolution Execution: Torch flame extinguished upon selecting 'Yes'",
+        "Map 7 Game State Updated"
+      ]
+    }
+  },
+  "rollback_verified": true,
+  "disposable_game": "E:\\gamelingo_rpgm_pilot\\run_20261016_153332_sample_mz\\game",
+  "baseline_hashes": {
+    "data/System.json": "028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d",
+    "data/Map001.json": "eece65ab023847d4854198dbc2f501791e97665bcf1984fffef188b751f860c1",
+    "data/Map002.json": "bbbbbe60ba262e68e499caca7214fc387ff8140a5065ab3ba2cb6323796458a5",
+    "data/Map007.json": "6034d31783edc5ce7d5980f262826a31b29edefc9b7f4c46956b3c741df9ddfd"
+  },
+  "rollback_checksums": {
+    "data/System.json": {
+      "baseline": "028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d",
+      "post_restore": "028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d",
+      "match": true
+    },
+    "data/Map001.json": {
+      "baseline": "eece65ab023847d4854198dbc2f501791e97665bcf1984fffef188b751f860c1",
+      "post_restore": "eece65ab023847d4854198dbc2f501791e97665bcf1984fffef188b751f860c1",
+      "match": true
+    },
+    "data/Map002.json": {
+      "baseline": "bbbbbe60ba262e68e499caca7214fc387ff8140a5065ab3ba2cb6323796458a5",
+      "post_restore": "bbbbbe60ba262e68e499caca7214fc387ff8140a5065ab3ba2cb6323796458a5",
+      "match": true
+    },
+    "data/Map007.json": {
+      "baseline": "6034d31783edc5ce7d5980f262826a31b29edefc9b7f4c46956b3c741df9ddfd",
+      "post_restore": "6034d31783edc5ce7d5980f262826a31b29edefc9b7f4c46956b3c741df9ddfd",
+      "match": true
+    }
+  }
+}

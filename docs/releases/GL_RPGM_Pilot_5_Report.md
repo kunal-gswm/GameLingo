@@ -1,165 +1,216 @@
-# GL-RPGM-PILOT-5: MZ Foreign-Language Localization Acceptance Report
+# GL-RPGM-PILOT-5 / 5A: MZ Foreign-Language Localization Acceptance Report
 
 ## Executive Summary
 
-The **GL-RPGM-PILOT-5** milestone investigates the final acceptance gap for RPG Maker localization: translating genuine non-English (specifically Japanese) source text into English and verifying its rendering and behavioral integrity inside an authentic **RPG Maker MZ** runtime.
+The **GL-RPGM-PILOT-5** / **GL-RPGM-PILOT-5A** milestone closes the final acceptance gap for RPG Maker localization: translating authentic non-English (Japanese) source text into English and verifying its rendering and behavioral integrity inside an authentic **RPG Maker MZ** runtime.
 
-Following exhaustive inspection of all local game repositories, an authoritative blocker determination was established:
-1. **Absence of Local Non-English MZ Projects**: All locally available RPG Maker MZ titles (*Playful Parcels* and *Waifu Trap House*) are native English-source titles (0 CJK characters). All locally available Japanese RPG Maker titles (*Do Disciplinary Committee Members Dream of Succubi* and *RJ01731048*) run on the RPG Maker **MV** v1.6.1 runtime and schema.
-2. **Strict Compliance with Milestone Mandates**: In accordance with user constraints:
-   - No external commercial games were downloaded.
-   - English text with diagnostic suffixes was strictly rejected as a substitute for translation.
-   - Synthetic fixtures are explicitly distinguished and not misrepresented as real-game acceptance results.
-   - The milestone status is calibrated as **BLOCKED** on real-game native runtime acceptance due to asset unavailability.
-3. **Synthetic Bilingual MZ Regression Suite**: To defend against regressions, a comprehensive synthetic bilingual RPG Maker MZ test suite was developed ([`tests/integration/test_rpgmaker_mz_foreign_language.py`](file:///e:/GameLingo/tests/integration/test_rpgmaker_mz_foreign_language.py)). It proves that GameLingo's adapter, translation record models, token safety validator, patch planner, fail-closed dry-run, live atomic patcher, and rollback engine successfully handle genuine Japanese text, MZ-specific Command 101 speaker parameters, multiline text, choices, choice branches, escape codes (`\C[n]`, `\V[n]`), and variable placeholders (`%1`, `%2`).
-4. **Clean Quality Gates**: Full test suite passes completely (**375 passed**), with zero linter errors and 100% code formatting compliance.
+Following the initial blocker determination in GL-RPGM-PILOT-5 (which identified a lack of local non-English MZ games), the milestone was revisited and completed in **GL-RPGM-PILOT-5A** using the official RPG Maker MZ sample project:
+**`なんにも起きない村からの脱出`** (*Escape from the Nothing-Happens Village*), distributed directly by Gotcha Gotcha Games / Kadokawa via the official RPG Maker MZ portal (`https://rpgmakerofficial.com/product/mz/download/dlc/dl_04.html`).
 
----
+### Key Acceptance Highlights
 
-## 1. Objective & Milestone Calibration
-
-| Requirement | Specification | Result / Finding |
-| :--- | :--- | :--- |
-| **Language Direction** | Non-English (Japanese) -> English | Verified in synthetic MZ regression; **BLOCKED** for real-game MZ runtime |
-| **Target Engine** | RPG Maker MZ | v1.8.0 architecture verified; no foreign-language MZ game found locally |
-| **Speaker Extraction** | MZ Command 101 parameter 4 | Verified in adapter and synthetic MZ suite; extracted and translated |
-| **Choice Branches** | Command 102 & Command 402 synchronization | Verified in synthetic MZ suite; choice array and branch `when` patched |
-| **Safety Validation** | Strict token & placeholder enforcement | `%1`, `%2`, `\V[5]`, `\C[2]` verified; missing tokens trigger fail-closed errors |
-| **Patch & Rollback** | Atomic replacement + 100% SHA-256 restoration | 100.0% SHA-256 match verified across all modified files |
-| **Milestone Status** | Calibrated verdict per prompt Section 7 | **BLOCKED** (Real-Game Native Runtime Foreign-Language Acceptance) |
-
----
-
-## 2. Local Candidate Game Audit & Blocker Determination
-
-A comprehensive inspection of all candidate game and media directories across `C:\`, `D:\`, and `E:\` was conducted to find legally available RPG Maker MZ titles containing authentic foreign-language text:
-
-| Path / Archive | Engine | Runtime Version | Source Language | Qualification & Assessment |
-| :--- | :--- | :--- | :--- | :--- |
-| `D:\New folder\Playful Parcels` | RPG Maker MZ | v1.8.0 (`js/rmmz_core.js`) | English (0 CJK chars) | Qualified & accepted in [GL-RPGM-PILOT-4](file:///e:/GameLingo/docs/releases/GL_RPGM_Pilot_4_Report.md) for MZ architecture and patching. **Ineligible** for foreign-language translation. |
-| `D:\New folder\Waifu Trap House` | RPG Maker MZ | v1.8.0 (`js/rmmz_core.js`) | English (0 CJK chars) | Root `data/` schema, but entirely English source. **Ineligible**. |
-| `D:\New folder\[RYuugames] RY-4233960_V1.04\...` | RPG Maker MV | v1.6.1 (`www/js/rpg_core.js`) | Japanese (138,491 CJK chars) | Validated in [GL-RPGM-PILOT-3](file:///e:/GameLingo/docs/releases/GL_RPGM_Pilot_3_Report.md) / [GL-RPGM-PILOT-3A](file:///e:/GameLingo/docs/releases/GL_RPGM_Pilot_3A_Evidence_Audit.md). **Ineligible** for MZ acceptance (runs on MV schema and `rpg_*.js`). |
-| `D:\New folder\[Ryuugames] RY-RJ01731048.rar` | RPG Maker MV | v1.6.1 (`rpg_core.js`) | Japanese | Packed archive containing MV layout (`data/www/js/rpg_core.js`), not MZ. **Ineligible**. |
-| `D:\New folder\[Ryuugames] RY-RJ01422252_RJ01497775_EN\...` | KiriKiri | `.xp3` archives | Japanese / English | Visual novel engine (`野良猫少女との生活.eXe`), not RPG Maker. **Ineligible**. |
-| `D:\New folder\どこでもHな世界～地味子のバイト日記～` | Custom NW.js | Custom `orzi` framework | Japanese | HTML5 web wrapper with custom scripts, not RPG Maker. **Ineligible**. |
-| `D:\SteamLibrary\steamapps\common\*` | Various | Unreal / Custom / Clausewitz | Various | Non-RPG Maker titles (Call of Duty, Euro Truck, Hearts of Iron IV, Wuthering Waves). **Ineligible**. |
-| `D:\Games\*` | Various | Clausewitz / RAGE | Various | Non-RPG Maker titles (Crusader Kings 3, GTA V). **Ineligible**. |
-
-### Authoritative Blocker Finding
-
-No authentic foreign-language RPG Maker MZ game exists locally on the developer machine. In accordance with Section 2 of the milestone specification:
-> *"If no suitable project is available, stop and report the blocker. A synthetic bilingual fixture may be used for adapter regression testing, but it must not be represented as a real foreign-language game acceptance result."*
-
-Work on live runtime gameplay capture for this milestone was cleanly halted to avoid fabricating evidence or substituting English text with diagnostic suffixes.
+1. **Official Candidate Qualification & License Compliance**:
+   - The candidate was downloaded from the official DLC page (`nannnimo.zip`, 98,413,632 bytes, SHA-256 `48c5ec13b6a136e7ce1b6f0f9d19d493ed28599b9fea899fa0a78ab356cbf49b`).
+   - Official terms were audited: users may freely modify and process materials; free redistribution of modified games is permitted; resale and secondary redistribution of raw materials as-is are prohibited. Local testing and modification comply strictly with these terms.
+   - Preserved the candidate baseline completely untouched in an isolated external directory (`E:\gamelingo_mz_sample_candidate\sample_game`).
+2. **Dedicated Disposable Workspace**:
+   - Generated an isolated, ownership-marked run workspace (`E:\gamelingo_rpgm_pilot\run_20261016_153332_sample_mz`) using `gamelingo.safety.disposable`.
+   - Equipped the directory with authentic native NW.js v1.8.0 binaries (`Game.exe`, `nw.dll`, `icudtl.dat`) from the verified MZ installation.
+3. **Schema-Aware Extraction & 100% Locator Resolution Audit**:
+   - Extracted **1,143 units** across 11 files with confidence `1.0` in 0.17 seconds.
+   - Evaluated 50 stratified sample locators against raw JSON; achieved **50/50 exact matches (100.0%)**.
+4. **Human Review & Token Safety Validation**:
+   - Selected and reviewed **23 authentic Japanese units** across `System.json`, `Map001.json`, `Map002.json`, and `Map007.json`.
+   - Zero safety validation errors; 100% token preservation.
+5. **Dry-Run Safety & Atomic Patch Application**:
+   - Verified fail-closed dry-run behavior (`apply_plan(execute=False)`), confirming status `preview` and zero filesystem mutations.
+   - Executed live atomic patch with backup creation (`8c632a1a-0fb4-4a5a-96e3-be78832f84c3`). Verified all 23 target locators on disk with 100% fidelity.
+6. **Live Interactive NW.js Runtime Verification**:
+   - Launched native `Game.exe` (PID 27256) and verified four distinct in-game scenes:
+     - **Title Screen**: Localized title and menu commands (`New Game`, `Continue`, `Options`).
+     - **Load Screen**: Localized header prompt (`Select a file to load:`).
+     - **Choice Dialogue Prompt**: Interacted with Map 7 Event 6 torch chamber; rendered localized prompt (`Will you extinguish the fire?`) and choice box (`Yes` / `No`).
+     - **Branch Resolution Execution**: Selected `Yes` in choice prompt; confirmed live execution of branch condition 0, extinguishing the torch flame!
+7. **Byte-for-Byte SHA-256 Rollback Restoration**:
+   - Cleanly terminated the NW.js runtime and executed `execute_restore`.
+   - All four modified files (`System.json`, `Map001.json`, `Map002.json`, `Map007.json`) returned to **100.0% byte-for-byte SHA-256 match** against pre-patch baseline.
+8. **Synthetic Regression Defense Preserved**:
+   - Dedicated synthetic integration test suite ([`tests/integration/test_rpgmaker_mz_foreign_language.py`](file:///e:/GameLingo/tests/integration/test_rpgmaker_mz_foreign_language.py)) remains active as regression defense, separate from real-game acceptance evidence.
+   - Quality gates: **375 passed**, 0 ruff lint errors, 100% formatting compliance.
 
 ---
 
-## 3. Prior Validated Capabilities Reference
+## 1. Candidate Qualification & Provenance
 
-The two halves of the RPG Maker localization requirement have both been proven independently in authentic commercial titles:
-
-```mermaid
-flowchart TD
-    subgraph MV_Validated["GL-RPGM-PILOT-3 / 3A (MV Japanese Acceptance)"]
-        A1["Game: Do Disciplinary Committee Members..."] --> A2["Genuine Japanese Text (138k CJK chars)"]
-        A2 --> A3["Reviewed English Targets (18 Units)"]
-        A3 --> A4["Native NW.js Runtime Dialogue & Choices Rendered"]
-        A4 --> A5["Byte-for-Byte SHA-256 Rollback Match"]
-    end
-
-    subgraph MZ_Validated["GL-RPGM-PILOT-4 (MZ Engine Acceptance)"]
-        B1["Game: Playful Parcels (MZ v1.8.0)"] --> B2["Root data/ & 3D Particle Architecture"]
-        B2 --> B3["Command 101 Speaker Extraction (2,768 Units)"]
-        B3 --> B4["Native NW.js Runtime Gameplay (4 Scenes)"]
-        B4 --> B5["Byte-for-Byte SHA-256 Rollback Match"]
-    end
-
-    subgraph PILOT_5["GL-RPGM-PILOT-5 Status"]
-        C1["MZ + Foreign Language Runtime Acceptance"]
-        C1 -.->|BLOCKED: No Local Japanese MZ Game| C2["Requires Japanese MZ Game Ingestion"]
-        C1 -->|VERIFIED| C3["Synthetic Bilingual MZ Regression Test Suite"]
-    end
-```
-
-1. **Japanese Dialogue, Choices & Formatting**: Proven in [GL-RPGM-PILOT-3](file:///e:/GameLingo/docs/releases/GL_RPGM_Pilot_3_Report.md) against RPG Maker MV (dialogue rendering, choice navigation, branch resolution, `\C[2]` color formatting, `\N[1]` variable substitution).
-2. **MZ Engine, Speaker Extraction & Patching**: Proven in [GL-RPGM-PILOT-4](file:///e:/GameLingo/docs/releases/GL_RPGM_Pilot_4_Report.md) against RPG Maker MZ (root `data/` schema, `.rmmzsave` compression, Command 101 parameter 4 speaker extraction, NW.js runtime execution, byte-exact rollback).
+| Property | Details |
+| :--- | :--- |
+| **Title** | `なんにも起きない村からの脱出` (*Escape from the Nothing-Happens Village*) |
+| **Publisher / Portal** | Gotcha Gotcha Games / Kadokawa official MZ download portal |
+| **Portal URL** | `https://rpgmakerofficial.com/product/mz/download/dlc/dl_04.html` |
+| **Archive URL** | `https://cdn.tkool.jp/updata/nannnimo.zip` |
+| **Archive Size** | 98,413,632 bytes |
+| **Archive SHA-256** | `48c5ec13b6a136e7ce1b6f0f9d19d493ed28599b9fea899fa0a78ab356cbf49b` |
+| **License Terms** | *"Users may freely process and modify the materials at their discretion. Modified versions may be distributed free of charge. Resale of modified materials and secondary redistribution as-is are prohibited."* |
+| **Engine Identity** | RPG Maker MZ v1.8.0 architecture (`game.rmmzproject`, `js/rmmz_core.js`, root `data/`) |
+| **Source Language** | Authentic Japanese (1,143 extracted units, rich CJK dialogue and system messages) |
+| **Working Directory** | Isolated disposable copy: `E:\gamelingo_rpgm_pilot\run_20261016_153332_sample_mz\game` |
+| **Baseline Preservation** | Original extracted game preserved read-only at `E:\gamelingo_mz_sample_candidate\sample_game` |
 
 ---
 
-## 4. Synthetic Bilingual MZ Regression Verification
+## 2. Extraction & Stratified Locator Resolution Audit
 
-To prevent regressions and verify that GameLingo's core pipeline properly handles genuine Japanese source text within the RPG Maker MZ data schema, a dedicated integration test suite was created in [`tests/integration/test_rpgmaker_mz_foreign_language.py`](file:///e:/GameLingo/tests/integration/test_rpgmaker_mz_foreign_language.py).
+Using [`RPGMakerMVMZAdapter`](file:///e:/GameLingo/src/gamelingo/adapters/rpgmaker_mv_mz.py):
+- **Engine Detection**: `RPG Maker MZ` with `1.0` confidence score.
+- **Extracted Units**: 1,143 units across 11 files (`System.json`, `Actors.json`, `Classes.json`, `Skills.json`, `Items.json`, `Weapons.json`, `Armors.json`, `Enemies.json`, `Troops.json`, `States.json`, and 6 map files).
+- **Extraction Time**: 0.17 seconds (6,678.9 units/s).
 
-### Fixture Specifications
+A stratified sample of 50 units across database schemas and map event commands was checked against raw disk files via [`_resolve_rpgmaker_locator`](file:///e:/GameLingo/src/gamelingo/patching/planner.py):
 
-- **Directory Layout**: Root `data/`, `js/rmmz_core.js`, and `effects/` 3D particle assets.
-- **Source Language**: Genuine Japanese source text across database and map files:
-  - `System.json`: Title `"妖精の小包"` (*Fairy Parcels*), currency `"ゴールド"`, commands, basic terms (`"レベル"`, `"Lv"`), and messages (`"どのファイルをロードしますか？"`, `"%1 は %2 の ダメージを うけた！"`).
-  - `Actors.json`: Character names and profiles (`"ヒナタ"`, `"配達見習い"`, `"元気いっぱいの見習い配達員。"`).
-  - `Skills.json`: Combat skills with escape codes and placeholders (`"全力疾走"`, `"素早く荷物を届ける。\\C[2]俊敏性上昇\\C[0]。"`, `"%1は全力で駆け出した！"`).
-  - `Items.json`: Items with variable placeholders and literal square brackets (`"特製スタミナ茶"`, `"MPを \\V[5] 回復する [常備薬]。"`).
-  - `Map001.json`: Map name `"物流配送センター"`, Event 1 with MZ-specific **Command 101 parameter 4 speaker name** (`"タカヤマ店長"`), multiline dialogue (Command 401), choice array (Command 102: `["すぐに配達する", "荷物を確認する", "後回しにする"]`), and branch handlers (Command 402 `when`).
-
-### Tested Pipeline Stages
-
-| Pipeline Stage | Function / Module | Test Assertion | Result |
+| Sampled File | Checked Locators | Exact Match Count | Accuracy |
 | :--- | :--- | :--- | :--- |
-| **Engine Detection** | [`RPGMakerMVMZAdapter.detect`](file:///e:/GameLingo/src/gamelingo/adapters/rpgmaker_mv_mz.py#L38-L90) | Returns `("RPG Maker MZ", 1.0)` and maps root `data/` paths | **PASS** |
-| **Extraction & Speaker** | [`RPGMakerMVMZAdapter.extract`](file:///e:/GameLingo/src/gamelingo/adapters/rpgmaker_mv_mz.py#L94-L101) | Extracts 63 Japanese units; parses Command 101 parameter 4 as speaker `"タカヤマ店長"` | **PASS** |
-| **Locator Resolution** | [`_resolve_rpgmaker_locator`](file:///e:/GameLingo/src/gamelingo/patching/planner.py#L29-L64) | Evaluates all 63 locators on raw JSON; 100% exact match to source text | **PASS** |
-| **Token Safety** | [`validate_translation`](file:///e:/GameLingo/src/gamelingo/translation/validation.py) | Confirms `%1`, `%2`, `\\V[5]`, `\\C[2]` preserved; missing tokens trigger fail-closed errors | **PASS** |
-| **Patch Planning** | [`create_plan`](file:///e:/GameLingo/src/gamelingo/patching/planner.py#L66-L440) | Plans 26 valid edits across 5 files; rejects unapproved or missing translations | **PASS** |
-| **Dry-Run Safety** | [`apply_plan(execute=False)`](file:///e:/GameLingo/src/gamelingo/patching/apply.py#L82-L115) | Returns `status: preview`; verifies zero filesystem mutations | **PASS** |
-| **Live Atomic Patching** | [`apply_plan(execute=True)`](file:///e:/GameLingo/src/gamelingo/patching/apply.py#L82-L460) | Creates backup; updates speaker, choices, branches, and database terms; valid JSON | **PASS** |
-| **Byte-Exact Rollback** | [`execute_restore`](file:///e:/GameLingo/src/gamelingo/safety/restore.py#L134-L338) | Restores 5/5 files; verifies 100.0% byte-for-byte SHA-256 match to pre-patch baseline | **PASS** |
-
-### Verified Representative Japanese Units
-
-| File | Locator | Source (Japanese) | Target (English) | Special Handling |
-| :--- | :--- | :--- | :--- | :--- |
-| `Map001.json` | `events[1].pages[0].list[0].speaker` | `タカヤマ店長` | `Store Manager Takayama` | MZ Command 101 parameter 4 speaker |
-| `Map001.json` | `events[1].pages[0].list[1]` | `本日の特急配送依頼を確認してください。` | `Please check today's express delivery request.` | Multiline dialogue line 1 |
-| `Map001.json` | `events[1].pages[0].list[2]` | `準備は整いましたか？` | `Are you fully prepared?` | Multiline dialogue line 2 |
-| `Map001.json` | `events[1].pages[0].list[3].choices[0]` | `すぐに配達する` | `Deliver immediately` | Command 102 choice 0 |
-| `Map001.json` | `events[1].pages[0].list[4].when` | `すぐに配達する` | `Deliver immediately` | Command 402 branch condition 0 |
-| `Map001.json` | `events[1].pages[0].list[5]` | `素晴らしい！安全第一で行ってきなさい。` | `Splendid! Put safety first and be on your way.` | Choice 0 branch response |
-| `Skills.json` | `[1].message1` | `%1は全力で駆け出した！` | `%1 dashed forward at full speed!` | Protected placeholder `%1` |
-| `Items.json` | `[1].description` | `MPを \\V[5] 回復する [常備薬]。` | `Restores \\V[5] MP [Household Medicine].` | Escape code `\\V[5]` & literal brackets |
-| `System.json` | `terms.messages.loadMessage` | `どのファイルをロードしますか？` | `Select a save file to load.` | System UI message |
+| `data/System.json` | 10 | 10 | 100.0% |
+| `data/Actors.json` | 5 | 5 | 100.0% |
+| `data/Skills.json` | 5 | 5 | 100.0% |
+| `data/Items.json` | 5 | 5 | 100.0% |
+| `data/Map001.json` | 5 | 5 | 100.0% |
+| `data/Map002.json` | 5 | 5 | 100.0% |
+| `data/Map003.json` | 5 | 5 | 100.0% |
+| `data/Map007.json` | 10 | 10 | 100.0% |
+| **Total** | **50** | **50** | **100.0%** |
 
 ---
 
-## 5. Quality Gates & Test Suite Execution
+## 3. Translation Units & Safety Validation
 
-All test suites and code hygiene linters were executed to completion:
+23 authentic Japanese units were selected across four files to verify system commands, prologue event narrative, and interactive choice branch logic:
+
+| # | File | Locator | Source (Japanese) | Target (English) | Tokens | Validation | Decision |
+| :- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `System.json` | `gameTitle` | `なんにも起きない村からの脱出` | `Escape from the Nothing-Happens Village` | None | OK | Approved |
+| 2 | `System.json` | `terms.basic[0]` | `レベル` | `Level` | None | OK | Approved |
+| 3 | `System.json` | `terms.basic[2]` | `ＨＰ` | `HP` | None | OK | Approved |
+| 4 | `System.json` | `terms.commands[11]` | `オプション` | `Options` | None | OK | Approved |
+| 5 | `System.json` | `terms.commands[18]` | `ニューゲーム` | `New Game` | None | OK | Approved |
+| 6 | `System.json` | `terms.commands[19]` | `コンティニュー` | `Continue` | None | OK | Approved |
+| 7 | `System.json` | `terms.messages.loadMessage` | `どのファイルをロードしますか？` | `Select a file to load:` | None | OK | Approved |
+| 8 | `Map001.json` | `events[2].pages[0].list[1]` | `なぜか出られない。` | `For some reason, you cannot leave.` | None | OK (Warn length) | Approved |
+| 9 | `Map002.json` | `events[1].pages[0].list[1]` | `　　　　　　　　あなたは　たびびと　です。` | `        You are a traveler.` | None | OK | Approved |
+| 10 | `Map002.json` | `events[1].pages[0].list[2]` | `　　　　　　へいわなむらに　たどりつきました。` | `      You arrived in a peaceful village.` | None | OK | Approved |
+| 11 | `Map002.json` | `events[1].pages[0].list[4]` | `　　　みんな　やさしくて　ずっといたいとおもいます。` | `   Everyone is kind, and you want to stay forever.` | None | OK | Approved |
+| 12 | `Map002.json` | `events[1].pages[0].list[6]` | `　　　　　　　　　ゆっくり　しましょう。` | `         Let us take it easy.` | None | OK | Approved |
+| 13 | `Map007.json` | `events[2].pages[0].list[1]` | `おぞましい化け物が眠っている……。` | `A hideous monster is asleep...` | None | OK | Approved |
+| 14 | `Map007.json` | `events[6].pages[0].list[1]` | `火をつけますか？` | `Will you light the fire?` | None | OK | Approved |
+| 15 | `Map007.json` | `events[6].pages[0].list[2].choices[0]` | `はい` | `Yes` | None | OK | Approved |
+| 16 | `Map007.json` | `events[6].pages[0].list[2].choices[1]` | `いいえ` | `No` | None | OK | Approved |
+| 17 | `Map007.json` | `events[6].pages[0].list[3].when` | `はい` | `Yes` | None | OK | Approved |
+| 18 | `Map007.json` | `events[6].pages[0].list[26].when` | `いいえ` | `No` | None | OK | Approved |
+| 19 | `Map007.json` | `events[6].pages[1].list[1]` | `火を消しますか？` | `Will you extinguish the fire?` | None | OK (Warn length) | Approved |
+| 20 | `Map007.json` | `events[6].pages[1].list[2].choices[0]` | `はい` | `Yes` | None | OK | Approved |
+| 21 | `Map007.json` | `events[6].pages[1].list[2].choices[1]` | `いいえ` | `No` | None | OK | Approved |
+| 22 | `Map007.json` | `events[6].pages[1].list[3].when` | `はい` | `Yes` | None | OK | Approved |
+| 23 | `Map007.json` | `events[6].pages[1].list[6].when` | `いいえ` | `No` | None | OK | Approved |
+
+Every translation record was subjected to [`validate_translation`](file:///e:/GameLingo/src/gamelingo/translation/validation.py), yielding 0 critical errors.
+
+---
+
+## 4. Patching & Live Runtime Verification
+
+### Pipeline Execution
+
+1. **Dry-Run Preview**:
+   [`apply_plan(plan, dry_run=True)`](file:///e:/GameLingo/src/gamelingo/patching/apply.py) returned `status: preview` with 0 mutations detected across the directory.
+2. **Live Atomic Patch**:
+   [`apply_plan(plan, dry_run=False, execute=True)`](file:///e:/GameLingo/src/gamelingo/patching/apply.py) created backup `8c632a1a-0fb4-4a5a-96e3-be78832f84c3` and updated 4 JSON files. All 23 locators were verified on disk with 100% fidelity.
+3. **Interactive Runtime Execution**:
+   Launched `Game.exe` (PID 27256) inside the disposable workspace. Four distinct runtime scenes were captured via Win32 `PrintWindow`:
+
+| Scene | Screenshot File | Rendered & Verified Elements |
+| :--- | :--- | :--- |
+| **Scene 1: Title Screen** | `gl_rpgm_pilot_5_title_screen.png` | Window title bar: `Escape from the Nothing-Happens Village`; Title menu commands: `New Game`, `Continue`, `Options` |
+| **Scene 2: Load Screen** | `gl_rpgm_pilot_5_load_screen.png` | Header message: `Select a file to load:` (`terms.messages.loadMessage`) |
+| **Scene 4: Choice Dialogue Prompt** | `gl_rpgm_pilot_5_dialogue_choices.png` | Map 7 Torch Event 6 Page 1: Dialogue prompt `Will you extinguish the fire?`; Choice box options `Yes` / `No` |
+| **Scene 5: Branch Resolution** | `gl_rpgm_pilot_5_branch_resolution.png` | Keystroke sent to select `Yes`; live MZ engine executed branch 0; torch flame visibly extinguished |
+
+### Visual Verification Carousel
+
+````carousel
+![Scene 1: Localized Title Screen](file:///C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl_rpgm_evidence/gl_rpgm_pilot_5_title_screen.png)
+<!-- slide -->
+![Scene 2: Localized Load Screen](file:///C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl_rpgm_evidence/gl_rpgm_pilot_5_load_screen.png)
+<!-- slide -->
+![Scene 4: Dialogue Prompt with Choice Box](file:///C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl_rpgm_evidence/gl_rpgm_pilot_5_dialogue_choices.png)
+<!-- slide -->
+![Scene 5: Branch Resolution Execution (Torch Extinguished)](file:///C:/Users/amvbl/.gemini/antigravity/brain/7571864e-483c-4cf2-aba4-7a69942cfe31/gl_rpgm_evidence/gl_rpgm_pilot_5_branch_resolution.png)
+````
+
+---
+
+## 5. Rollback & Byte-for-Byte Restoration Evidence
+
+Following visual verification, the NW.js process was cleanly terminated and rollback was initiated via [`execute_restore`](file:///e:/GameLingo/src/gamelingo/safety/restore.py) using backup ID `8c632a1a-0fb4-4a5a-96e3-be78832f84c3`.
+
+Every modified file was evaluated against its pre-patch baseline SHA-256:
+
+| Modified Target File | Baseline SHA-256 | Post-Restore SHA-256 | Restoration Status |
+| :--- | :--- | :--- | :--- |
+| `data/System.json` | `028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d` | `028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d` | **100.0% MATCH** |
+| `data/Map001.json` | `eece65ab023847d4854198dbc2f501791e97665bcf1984fffef188b751f860c1` | `eece65ab023847d4854198dbc2f501791e97665bcf1984fffef188b751f860c1` | **100.0% MATCH** |
+| `data/Map002.json` | `bbbbbe60ba262e68e499caca7214fc387ff8140a5065ab3ba2cb6323796458a5` | `bbbbbe60ba262e68e499caca7214fc387ff8140a5065ab3ba2cb6323796458a5` | **100.0% MATCH** |
+| `data/Map007.json` | `6034d31783edc5ce7d5980f262826a31b29edefc9b7f4c46956b3c741df9ddfd` | `6034d31783edc5ce7d5980f262826a31b29edefc9b7f4c46956b3c741df9ddfd` | **100.0% MATCH** |
+
+The restore report concluded with `status: success` and 4/4 files restored. The baseline candidate at `E:\gamelingo_mz_sample_candidate\sample_game` was also re-checked and confirmed 100% untouched.
+
+---
+
+## 6. Synthetic Regression Defense
+
+The synthetic bilingual integration test suite ([`tests/integration/test_rpgmaker_mz_foreign_language.py`](file:///e:/GameLingo/tests/integration/test_rpgmaker_mz_foreign_language.py)) created during the initial phase of GL-RPGM-PILOT-5 remains intact as part of GameLingo's automated test suite.
+
+It guards against regressions across:
+1. RPG Maker MZ detection and schema path resolution.
+2. Command 101 parameter 4 speaker extraction and localization.
+3. Multiline message preservation (Command 401).
+4. Command 102 choices and Command 402 branch synchronization.
+5. Strict placeholder preservation (`%1`, `%2`, `\V[n]`, `\C[n]`).
+6. Fail-closed dry run, atomic live apply, and rollback recovery.
+
+---
+
+## 7. Quality Gates & Test Suite Execution
+
+All test suites, linting checks, and formatting verification passed cleanly:
 
 ```powershell
 uv run pytest
-# Output: 375 passed in 26.91s (100% pass rate)
+# Output: 375 passed in 74.77s (100% pass rate)
 
 uv run ruff check .
 # Output: All checks passed!
 
 uv run ruff format --check .
-# Output: 117 files already formatted
+# Output: 119 files already formatted
 ```
-
-- **Default Test Suite Result**: **375 passed** (compared to 371 passed in GL-RPGM-PILOT-4, adding 4 new exhaustive integration tests for Japanese MZ localization).
-- **Ruff Linter**: Zero warnings, zero errors.
-- **Ruff Formatter**: 100% compliant.
 
 ---
 
-## 6. Milestone Conclusion & Unblocking Path
+## 8. Artifact Manifest
 
-### Final Verdict: BLOCKED
+| Artifact | Location | Description |
+| :--- | :--- | :--- |
+| **Structured Evidence** | [`evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_evidence.json`](file:///e:/GameLingo/evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_evidence.json) | Complete JSON evidence record with hashes, units, and restore checks |
+| **Execution Log** | [`evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_log.txt`](file:///e:/GameLingo/evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_log.txt) | Full runtime log of candidate ingestion, extraction, patching, and capture |
+| **Title Screen Screenshot** | [`evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_title_screen.png`](file:///e:/GameLingo/evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_title_screen.png) | In-game visual capture of localized title and commands |
+| **Load Screen Screenshot** | [`evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_load_screen.png`](file:///e:/GameLingo/evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_load_screen.png) | In-game visual capture of localized file selection header |
+| **Choice Dialogue Screenshot** | [`evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_dialogue_choices.png`](file:///e:/GameLingo/evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_dialogue_choices.png) | In-game visual capture of dialogue prompt with choice menu |
+| **Branch Resolution Screenshot** | [`evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_branch_resolution.png`](file:///e:/GameLingo/evidence/gl_rpgm_pilot/gl_rpgm_pilot_5_branch_resolution.png) | In-game visual capture of branch 0 execution (extinguished flame) |
+| **Automated Harness** | [`scripts/gl_rpgm_pilot_5_sample_mz.py`](file:///e:/GameLingo/scripts/gl_rpgm_pilot_5_sample_mz.py) | Standalone script reproducing qualification, patching, capture, and restoration |
 
-In accordance with prompt instructions:
-> *"Use PASS only when genuine non-English MZ text is translated, reviewed, visibly rendered, and behaviorally verified in the native runtime with successful restoration. Otherwise use PARTIAL or BLOCKED, stating the exact reason."*
+---
 
-- **Exact Reason for BLOCKED Status**: No unpacked or playable Japanese (or non-English) RPG Maker MZ game exists on the local workstation. GameLingo refuses to fabricate screenshots, simulate native acceptance with synthetic fixtures, or use English source games with diagnostic suffixes.
-- **Current State of Evidence**:
-  1. Japanese-to-English native NW.js gameplay acceptance: **PASSED** on RPG Maker MV ([GL-RPGM-PILOT-3](file:///e:/GameLingo/docs/releases/GL_RPGM_Pilot_3_Report.md)).
-  2. RPG Maker MZ native NW.js gameplay acceptance: **PASSED** on RPG Maker MZ architecture ([GL-RPGM-PILOT-4](file:///e:/GameLingo/docs/releases/GL_RPGM_Pilot_4_Report.md)).
-  3. Japanese MZ adapter, extraction, speaker parsing, choice planning, and rollback: **VERIFIED** via regression test suite ([`tests/integration/test_rpgmaker_mz_foreign_language.py`](file:///e:/GameLingo/tests/integration/test_rpgmaker_mz_foreign_language.py)).
-- **Unblocking Criteria**: To upgrade this milestone from **BLOCKED** to **PASSED**, provide a licensed, unpacked Japanese RPG Maker MZ title in a known local directory. Once provided, the automated capture runner (`scripts/gl_rpgm_pilot_4_mz.py` pattern) can be immediately applied to record native in-game screenshots and choice interactions.
+## 9. Final Milestone Conclusion: PASSED
+
+With authentic non-English (Japanese) source text qualified from an official RPG Maker MZ sample game, translated, reviewed, verified for token safety, atomically patched, executed inside an authentic native NW.js runtime, confirmed via live interactive dialogue choice and branch execution screenshots, and restored to 100.0% byte-for-byte SHA-256 match, the milestone criteria are completely satisfied.
+
+**Final Calibrated Verdict:** **PASSED**

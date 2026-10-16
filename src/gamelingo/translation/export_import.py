@@ -1,4 +1,5 @@
 import csv
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -165,10 +166,32 @@ class ExportImportService:
                     # Validate new translation
                     from gamelingo.translation.validation import validate_translation
 
-                    issues = validate_translation(source_text, translated_text)
+                    adapter_id = db_unit.get("adapter_id")
+                    if not adapter_id:
+                        if db_unit.get("file_id", "").endswith(".json"):
+                            adapter_id = "rpgmaker_mv_mz"
+                        elif db_unit.get("file_id", "").endswith(".rpy"):
+                            adapter_id = "renpy"
+
+                    expected_tokens = None
+                    if adapter_id == "rpgmaker_mv_mz" and db_unit.get("tokens_json"):
+                        try:
+                            expected_tokens = json.loads(db_unit["tokens_json"])
+                        except (json.JSONDecodeError, TypeError):
+                            expected_tokens = None
+
+                    issues = validate_translation(
+                        source_text,
+                        translated_text,
+                        adapter_id=adapter_id,
+                        expected_tokens=expected_tokens,
+                    )
                     if any(issue.severity == "error" for issue in issues):
                         result["validation_blocked"] += 1
-                        raise ValueError("Validation failed: " + issues[0].message)
+                        error_msgs = [
+                            i.message for i in issues if i.severity == "error"
+                        ]
+                        raise ValueError("Validation failed: " + "; ".join(error_msgs))
 
                     result["valid_editable"] += 1
                     result["would_need_review"] += 1
@@ -229,7 +252,26 @@ class ExportImportService:
                 if not unit:
                     raise ValueError(f"Unit {unit_id} not found during apply.")
 
-                issues = validate_translation(unit["source_text"], new_text)
+                adapter_id = unit.get("adapter_id")
+                if not adapter_id:
+                    if unit.get("file_id", "").endswith(".json"):
+                        adapter_id = "rpgmaker_mv_mz"
+                    elif unit.get("file_id", "").endswith(".rpy"):
+                        adapter_id = "renpy"
+
+                expected_tokens = None
+                if adapter_id == "rpgmaker_mv_mz" and unit.get("tokens_json"):
+                    try:
+                        expected_tokens = json.loads(unit["tokens_json"])
+                    except (json.JSONDecodeError, TypeError):
+                        expected_tokens = None
+
+                issues = validate_translation(
+                    unit["source_text"],
+                    new_text,
+                    adapter_id=adapter_id,
+                    expected_tokens=expected_tokens,
+                )
                 if any(i.severity == "error" for i in issues):
                     raise ValueError(f"Validation failed during apply for {unit_id}.")
 
@@ -279,3 +321,24 @@ class ExportImportService:
             raise
 
         return len(updates)
+
+    def import_csv(
+        self, input_path: Path, project_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Convenience method that previews and applies a CSV import atomically."""
+        preview = self.import_csv_preview(input_path)
+        if preview["invalid"] > 0:
+            err_details = []
+            for r in preview["rows"]:
+                if r.get("action") == "error":
+                    err_details.append(f"Row {r.get('row')}: {r.get('reason')}")
+            err_msg = "; ".join(err_details[:5])
+            raise ValueError(
+                f"Cannot import CSV: found {preview['invalid']} invalid row(s). {err_msg}"
+            )
+        count = self.import_csv_apply(input_path)
+        return {
+            "updated_count": count,
+            "skipped_count": preview.get("unchanged", 0),
+            "total_rows": preview.get("total_rows", 0),
+        }

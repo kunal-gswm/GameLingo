@@ -79,6 +79,7 @@ class ReviewPage(QWidget):
         self.cmb_status = QComboBox()
         self.cmb_status.addItem("Pending Review", "pending")
         self.cmb_status.addItem("All Items", "all")
+        self.cmb_status.addItem("Untranslated Only", "untranslated")
         self.cmb_status.addItem("Approved Only", "approved")
         self.cmb_status.addItem("Draft Only", "draft")
         self.cmb_status.addItem("Rejected Only", "rejected")
@@ -237,6 +238,8 @@ class ReviewPage(QWidget):
         choice = self.cmb_status.currentData()
         if choice == "all":
             return None
+        elif choice == "untranslated":
+            return ["untranslated"]
         elif choice == "approved":
             return ["approved"]
         elif choice == "draft":
@@ -408,6 +411,25 @@ class ReviewPage(QWidget):
         self.lbl_unsaved.setVisible(False)
         self._refresh_current_item_display("DRAFT")
 
+        # Immediately refresh status and validation diagnostics in UI
+        unit = self.service.get_unit(self.current_unit_id)
+        if unit:
+            self.lbl_status.setText(f"Status: {unit['status'].upper()}")
+            flags_text = ""
+            if unit.get("quality_flags"):
+                try:
+                    flags = json.loads(unit["quality_flags"])
+                    if flags:
+                        flags_text = "\n".join(
+                            [
+                                f"[{f.get('severity', 'warning').upper()}] {f.get('message', '')}"
+                                for f in flags
+                            ]
+                        )
+                except Exception:
+                    flags_text = str(unit["quality_flags"])
+            self.lbl_validation.setText(flags_text)
+
     def on_approve(self):
         if not self.current_unit_id or not self.service:
             return
@@ -418,6 +440,22 @@ class ReviewPage(QWidget):
             self.lbl_status.setText("Status: APPROVED")
             self._refresh_current_item_display("APPROVED")
         except Exception as e:
+            # Refresh flags so the blocking error is visible in editor
+            unit = self.service.get_unit(self.current_unit_id)
+            if unit and unit.get("quality_flags"):
+                try:
+                    flags = json.loads(unit["quality_flags"])
+                    if flags:
+                        self.lbl_validation.setText(
+                            "\n".join(
+                                [
+                                    f"[{f.get('severity', 'error').upper()}] {f.get('message', '')}"
+                                    for f in flags
+                                ]
+                            )
+                        )
+                except Exception:
+                    pass
             QMessageBox.critical(self, "Approval Error", str(e))
 
     def on_approve_all(self):
@@ -490,11 +528,14 @@ class ReviewPage(QWidget):
             self, "Import CSV", "", "CSV Files (*.csv)"
         )
         if file_path:
-            service = ExportImportService(self.state.db)
-            report = service.import_csv(Path(file_path), "default")
-            self.load_units()
-            QMessageBox.information(
-                self,
-                "Import Complete",
-                f"Imported: {report['updated_count']} updated, {report['skipped_count']} skipped.",
-            )
+            try:
+                service = ExportImportService(self.state.db)
+                report = service.import_csv(Path(file_path), "default")
+                self.load_units()
+                QMessageBox.information(
+                    self,
+                    "Import Complete",
+                    f"Imported: {report['updated_count']} updated, {report['skipped_count']} skipped.",
+                )
+            except Exception as e:
+                QMessageBox.critical(self, "Import Error", f"CSV Import failed:\n{e}")

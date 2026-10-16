@@ -1,0 +1,88 @@
+[2026-10-16 15:33:32] ================================================================================
+[2026-10-16 15:33:32] GL-RPGM-PILOT-5A: Official MZ Sample Qualification & Acceptance Harness
+[2026-10-16 15:33:32] Game: なんにも起きない村からの脱出 (Escape from the Nothing-Happens Village)
+[2026-10-16 15:33:32] Source: https://rpgmakerofficial.com/product/mz/download/dlc/dl_04.html
+[2026-10-16 15:33:32] ================================================================================
+[2026-10-16 15:33:32] 
+[Step 1] Establishing Disposable Run Directory...
+[2026-10-16 15:33:32] Created owned disposable run directory: E:\gamelingo_rpgm_pilot\run_20261016_153332_sample_mz
+[2026-10-16 15:33:32] Copying official sample game assets to disposable workspace...
+[2026-10-16 15:33:33] Equipping native NW.js v1.8.0 runtime runner into disposable workspace...
+[2026-10-16 15:33:34] 
+[Step 2] Recording Pre-Patch Baseline Hashes for Relevant Files...
+[2026-10-16 15:33:34]   data/System.json    : 028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d
+[2026-10-16 15:33:34]   data/Map001.json    : eece65ab023847d4854198dbc2f501791e97665bcf1984fffef188b751f860c1
+[2026-10-16 15:33:34]   data/Map002.json    : bbbbbe60ba262e68e499caca7214fc387ff8140a5065ab3ba2cb6323796458a5
+[2026-10-16 15:33:34]   data/Map007.json    : 6034d31783edc5ce7d5980f262826a31b29edefc9b7f4c46956b3c741df9ddfd
+[2026-10-16 15:33:34] 
+[Step 3] Running Adapter Detection & Extraction Audit...
+[2026-10-16 15:33:34] Adapter detection: True | Engine: RPG Maker MZ | Confidence: 1.0
+[2026-10-16 15:33:35] Total extracted units: 1,143 across project
+[2026-10-16 15:33:35] 
+Performing 50-Unit Stratified Locator Roundtrip Verification...
+[2026-10-16 15:33:35] Stratified Locator Audit: 50/50 exact matches (100.0%)
+[2026-10-16 15:33:35] 
+[Step 4] Formulating Reviewed Japanese-to-English Translation Specifications...
+[2026-10-16 15:33:35]   Map001.json  | events[2].pages[0].list[1]             | 'なぜか出られない。' -> 'For some reason, you cannot leave.' [Tokens: []]
+[2026-10-16 15:33:35]   Map002.json  | events[1].pages[0].list[1]             | '\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000あなたは\u3000たびびと\u3000です。' -> '        You are a traveler.' [Tokens: []]
+[2026-10-16 15:33:35]   Map002.json  | events[1].pages[0].list[2]             | '\u3000\u3000\u3000\u3000\u3000\u3000へいわなむらに\u3000たどりつきました。' -> '      You arrived in a peaceful village.' [Tokens: []]
+[2026-10-16 15:33:35]   Map002.json  | events[1].pages[0].list[4]             | '\u3000\u3000\u3000みんな\u3000やさしくて\u3000ずっといたいとおもいます。' -> '   Everyone is kind, and you want to stay forever.' [Tokens: []]
+[2026-10-16 15:33:35]   Map002.json  | events[1].pages[0].list[6]             | '\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000ゆっくり\u3000しましょう。' -> '         Let us take it easy.' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[2].pages[0].list[1]             | 'おぞましい化け物が眠っている……。' -> 'A hideous monster is asleep...' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[0].list[1]             | '火をつけますか？' -> 'Will you light the fire?' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[0].list[2].choices[0]  | 'はい' -> 'Yes' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[0].list[2].choices[1]  | 'いいえ' -> 'No' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[0].list[3].when        | 'はい' -> 'Yes' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[0].list[26].when       | 'いいえ' -> 'No' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[1].list[1]             | '火を消しますか？' -> 'Will you extinguish the fire?' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[1].list[2].choices[0]  | 'はい' -> 'Yes' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[1].list[2].choices[1]  | 'いいえ' -> 'No' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[1].list[3].when        | 'はい' -> 'Yes' [Tokens: []]
+[2026-10-16 15:33:35]   Map007.json  | events[6].pages[1].list[6].when        | 'いいえ' -> 'No' [Tokens: []]
+[2026-10-16 15:33:35]   System.json  | gameTitle                              | 'なんにも起きない村からの脱出' -> 'Escape from the Nothing-Happens Village' [Tokens: []]
+[2026-10-16 15:33:35]   System.json  | terms.basic[0]                         | 'レベル' -> 'Level' [Tokens: []]
+[2026-10-16 15:33:35]   System.json  | terms.basic[2]                         | 'ＨＰ' -> 'HP' [Tokens: []]
+[2026-10-16 15:33:35]   System.json  | terms.commands[11]                     | 'オプション' -> 'Options' [Tokens: []]
+[2026-10-16 15:33:35]   System.json  | terms.commands[18]                     | 'ニューゲーム' -> 'New Game' [Tokens: []]
+[2026-10-16 15:33:35]   System.json  | terms.commands[19]                     | 'コンティニュー' -> 'Continue' [Tokens: []]
+[2026-10-16 15:33:35]   System.json  | terms.messages.loadMessage             | 'どのファイルをロードしますか？' -> 'Select a file to load:' [Tokens: []]
+[2026-10-16 15:33:35] Selected and approved 23 target translation units.
+[2026-10-16 15:33:35] 
+[Step 5] Creating Patch Plan and Verifying Dry-Run Safety...
+[2026-10-16 15:33:35] Plan ID: 5af35fc6-4b92-4113-8d24-14773fc772d5 | Total valid edits: 23
+[2026-10-16 15:33:35] Dry-run report status: preview | errors: []
+[2026-10-16 15:33:35] Dry-run verified: 0 filesystem mutations detected.
+[2026-10-16 15:33:35] 
+[Step 6] Executing Live Atomic Patch Application (execute=True, overwrite=True)...
+[2026-10-16 15:33:35] Apply report status: success | files modified: 4
+[2026-10-16 15:33:35] Automated backup created: 8c632a1a-0fb4-4a5a-96e3-be78832f84c3 in 8c632a1a-0fb4-4a5a-96e3-be78832f84c3
+[2026-10-16 15:33:35] All 23 target locators verified on patched files with 100% fidelity.
+[2026-10-16 15:33:35] 
+[Step 7] Launching Native Game Runtime for In-Game Visual & Behavioral Verification...
+[2026-10-16 15:33:36] Launched native NW.js process PID: 27256
+[2026-10-16 15:33:40] Capturing Scene 1: Localized Title Screen...
+[2026-10-16 15:33:40] Captured Scene 1 (Title Screen): True | Window: 'なんにも起きない村からの脱出' -> gl_rpgm_pilot_5_title_screen.png
+[2026-10-16 15:33:40] Opening Load Screen (Continue)...
+[2026-10-16 15:33:43] Captured Scene 2 (Load Screen): True -> gl_rpgm_pilot_5_load_screen.png
+[2026-10-16 15:33:43] Loading File 1 into Map 7 Torch Chamber...
+[2026-10-16 15:33:47] Interacting with Torch Event 6 (ENTER)...
+[2026-10-16 15:33:49] Captured Scene 4 (Dialogue & Choice Box): True -> gl_rpgm_pilot_5_dialogue_choices.png
+[2026-10-16 15:33:49] Selecting 'Yes' (Choice 0) to execute branch condition...
+[2026-10-16 15:33:52] Captured Scene 5 (Branch Resolution - Torch Extinguished): True -> gl_rpgm_pilot_5_branch_resolution.png
+[2026-10-16 15:33:52] Terminating native NW.js process...
+[2026-10-16 15:33:54] 
+[Step 8] Executing Rollback via execute_restore...
+[2026-10-16 15:33:54] Restore report status: success | restored: 4
+[2026-10-16 15:33:54] Verifying 100.0% Byte-for-Byte SHA-256 Checksums Against Baseline...
+[2026-10-16 15:33:54]   data/System.json    : MATCH
+[2026-10-16 15:33:54]   data/Map001.json    : MATCH
+[2026-10-16 15:33:54]   data/Map002.json    : MATCH
+[2026-10-16 15:33:54]   data/Map007.json    : MATCH
+[2026-10-16 15:33:54] 
+Verifying that original candidate at E:\gamelingo_mz_sample_candidate\sample_game remained untouched...
+[2026-10-16 15:33:54] Original candidate is completely untouched and pristine.
+[2026-10-16 15:33:54] Saved structured evidence to gl_rpgm_pilot_5_evidence.json
+[2026-10-16 15:33:54] 
+================================================================================
+[2026-10-16 15:33:54] GL-RPGM-PILOT-5A COMPLETED SUCCESSFULLY: PASSED
+[2026-10-16 15:33:54] ================================================================================

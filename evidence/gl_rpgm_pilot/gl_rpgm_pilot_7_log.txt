@@ -1,0 +1,71 @@
+[2026-10-16 16:46:14] ================================================================================
+[2026-10-16 16:46:14] GL-RPGM-PILOT-7: RPG Maker Production-Readiness Audit
+[2026-10-16 16:46:14] ================================================================================
+[2026-10-16 16:46:14] Candidate Baseline: E:\gamelingo_mz_sample_candidate\sample_game
+[2026-10-16 16:46:14]   Verified baseline: data/System.json -> 028a83cb052fed03... OK
+[2026-10-16 16:46:14]   Verified baseline: data/Map001.json -> eece65ab023847d4... OK
+[2026-10-16 16:46:14]   Verified baseline: data/Map002.json -> bbbbbe60ba262e68... OK
+[2026-10-16 16:46:14]   Verified baseline: data/Map007.json -> 6034d31783edc5ce... OK
+[2026-10-16 16:46:14] 
+================================================================================
+[2026-10-16 16:46:14] [AUDIT 1] RPG Maker MV/MZ Coverage Matrix Inspection
+[2026-10-16 16:46:14] ================================================================================
+[2026-10-16 16:46:14] Coverage Matrix successfully cataloged:
+[2026-10-16 16:46:14]   [system_terms]: 6 capabilities cataloged
+[2026-10-16 16:46:14]   [database_records]: 10 capabilities cataloged
+[2026-10-16 16:46:14]   [maps_and_events]: 11 capabilities cataloged
+[2026-10-16 16:46:14]   [escape_codes_and_placeholders]: 11 capabilities cataloged
+[2026-10-16 16:46:14]   [encodings_and_text]: 6 capabilities cataloged
+[2026-10-16 16:46:14]   [unsupported_or_ambiguous_structures]: 5 capabilities cataloged
+[2026-10-16 16:46:14] 
+================================================================================
+[2026-10-16 16:46:14] [AUDIT 2] Large-Project Scale Benchmark on Playful Parcels (8,223 Units)
+[2026-10-16 16:46:14] ================================================================================
+[2026-10-16 16:46:14] Extraction Benchmark: 8223 units extracted in 88.15 ms (93286 units/sec)
+[2026-10-16 16:46:14] DB Insertion Benchmark: 8223 units stored in 45.55 ms
+[2026-10-16 16:46:15] CSV Export Benchmark: 8223 units exported in 620.72 ms (1894.5 KB)
+[2026-10-16 16:46:15] CSV Import Preview Benchmark: 8223 rows inspected in 620.17 ms (invalid=0, unchanged=8223)
+[2026-10-16 16:46:15] Patch Planning Benchmark: 100 units planned in 31.47 ms (80 valid edits)
+[2026-10-16 16:46:15] Plan Validation Benchmark: validated in 65.21 ms (valid=True)
+[2026-10-16 16:46:15] 
+================================================================================
+[2026-10-16 16:46:15] [AUDIT 3] Deep Failure Injection & Recovery Auditing
+[2026-10-16 16:46:15] ================================================================================
+[2026-10-16 16:46:15] 
+--- Test 1: Stale Source Detection ---
+[2026-10-16 16:46:15] PASS: Planner correctly rejected stale source edit (reason: stale_source)
+[2026-10-16 16:46:15] 
+--- Test 2: Invalid Locator Rejection ---
+[2026-10-16 16:46:15] PASS: Planner correctly rejected invalid locator (reason: locator_not_found)
+[2026-10-16 16:46:15] 
+--- Test 3: Sentinel Leak Rejection ---
+[2026-10-16 16:46:15] PASS: Safety validator caught both XXXTOKEN1XXX and [T1] sentinel leaks
+[2026-10-16 16:46:15] 
+--- Test 4: Token Mismatch Rejection ---
+[2026-10-16 16:46:15] PASS: Safety validator strictly rejected missing placeholder (\C[2]) and unexpected placeholder (\V[5])
+[2026-10-16 16:46:15] 
+--- Test 5: Malformed JSON Data File Handling ---
+[2026-10-16 16:46:15] PASS: Adapter cleanly caught malformed JSON file during extraction (warning: Failed to parse RPG Maker data file 'Map999.json': Expecting property name enclosed in double quotes: line 2 column 1 (char 2))
+[2026-10-16 16:46:15] PASS: Applier cleanly caught malformed JSON and returned failed report: Plan validation failed: Failed to read or resolve data/Map999.json::events[1].pages[0].list[1]
+[2026-10-16 16:46:15] 
+--- Test 6: Multi-File Patch Failure & Automatic Rollback ---
+[2026-10-16 16:46:15] PASS: Apply plan caught replacement failure and triggered automatic recovery
+[2026-10-16 16:46:15] PASS: Post-failure recovery restored 100% of affected files to original bytes
+[2026-10-16 16:46:15] 
+--- Test 7: Corrupted Backup Pre-Validation ---
+[2026-10-16 16:46:15] PASS: Restore service fail-closed check caught corrupted backup: Backup file corrupted (checksum mismatch): data/System.json
+[2026-10-16 16:46:15] 
+--- Test 8: UTF-8 BOM Preservation ---
+[2026-10-16 16:46:15] PASS: Patch application preserved UTF-8 BOM on System.json and no-BOM on Map001.json
+[2026-10-16 16:46:15] PASS: Rollback restored exact original bytes including original BOMs
+[2026-10-16 16:46:15] 
+--- Test 9: Duplicate CSV Rows & Transaction Rollback ---
+[2026-10-16 16:46:16] PASS: CSV import refused duplicate unit rows: Cannot apply import: found 1 invalid rows. Resolve conflicts first.
+[2026-10-16 16:46:16] 
+================================================================================
+[2026-10-16 16:46:16] [AUDIT 4] Translation Quality, Status Isolation & Review Safety
+[2026-10-16 16:46:16] ================================================================================
+[2026-10-16 16:46:16] PASS: Editing approved unit in CSV correctly downgraded status to 'draft'
+[2026-10-16 16:46:16] PASS: Quality warnings correctly generated for EMPTY_OUTPUT, IDENTICAL_TO_SOURCE, and LENGTH_MISMATCH
+[2026-10-16 16:46:16] 
+Saved structured evidence to E:\GameLingo\evidence\gl_rpgm_pilot\gl_rpgm_pilot_7_evidence.json

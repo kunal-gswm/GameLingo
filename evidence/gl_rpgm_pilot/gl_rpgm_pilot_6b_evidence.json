@@ -1,0 +1,149 @@
+{
+  "milestone": "GL-RPGM-PILOT-6B",
+  "engine": "RPG Maker MZ",
+  "candidate": "なんにも起きない村からの脱出",
+  "timestamp": "2026-10-16T16:25:57Z",
+  "disposable_game": "E:\\gamelingo_rpgm_pilot\\run_20261016_162532_pilot6b_gui_mz\\game",
+  "workspace_dir": "E:\\gamelingo_rpgm_pilot\\run_20261016_162532_pilot6b_gui_mz\\workspace",
+  "gui_workflow_verified": {
+    "stage_1_open_project": {
+      "status": "PASSED",
+      "ui_controls": [
+        "dash_page.btn_open_ws",
+        "dash_page.btn_select_game"
+      ],
+      "result": "MZ engine and structure verified"
+    },
+    "stage_2_extract_text": {
+      "status": "PASSED",
+      "ui_controls": [
+        "extract_page.btn_extract",
+        "extract_page.worker"
+      ],
+      "extracted_units": 1143
+    },
+    "stage_3_import_translations": {
+      "status": "PASSED",
+      "ui_controls": [
+        "rev_page.btn_export",
+        "rev_page.btn_import"
+      ],
+      "imported_units": 23
+    },
+    "stage_4_safety_validation": {
+      "status": "PASSED",
+      "ui_controls": [
+        "rev_page.txt_target",
+        "rev_page.btn_save",
+        "rev_page.btn_approve"
+      ],
+      "sentinel_leak_blocked": true,
+      "critical_dialog_shown": true
+    },
+    "stage_5_review_approve": {
+      "status": "PASSED",
+      "ui_controls": [
+        "rev_page.btn_approve",
+        "rev_page.btn_batch_approve"
+      ],
+      "approved_units": 23
+    },
+    "stage_6_patch_apply": {
+      "status": "PASSED",
+      "ui_controls": [
+        "patch_page.btn_create",
+        "patch_page.btn_preview",
+        "patch_page.btn_apply"
+      ],
+      "pill_status": "Patch Applied",
+      "edits_applied": 23
+    },
+    "stage_7_runtime_rendering": {
+      "status": "PASSED",
+      "runtime": "NW.js v1.8.0 Game.exe",
+      "scenes_captured": [
+        "title_screen",
+        "load_screen"
+      ]
+    },
+    "stage_8_choice_branch_execution": {
+      "status": "PASSED",
+      "runtime": "NW.js v1.8.0 Game.exe",
+      "target_event": "Map007 EV006",
+      "save_loaded": "file3.rmmzsave",
+      "choice_selected": "Yes",
+      "branch_executed": "torch_flame_extinguished"
+    },
+    "stage_9_rollback_recovery": {
+      "status": "PASSED",
+      "ui_controls": [
+        "patch_page.cmb_backups",
+        "patch_page.btn_restore"
+      ],
+      "checksum_match_rate": "100.0%"
+    }
+  },
+  "screenshots": {
+    "scene_1_title_screen": {
+      "file": "gl_rpgm_pilot_6b_title_screen.png",
+      "verified_elements": [
+        "Window Title: Escape from the Nothing-Happens Village",
+        "New Game (System.json terms.commands[18])",
+        "Continue (System.json terms.commands[19])",
+        "Options (System.json terms.commands[11])"
+      ]
+    },
+    "scene_2_load_screen": {
+      "file": "gl_rpgm_pilot_6b_load_screen.png",
+      "verified_elements": [
+        "Select a file to load: (System.json terms.messages.loadMessage)"
+      ]
+    },
+    "scene_3_map7_torch_chamber": {
+      "file": "gl_rpgm_pilot_6b_map7_torch_chamber.png",
+      "verified_elements": [
+        "Map 7 Dungeon Chamber (Map007.json)",
+        "Player at (10, 9) facing Left (direction 4)",
+        "Event 6 Torch at (9, 9) with active burning flame (Switch 12 ON)"
+      ]
+    },
+    "scene_4_dialogue_choices": {
+      "file": "gl_rpgm_pilot_6b_dialogue_choices.png",
+      "verified_elements": [
+        "Dialogue Prompt: Will you extinguish the fire? (Map007.json Event 6 Page 1)",
+        "Choice Option 0: Yes (Map007.json Event 6 Page 1 choices[0])",
+        "Choice Option 1: No (Map007.json Event 6 Page 1 choices[1])"
+      ]
+    },
+    "scene_5_branch_resolution": {
+      "file": "gl_rpgm_pilot_6b_branch_resolution.png",
+      "verified_elements": [
+        "Branch Execution: Switch 12 set to OFF by branch condition 0",
+        "Live Game State: Event 6 flame sprite extinguished (!Flame direction 8)",
+        "Visual verification: Player standing in front of unlit torch"
+      ]
+    }
+  },
+  "rollback_checksums": {
+    "data/System.json": {
+      "baseline": "028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d",
+      "post_restore": "028a83cb052fed039c1a007958087196edc94aa246cf12d4f2884e2fa4c4029d",
+      "match": true
+    },
+    "data/Map001.json": {
+      "baseline": "eece65ab023847d4854198dbc2f501791e97665bcf1984fffef188b751f860c1",
+      "post_restore": "eece65ab023847d4854198dbc2f501791e97665bcf1984fffef188b751f860c1",
+      "match": true
+    },
+    "data/Map002.json": {
+      "baseline": "bbbbbe60ba262e68e499caca7214fc387ff8140a5065ab3ba2cb6323796458a5",
+      "post_restore": "bbbbbe60ba262e68e499caca7214fc387ff8140a5065ab3ba2cb6323796458a5",
+      "match": true
+    },
+    "data/Map007.json": {
+      "baseline": "6034d31783edc5ce7d5980f262826a31b29edefc9b7f4c46956b3c741df9ddfd",
+      "post_restore": "6034d31783edc5ce7d5980f262826a31b29edefc9b7f4c46956b3c741df9ddfd",
+      "match": true
+    }
+  }
+}

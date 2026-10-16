@@ -363,11 +363,12 @@ def apply_plan(
                 try:
                     with open(target_file, "rb") as f_raw:
                         has_bom = f_raw.read(3) == b"\xef\xbb\xbf"
-                except Exception:
-                    has_bom = False
-
-                with open(target_file, "r", encoding="utf-8-sig") as f:
-                    data = json.load(f)
+                    with open(target_file, "r", encoding="utf-8-sig") as f:
+                        data = json.load(f)
+                except Exception as e:
+                    report["status"] = "failed"
+                    report["errors"].append(f"Failed to read or parse '{fp}': {e}")
+                    return report
 
                 all_applied = True
                 for edit in file_edits:

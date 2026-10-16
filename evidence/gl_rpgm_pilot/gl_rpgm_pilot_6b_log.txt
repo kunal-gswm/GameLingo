@@ -1,0 +1,80 @@
+[2026-10-16 16:25:32] ================================================================================
+[2026-10-16 16:25:32] GL-RPGM-PILOT-6B: GUI-Driven Workflow & Trustworthy Evidence Closure
+[2026-10-16 16:25:32] ================================================================================
+[2026-10-16 16:25:32] Candidate Baseline: E:\gamelingo_mz_sample_candidate\sample_game
+[2026-10-16 16:25:32] Verifying pristine baseline SHA-256 hashes...
+[2026-10-16 16:25:32]   Verified baseline: data/System.json -> 028a83cb052fed03... OK
+[2026-10-16 16:25:32]   Verified baseline: data/Map001.json -> eece65ab023847d4... OK
+[2026-10-16 16:25:32]   Verified baseline: data/Map002.json -> bbbbbe60ba262e68... OK
+[2026-10-16 16:25:32]   Verified baseline: data/Map007.json -> 6034d31783edc5ce... OK
+[2026-10-16 16:25:32] Creating disposable workspace at E:\gamelingo_rpgm_pilot\run_20261016_162532_pilot6b_gui_mz...
+[2026-10-16 16:25:32] Copying candidate project files into disposable game directory...
+[2026-10-16 16:25:33] Copying authentic NW.js binaries from D:\New folder\Playful Parcels...
+[2026-10-16 16:25:33] 
+[Stage 1] Executing Project Selection via Dashboard GUI Controls...
+[2026-10-16 16:25:37] GUI Workspace Label: E:\gamelingo_rpgm_pilot\run_20261016_162532_pilot6b_gui_mz\workspace
+[2026-10-16 16:25:37] GUI Game Label: E:\gamelingo_rpgm_pilot\run_20261016_162532_pilot6b_gui_mz\game
+[2026-10-16 16:25:37] GUI Dashboard MZ Pill: Supported
+[2026-10-16 16:25:37] GUI Dashboard Structure Pill: Structure Verified
+[2026-10-16 16:25:37] 
+[Stage 2] Executing String Extraction via ExtractionPage GUI Controls...
+[2026-10-16 16:25:38] GUI Extraction Results Box Count: 1143
+[2026-10-16 16:25:38] 
+[Stage 3] Executing CSV Export & Import via ReviewPage GUI Controls...
+[2026-10-16 16:25:38] GUI btn_export wrote translations_export.csv
+[2026-10-16 16:25:38] GUI btn_import applied reviewed CSV import successfully.
+[2026-10-16 16:25:38] 
+[Stage 4] Testing Safety Validation & Error Blocking in Review GUI...
+[2026-10-16 16:25:38] GUI Status Label: Status: NEEDS_REVIEW
+[2026-10-16 16:25:38] GUI Validation Label: [ERROR] Translation output leaked a masking sentinel: XXXTOKEN1XXX
+[WARNING] Translation is unusually long compared to source.
+[2026-10-16 16:25:38] GUI Approval Blocked Dialog Title: Approval Error
+[2026-10-16 16:25:38] 
+[Stage 5] Approving Translations via ReviewPage GUI Controls...
+[2026-10-16 16:25:38] GUI Review Queue Count: 0 units
+[2026-10-16 16:25:38] 
+[Stage 6] Planning, Inspecting & Applying Patch via PatchPage GUI Controls...
+[2026-10-16 16:25:38] GUI Patch Plan Pill: Plan Valid
+[2026-10-16 16:25:38] GUI Preview Plan Text:
+Patch Plan 0c95ba20-e4b6-40d1-a9a7-b7c307c6a578
+Project: default
+----------------------------------------
+Valid Edits: 23
+  [VALID] data/Map001.json @ events[2].pages[0].list[1]
+    - なぜか出られない。
+    + ...
+[2026-10-16 16:25:38] GUI Post-Apply Plan Pill: Patch Applied
+[2026-10-16 16:25:38] All 23 target locators verified on disk with 100% fidelity.
+[2026-10-16 16:25:38] 
+[Stage 7 & 8] Launching Native Game Runtime for Verified In-Game Interaction...
+[2026-10-16 16:25:38] Launched native game process PID 29592
+[2026-10-16 16:25:42] Discovered game window HWND: 590626
+[2026-10-16 16:25:42] Waiting for Title Screen to render...
+[2026-10-16 16:25:44] Capturing Scene 1: Localized Title Screen...
+[2026-10-16 16:25:45] Captured Scene 1 (Title Screen): True | Window: 'Escape from the Nothing-Happens Village' -> gl_rpgm_pilot_6b_title_screen.png
+[2026-10-16 16:25:45] Navigating to Load Screen (Continue)...
+[2026-10-16 16:25:47] Captured Scene 2 (Load Screen): True -> gl_rpgm_pilot_6b_load_screen.png
+[2026-10-16 16:25:47] Navigating to File 3 (Map 7 Torch Chamber)...
+[2026-10-16 16:25:48] Loading File 3 into Map 7 Torch Chamber...
+[2026-10-16 16:25:51] Capturing Scene 3: Map 7 Torch Chamber (Player in front of burning torch)...
+[2026-10-16 16:25:51] Captured Scene 3 (Map 7 Torch Chamber): True -> gl_rpgm_pilot_6b_map7_torch_chamber.png
+[2026-10-16 16:25:51] Interacting with Torch Event 6 (ENTER)...
+[2026-10-16 16:25:53] Captured Scene 4 (Choice Dialogue Prompt): True -> gl_rpgm_pilot_6b_dialogue_choices.png
+[2026-10-16 16:25:53] Selecting 'Yes' (Choice 0) to execute branch condition...
+[2026-10-16 16:25:55] Captured Scene 5 (Branch Resolution - Torch Extinguished): True -> gl_rpgm_pilot_6b_branch_resolution.png
+[2026-10-16 16:25:55] Terminating native NW.js process...
+[2026-10-16 16:25:57] 
+[Stage 9] Executing Rollback & Verification via PatchPage GUI Controls...
+[2026-10-16 16:25:57] GUI Post-Restore Status Info:
+[RESTORE COMPLETE]
+Restored 4 files:
+  • data/Map001.json
+  • data/Map002.json
+  • data/Map007.json
+  • data/System.json
+[2026-10-16 16:25:57]   data/System.json: MATCH (028a83cb052fed03...)
+[2026-10-16 16:25:57]   data/Map001.json: MATCH (eece65ab023847d4...)
+[2026-10-16 16:25:57]   data/Map002.json: MATCH (bbbbbe60ba262e68...)
+[2026-10-16 16:25:57]   data/Map007.json: MATCH (6034d31783edc5ce...)
+[2026-10-16 16:25:57] Verifying original baseline candidate at E:\gamelingo_mz_sample_candidate\sample_game remained untouched...
+[2026-10-16 16:25:57] Candidate baseline confirmed 100% untouched.

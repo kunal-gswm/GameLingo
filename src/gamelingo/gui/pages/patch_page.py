@@ -327,6 +327,11 @@ class PatchPage(QWidget):
 
         if reply == QMessageBox.Yes:
             self.btn_apply.setEnabled(False)
+            self._set_plan_pill("Applying Patch...", "info")
+            from PySide6.QtWidgets import QApplication
+
+            QApplication.processEvents()
+
             backup_root = self.state.workspace_path / "backups"
             try:
                 report = apply_plan(
@@ -353,9 +358,17 @@ class PatchPage(QWidget):
                 self.load_backups()
                 if report["status"] == "success":
                     self._set_plan_pill("Patch Applied", "success")
+                    self.current_plan = None
                     QMessageBox.information(
                         self,
                         "Patch Complete",
+                        msg,
+                    )
+                elif report["status"] == "failed":
+                    self._set_plan_pill("Patch Failed", "danger")
+                    QMessageBox.critical(
+                        self,
+                        "Patch Failed",
                         msg,
                     )
                 else:
@@ -369,7 +382,7 @@ class PatchPage(QWidget):
                 self._set_plan_pill("Patch Failed", "danger")
                 QMessageBox.critical(self, "Error", f"Patch application failed:\n{e}")
             finally:
-                self.btn_apply.setEnabled(True)
+                self.btn_apply.setEnabled(self.current_plan is not None)
 
     def load_backups(self):
         self.cmb_backups.clear()

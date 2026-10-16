@@ -60,14 +60,35 @@ class ReviewService:
         row = cur.fetchone()
         return dict(row) if row else None
 
+    def _resolve_adapter_id(self, unit: Dict[str, Any]) -> str:
+        aid = unit.get("adapter_id")
+        if aid:
+            return aid
+        fid = unit.get("file_id", "")
+        if fid.endswith(".json"):
+            return "rpgmaker_mv_mz"
+        if fid.endswith(".rpy"):
+            return "renpy"
+        try:
+            cur = self.db.connect().execute(
+                "SELECT adapter_id FROM projects WHERE id = 'default'"
+            )
+            r = cur.fetchone()
+            if r and r["adapter_id"]:
+                return r["adapter_id"]
+        except Exception:
+            pass
+        return "rpgmaker_mv_mz"
+
     def update_translation(self, unit_id: str, new_text: str):
         """Updates text and revalidates. Resets status to draft or needs_review."""
         unit = self.get_unit(unit_id)
         if not unit:
             raise ValueError(f"Unit {unit_id} not found")
 
+        adapter_id = self._resolve_adapter_id(unit)
         expected_tokens = None
-        if unit.get("adapter_id") == "rpgmaker_mv_mz" and unit.get("tokens_json"):
+        if adapter_id == "rpgmaker_mv_mz" and unit.get("tokens_json"):
             try:
                 expected_tokens = json.loads(unit["tokens_json"])
             except (json.JSONDecodeError, TypeError):
@@ -76,7 +97,7 @@ class ReviewService:
         issues = validate_translation(
             unit["source_text"],
             new_text,
-            adapter_id=unit.get("adapter_id"),
+            adapter_id=adapter_id,
             expected_tokens=expected_tokens,
         )
         has_errors = any(i.severity == "error" for i in issues)
@@ -135,8 +156,9 @@ class ReviewService:
             raise ValueError(f"Unit {unit_id} not found")
 
         text = unit.get("translated_text") or ""
+        adapter_id = self._resolve_adapter_id(unit)
         expected_tokens = None
-        if unit.get("adapter_id") == "rpgmaker_mv_mz" and unit.get("tokens_json"):
+        if adapter_id == "rpgmaker_mv_mz" and unit.get("tokens_json"):
             try:
                 expected_tokens = json.loads(unit["tokens_json"])
             except (json.JSONDecodeError, TypeError):
@@ -145,7 +167,7 @@ class ReviewService:
         issues = validate_translation(
             unit["source_text"],
             text,
-            adapter_id=unit.get("adapter_id"),
+            adapter_id=adapter_id,
             expected_tokens=expected_tokens,
         )
         if any(i.severity == "error" for i in issues):
@@ -177,8 +199,9 @@ class ReviewService:
                 skipped_count += 1
                 continue
 
+            adapter_id = self._resolve_adapter_id(u)
             expected_tokens = None
-            if u.get("adapter_id") == "rpgmaker_mv_mz" and u.get("tokens_json"):
+            if adapter_id == "rpgmaker_mv_mz" and u.get("tokens_json"):
                 try:
                     expected_tokens = json.loads(u["tokens_json"])
                 except (json.JSONDecodeError, TypeError):
@@ -187,7 +210,7 @@ class ReviewService:
             issues = validate_translation(
                 u["source_text"],
                 text,
-                adapter_id=u.get("adapter_id"),
+                adapter_id=adapter_id,
                 expected_tokens=expected_tokens,
             )
             if any(i.severity == "error" for i in issues):

@@ -1131,3 +1131,105 @@ def test_gui_rpgmaker_selection_unchanged(qapp, tmp_path):
 
     extract_page.refresh()
     assert extract_page.btn_extract.isEnabled()
+
+
+def test_gui_review_page_untranslated_filter_and_import(qapp, tmp_path):
+    """Test ReviewPage UI features: untranslated filter, on_save validation refresh, on_import execution."""
+    ws = tmp_path / "ws_rev"
+    state = AppState()
+    state.open_workspace(ws)
+
+    conn = state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO projects (id, title, install_path, adapter_id, profile_version, created_at) "
+            "VALUES ('default', 'Test Project', '', 'rpgmaker_mv_mz', '1.0', 123)"
+        )
+        conn.execute(
+            "INSERT INTO game_files (id, project_id, relative_path, format, size, source_hash, detected_at) "
+            "VALUES ('f1', 'default', 'Map001.json', 'json', 10, 'h1', 123)"
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) "
+            "VALUES ('u1', 'f1', 'l1', 'こんにちは', 'ctx', '[]', 'sh1', 'untranslated')"
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) "
+            "VALUES ('u2', 'f1', 'l2', 'アイテム [常備薬]', 'ctx', '[]', 'sh2', 'untranslated')"
+        )
+
+    win = MainWindow(state)
+    rev_page = win.pages[3]  # ReviewPage
+    rev_page.refresh()
+
+    # Verify Untranslated Only filter
+    idx = rev_page.cmb_status.findData("untranslated")
+    assert idx != -1
+    rev_page.cmb_status.setCurrentIndex(idx)
+    assert rev_page.list_widget.count() == 2
+
+    # Select unit u1
+    rev_page.list_widget.setCurrentRow(0)
+    assert rev_page.current_unit_id == "u1"
+    assert rev_page.txt_source.toPlainText() == "こんにちは"
+
+    # Edit target text with a valid translation
+    rev_page.txt_target.setPlainText("Hello")
+    rev_page.on_save()
+    assert rev_page.lbl_status.text() == "Status: DRAFT"
+    assert rev_page.lbl_validation.text() == ""
+
+    # Approve unit u1
+    with patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit:
+        rev_page.on_approve()
+        assert not mock_crit.called
+        assert rev_page.lbl_status.text() == "Status: APPROVED"
+
+    # Test CSV export and import via ReviewPage buttons
+    csv_out = tmp_path / "export_test.csv"
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getSaveFileName",
+            return_value=(str(csv_out), ""),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_info,
+    ):
+        rev_page.on_export()
+        assert mock_info.called
+        assert csv_out.exists()
+
+    # Modify export for u2 with RPG Maker brackets [Medicine]
+    import csv
+
+    with open(csv_out, "r", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        fieldnames = reader.fieldnames
+
+    for r in rows:
+        if r["unit_id"] == "u2":
+            r["translated_text"] = "Item [Medicine]"
+
+    with open(csv_out, "w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    # Import CSV through ReviewPage.on_import
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+            return_value=(str(csv_out), ""),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.information") as mock_import_info,
+        patch("PySide6.QtWidgets.QMessageBox.critical") as mock_import_crit,
+    ):
+        rev_page.on_import()
+        assert not mock_import_crit.called
+        assert mock_import_info.called
+        assert "1 updated" in mock_import_info.call_args[0][2]
+
+    # Verify u2 translation imported properly
+    u2_data = rev_page.service.get_unit("u2")
+    assert u2_data["translated_text"] == "Item [Medicine]"
+    assert u2_data["status"] == "draft"

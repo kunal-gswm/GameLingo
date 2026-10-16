@@ -1,0 +1,326 @@
+{
+  "milestone": "GL-RPGM-PILOT-7",
+  "engine": "RPG Maker MV/MZ",
+  "timestamp": "2026-10-16T16:46:16Z",
+  "coverage_matrix": {
+    "system_terms": {
+      "gameTitle": {
+        "supported": true,
+        "tested_live": true,
+        "tests": [
+          "unit",
+          "integration",
+          "runtime"
+        ]
+      },
+      "currencyUnit": {
+        "supported": true,
+        "tested_live": true,
+        "tests": [
+          "unit",
+          "integration"
+        ]
+      },
+      "terms.basic": {
+        "supported": true,
+        "tested_live": true,
+        "tests": [
+          "unit",
+          "integration",
+          "runtime"
+        ]
+      },
+      "terms.params": {
+        "supported": true,
+        "tested_live": true,
+        "tests": [
+          "unit",
+          "integration"
+        ]
+      },
+      "terms.commands": {
+        "supported": true,
+        "tested_live": true,
+        "tests": [
+          "unit",
+          "integration",
+          "runtime"
+        ]
+      },
+      "terms.messages": {
+        "supported": true,
+        "tested_live": true,
+        "tests": [
+          "unit",
+          "integration",
+          "runtime"
+        ]
+      }
+    },
+    "database_records": {
+      "Actors.json": {
+        "supported": true,
+        "fields": [
+          "name",
+          "nickname",
+          "profile"
+        ],
+        "tested_live": true
+      },
+      "Classes.json": {
+        "supported": true,
+        "fields": [
+          "name"
+        ],
+        "tested_live": true
+      },
+      "Skills.json": {
+        "supported": true,
+        "fields": [
+          "name",
+          "description",
+          "message1",
+          "message2"
+        ],
+        "tested_live": true
+      },
+      "Items.json": {
+        "supported": true,
+        "fields": [
+          "name",
+          "description"
+        ],
+        "tested_live": true
+      },
+      "Weapons.json": {
+        "supported": true,
+        "fields": [
+          "name",
+          "description"
+        ],
+        "tested_live": true
+      },
+      "Armors.json": {
+        "supported": true,
+        "fields": [
+          "name",
+          "description"
+        ],
+        "tested_live": true
+      },
+      "Enemies.json": {
+        "supported": true,
+        "fields": [
+          "name"
+        ],
+        "tested_live": true
+      },
+      "States.json": {
+        "supported": true,
+        "fields": [
+          "name",
+          "description",
+          "message1",
+          "message2",
+          "message3",
+          "message4"
+        ],
+        "tested_live": true
+      },
+      "Troops.json": {
+        "supported": true,
+        "fields": [
+          "name",
+          "pages.list commands"
+        ],
+        "tested_live": true
+      },
+      "MapInfos.json": {
+        "supported": true,
+        "fields": [
+          "name"
+        ],
+        "tested_live": true
+      }
+    },
+    "maps_and_events": {
+      "MapXXX.json displayName": {
+        "supported": true,
+        "tested_live": true
+      },
+      "Code 101 Show Text (Speaker Name - MZ)": {
+        "supported": true,
+        "tested_live": true,
+        "runtime_verified": true
+      },
+      "Code 401 Show Text (Dialogue line)": {
+        "supported": true,
+        "tested_live": true,
+        "runtime_verified": true
+      },
+      "Code 102 Show Choices (Choice array)": {
+        "supported": true,
+        "tested_live": true,
+        "runtime_verified": true
+      },
+      "Code 402 When Choice (Branch header)": {
+        "supported": true,
+        "tested_live": true,
+        "runtime_verified": true
+      },
+      "Code 405 Show Scrolling Text": {
+        "supported": true,
+        "tested_live": true
+      },
+      "Code 320 Change Actor Name": {
+        "supported": true,
+        "tested_live": true
+      },
+      "Code 324 Change Actor Nickname": {
+        "supported": true,
+        "tested_live": true
+      },
+      "Code 325 Change Actor Profile": {
+        "supported": true,
+        "tested_live": true
+      },
+      "Code 111 Conditional Branch": {
+        "supported": true,
+        "note": "Dialogue inside branch extracted via list[idx]; script condition preserved"
+      },
+      "CommonEvents.json": {
+        "supported": true,
+        "tested_live": true
+      }
+    },
+    "escape_codes_and_placeholders": {
+      "\\V[n] (Variable)": {
+        "supported": true,
+        "token_protection": true
+      },
+      "\\N[n] (Actor Name)": {
+        "supported": true,
+        "token_protection": true,
+        "tested_live": true
+      },
+      "\\P[n] (Party Member)": {
+        "supported": true,
+        "token_protection": true
+      },
+      "\\C[n] (Color Code)": {
+        "supported": true,
+        "token_protection": true,
+        "tested_live": true
+      },
+      "\\I[n] (Icon Index)": {
+        "supported": true,
+        "token_protection": true
+      },
+      "\\FS[n] (Font Size - MZ)": {
+        "supported": true,
+        "token_protection": true,
+        "tested_live": true
+      },
+      "\\PX[n], \\PY[n] (Coordinates - MZ)": {
+        "supported": true,
+        "token_protection": true
+      },
+      "\\G (Gold Unit)": {
+        "supported": true,
+        "token_protection": true,
+        "tested_live": true
+      },
+      "\\$, \\{, \\}, \\., \\|, \\!, \\>, \\<, \\^": {
+        "supported": true,
+        "token_protection": true
+      },
+      "\\\\ (Literal Backslash)": {
+        "supported": true,
+        "token_protection": true
+      },
+      "%1..%9, %s, %d (Positional Format)": {
+        "supported": true,
+        "token_protection": true,
+        "tested_live": true
+      }
+    },
+    "encodings_and_text": {
+      "UTF-8 without BOM": {
+        "supported": true,
+        "tested_live": true,
+        "runtime_verified": true
+      },
+      "UTF-8 with BOM (\\xef\\xbb\\xbf)": {
+        "supported": true,
+        "tested_live": true,
+        "preserved_on_patch": true
+      },
+      "Japanese CJK Kanji/Hiragana/Katakana": {
+        "supported": true,
+        "tested_live": true,
+        "runtime_verified": true
+      },
+      "Unicode Accented / Cyrillic / Emoji": {
+        "supported": true,
+        "tested_live": true
+      },
+      "Empty Strings": {
+        "supported": true,
+        "behavior": "Safely omitted from extraction"
+      },
+      "Repeated Strings across multiple events": {
+        "supported": true,
+        "behavior": "Unique locators guarantee collision-free isolation"
+      }
+    },
+    "unsupported_or_ambiguous_structures": {
+      "Save Files (*.rmmzsave, *.rpgsave)": {
+        "supported": false,
+        "status": "Excluded by design (dynamic runtime state)"
+      },
+      "Binary Assets (Game.exe, nw.exe, audio, img)": {
+        "supported": false,
+        "status": "Excluded by design (media/binaries)"
+      },
+      "Plugin Code / Scripts (js/plugins.js, js/plugins/*.js)": {
+        "supported": false,
+        "status": "Excluded by design (executable JS code)"
+      },
+      "Plugin Command parameters (Code 356 MV / Code 357 MZ)": {
+        "supported": false,
+        "status": "Ambiguous (plugin-dependent schema)"
+      },
+      "Event Comments / Note Tags (Code 108 / 408)": {
+        "supported": false,
+        "status": "Excluded by design (developer notes/plugin directives)"
+      }
+    }
+  },
+  "scale_benchmarks": {
+    "units_extracted": 8223,
+    "extract_time_ms": 88.15,
+    "db_insert_time_ms": 45.55,
+    "csv_export_time_ms": 620.72,
+    "csv_file_size_kb": 1894.5,
+    "csv_preview_time_ms": 620.17,
+    "planning_time_100_units_ms": 31.47,
+    "validation_time_100_units_ms": 65.21,
+    "throughput_units_per_sec": 93286
+  },
+  "failure_audits": {
+    "test_1_stale_source": "PASSED",
+    "test_2_invalid_locator": "PASSED",
+    "test_3_sentinel_leak": "PASSED",
+    "test_4_token_mismatch": "PASSED",
+    "test_5_malformed_json": "PASSED",
+    "test_6_atomic_patch_rollback": "PASSED",
+    "test_7_corrupted_backup_rejection": "PASSED",
+    "test_8_bom_preservation": "PASSED",
+    "test_9_duplicate_csv_rejection": "PASSED"
+  },
+  "review_safety_audits": {
+    "test_approval_invalidation": "PASSED",
+    "test_quality_warnings": "PASSED"
+  },
+  "verdict": "PASSED"
+}

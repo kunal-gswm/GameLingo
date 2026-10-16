@@ -523,12 +523,17 @@ class DashboardPage(QWidget):
                     )
             elif detected_adapter and detected_adapter.adapter_id == "rpgmaker_mv_mz":
                 self._update_pill(self.pill_renpy, "Not Detected", "neutral")
-                if (check_path / "www" / "data" / "System.json").exists():
-                    self._update_pill(self.pill_mv, "Supported", "info")
-                    self._update_pill(self.pill_mz, "Not Detected", "neutral")
-                else:
+                is_mz = (
+                    "MZ" in version_desc
+                    or (check_path / "js" / "rmmz_core.js").exists()
+                    or (check_path / "game.rmmzproject").exists()
+                )
+                if is_mz:
                     self._update_pill(self.pill_mz, "Supported", "info")
                     self._update_pill(self.pill_mv, "Not Detected", "neutral")
+                else:
+                    self._update_pill(self.pill_mv, "Supported", "info")
+                    self._update_pill(self.pill_mz, "Not Detected", "neutral")
 
                 data_dir = detected_adapter._get_data_dir(check_path)
                 try:

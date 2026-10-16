@@ -1,0 +1,71 @@
+[2026-10-16 15:59:50] ================================================================================
+[2026-10-16 15:59:50] GL-RPGM-PILOT-6: RPG Maker MZ Application-Level Acceptance Runner
+[2026-10-16 15:59:50] ================================================================================
+[2026-10-16 15:59:50] Candidate Baseline: E:\gamelingo_mz_sample_candidate\sample_game
+[2026-10-16 15:59:50] Verifying pristine baseline SHA-256 hashes...
+[2026-10-16 15:59:50]   Verified baseline: data/System.json -> 028a83cb052fed03... OK
+[2026-10-16 15:59:50]   Verified baseline: data/Map001.json -> eece65ab023847d4... OK
+[2026-10-16 15:59:50]   Verified baseline: data/Map002.json -> bbbbbe60ba262e68... OK
+[2026-10-16 15:59:50]   Verified baseline: data/Map007.json -> 6034d31783edc5ce... OK
+[2026-10-16 15:59:50] Creating disposable workspace at E:\gamelingo_rpgm_pilot\run_20261016_155950_pilot6_app_mz...
+[2026-10-16 15:59:50] Copying candidate project files into disposable game directory...
+[2026-10-16 15:59:51] Copying authentic NW.js binaries from D:\New folder\Playful Parcels...
+[2026-10-16 15:59:51] 
+[Stage 1] Initializing Application State and UI Framework...
+[2026-10-16 15:59:51] Opening application workspace: E:\gamelingo_rpgm_pilot\run_20261016_155950_pilot6_app_mz\workspace
+[2026-10-16 15:59:51] Selecting target game directory: E:\gamelingo_rpgm_pilot\run_20261016_155950_pilot6_app_mz\game
+[2026-10-16 15:59:51] Dashboard MZ Pill Status: Supported
+[2026-10-16 15:59:51] Dashboard Structure Pill: Structure Verified
+[2026-10-16 15:59:51] Dashboard Structure Desc: Valid RPG Maker data structure verified at 'data/' (20 JSON data files found, System.json present). Engine detected: RPG Maker MZ.
+[2026-10-16 15:59:51] 
+[Stage 2] Executing String Extraction via Application ExtractionWorker...
+[2026-10-16 15:59:51] Extraction completed: 1143 units extracted.
+[2026-10-16 15:59:51] Verified translation_units count in database: 1143
+[2026-10-16 15:59:51] Verified game_files count: 18 files registered.
+[2026-10-16 15:59:51] 
+[Stage 3] Testing Application CSV Export & Import Workflow...
+[2026-10-16 15:59:51] Exported 1143 rows to translations_export.csv
+[2026-10-16 15:59:51] Prepared CSV import payload with 23 reviewed translation units.
+[2026-10-16 15:59:51] CSV import completed: 23 updated, 1120 skipped.
+[2026-10-16 15:59:51] 
+[Stage 4] Testing Safety Validation & Token Mismatch Enforcement in Application...
+[2026-10-16 15:59:51] Intentional invalid edit status: needs_review | quality_flags: [{"code": "SENTINEL_LEAK", "severity": "error", "message": "Translation output leaked a masking sentinel: XXXTOKEN1XXX"}, {"code": "LENGTH_MISMATCH", "severity": "warning", "message": "Translation is unusually long compared to source."}]
+[2026-10-16 15:59:51] Approval correctly BLOCKED by validation rules: Cannot approve unit Map007.json::events[6].pages[1].list[1]: has blocking errors.
+[2026-10-16 15:59:51] 
+[Stage 5] Reviewing and Approving Translations via ReviewService...
+[2026-10-16 15:59:51] Batch approval result: 23 approved, 0 skipped.
+[2026-10-16 15:59:51] Review Page status: queue has 0 units
+[2026-10-16 15:59:51] 
+[Stage 6] Creating Patch Plan and Applying via Application PatchPage...
+[2026-10-16 15:59:51] Patch plan status: Plan Valid
+[2026-10-16 15:59:51] Planned edits: 23 edits across files
+[2026-10-16 15:59:51] Dry-run report status: preview | errors: []
+[2026-10-16 15:59:51] Applying atomic live patch with backup snapshot creation...
+[2026-10-16 15:59:51] Apply report status: success
+[2026-10-16 15:59:51] Backup ID: 7c43227a-4fc2-42d2-8fc3-7f6a7d013f79
+[2026-10-16 15:59:51] Successfully changed files: 4
+[2026-10-16 15:59:51] All 23 target locators verified on disk with 100% fidelity.
+[2026-10-16 15:59:51] 
+[Stage 7 & 8] Launching Native Game Runtime for In-Game Visual & Behavioral Verification...
+[2026-10-16 15:59:52] Launched native game process PID 25400
+[2026-10-16 15:59:55] Discovered game window HWND: 459320
+[2026-10-16 15:59:56] Waiting for Title Screen to render...
+[2026-10-16 15:59:58] Capturing Scene 1: Localized Title Screen...
+[2026-10-16 15:59:58] Captured Scene 1 (Title Screen): True | Window: 'Escape from the Nothing-Happens Village' -> gl_rpgm_pilot_6_title_screen.png
+[2026-10-16 15:59:58] Navigating to Load Screen (Continue)...
+[2026-10-16 16:00:00] Captured Scene 2 (Load Screen): True -> gl_rpgm_pilot_6_load_screen.png
+[2026-10-16 16:00:00] Loading File 1 save state to enter Map 7 (Torch Chamber)...
+[2026-10-16 16:00:05] Interacting with Torch (Event 6 Page 1)...
+[2026-10-16 16:00:07] Captured Scene 3 (Choice Dialogue Prompt): True -> gl_rpgm_pilot_6_dialogue_choices.png
+[2026-10-16 16:00:07] Selecting 'Yes' (Choice 0) to execute branch condition...
+[2026-10-16 16:00:09] Captured Scene 4 (Branch Resolution - Torch Extinguished): True -> gl_rpgm_pilot_6_branch_resolution.png
+[2026-10-16 16:00:09] Terminating native NW.js process...
+[2026-10-16 16:00:10] 
+[Stage 9] Executing Rollback & Verifying Byte-Exact Recovery...
+[2026-10-16 16:00:11] Restore result: status success | restored 4 files
+[2026-10-16 16:00:11]   data/System.json: MATCH (028a83cb052fed03...)
+[2026-10-16 16:00:11]   data/Map001.json: MATCH (eece65ab023847d4...)
+[2026-10-16 16:00:11]   data/Map002.json: MATCH (bbbbbe60ba262e68...)
+[2026-10-16 16:00:11]   data/Map007.json: MATCH (6034d31783edc5ce...)
+[2026-10-16 16:00:11] Verifying original baseline candidate at E:\gamelingo_mz_sample_candidate\sample_game remained untouched...
+[2026-10-16 16:00:11] Candidate baseline confirmed 100% untouched.

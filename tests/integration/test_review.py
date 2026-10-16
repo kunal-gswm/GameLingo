@@ -176,3 +176,30 @@ def test_approve_all(db):
 
     assert service.get_unit("u1")["status"] == "approved"
     assert service.get_unit("u2")["status"] == "draft"
+
+
+def test_review_rpgmaker_square_brackets_allowed(db):
+    service = ReviewService(db)
+    conn = db.connect()
+    with conn:
+        conn.execute(
+            "UPDATE projects SET adapter_id = 'rpgmaker_mv_mz' WHERE id = 'proj1'"
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) "
+            "VALUES ('u_sq', 'f1', 'items[1].desc', '回復薬 [常備薬]', 'item', '[]', 'h_sq', 'draft')"
+        )
+        conn.execute(
+            "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, created_at, updated_at) "
+            "VALUES ('r_sq', 'u_sq', 'human', 'manual', 'Medicine [Standard]', 'Medicine [Standard]', '[]', 0, 0)"
+        )
+
+    # Validating RPG Maker translation with square brackets must NOT fail with UNSAFE_INTERPOLATION
+    service.update_translation("u_sq", "Restores HP [Medicine].")
+    unit = service.get_unit("u_sq")
+    assert unit["status"] == "draft"
+    assert "UNSAFE_INTERPOLATION" not in unit.get("quality_flags", "")
+
+    # Approving must succeed
+    service.approve("u_sq")
+    assert service.get_unit("u_sq")["status"] == "approved"
