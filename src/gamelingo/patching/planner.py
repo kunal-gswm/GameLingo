@@ -5,6 +5,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from gamelingo.adapters.formats.lcf import load_lcf, resolve_lcf_locator
+from gamelingo.adapters.formats.ruby_marshal import load_marshal, resolve_ruby_locator
 from gamelingo.adapters.renpy import detect_renpy_runtime
 from gamelingo.domain.models import TranslationRecord, TranslationUnit
 from gamelingo.safety.backup import calculate_sha256, is_safe_path
@@ -63,6 +65,43 @@ def _resolve_rpgmaker_locator(data: Any, locator: str) -> Any:
         raise ValueError(f"Could not resolve locator: {locator}")
 
 
+def resolve_file_locator(
+    file_path: Path,
+    locator: str,
+    file_cache: Optional[Dict[str, Any]] = None,
+) -> str:
+    ext = file_path.suffix.lower()
+    cache_key = str(file_path.resolve())
+    data = None
+    if file_cache is not None and cache_key in file_cache:
+        data = file_cache[cache_key]
+    else:
+        if ext == ".json":
+            with open(file_path, "r", encoding="utf-8-sig") as f:
+                data = json.load(f)
+        elif ext in (".rvdata2", ".rvdata", ".rxdata"):
+            with open(file_path, "rb") as f:
+                data = load_marshal(f.read())
+        elif ext in (".ldb", ".lmt", ".lmu"):
+            with open(file_path, "rb") as f:
+                _, root, enc = load_lcf(f.read())
+                data = (root, enc)
+        else:
+            raise ValueError(f"Unsupported file format: {ext}")
+        if file_cache is not None:
+            file_cache[cache_key] = data
+
+    if ext == ".json":
+        val = _resolve_rpgmaker_locator(data, locator)
+        return str(val) if val is not None else ""
+    elif ext in (".rvdata2", ".rvdata", ".rxdata"):
+        return resolve_ruby_locator(data, locator)
+    elif ext in (".ldb", ".lmt", ".lmu"):
+        root, enc = data
+        return resolve_lcf_locator(root, locator, encoding=enc)
+    raise ValueError(f"Unsupported file format: {ext}")
+
+
 SUPPORTED_PLAN_VERSIONS = ("1.0", "1.1")
 
 
@@ -86,9 +125,22 @@ def create_plan(
     except OSError:
         raise PlannerError("Source root does not exist.")
 
-    is_renpy = adapter_id == "renpy" or (
-        adapter_id is None and units and any(u.file_id.endswith(".rpy") for u in units)
-    )
+    if adapter_id is not None:
+        actual_adapter_id = adapter_id
+    elif units and any(u.file_id.endswith(".rpy") for u in units):
+        actual_adapter_id = "renpy"
+    elif units and any(u.file_id.endswith(".rvdata2") for u in units):
+        actual_adapter_id = "rpgmaker_vx_ace"
+    elif units and any(u.file_id.endswith(".rvdata") for u in units):
+        actual_adapter_id = "rpgmaker_vx"
+    elif units and any(u.file_id.endswith(".rxdata") for u in units):
+        actual_adapter_id = "rpgmaker_xp"
+    elif units and any(u.file_id.endswith((".ldb", ".lmt", ".lmu")) for u in units):
+        actual_adapter_id = "rpgmaker_2003"
+    else:
+        actual_adapter_id = "rpgmaker_mv_mz"
+
+    is_renpy = actual_adapter_id == "renpy"
 
     plan = {
         "version": "1.1",
@@ -96,7 +148,7 @@ def create_plan(
         "created_at": time.time(),
         "project_id": str(project_id).strip(),
         "target_root": str(source_root_resolved),
-        "adapter_id": "renpy" if is_renpy else "rpgmaker_mv_mz",
+        "adapter_id": actual_adapter_id,
         "edits": [],
         "validation_errors": [],
     }
@@ -150,11 +202,29 @@ def create_plan(
         )
         if not is_renpy:
             # Auto-resolve RPG Maker relative path early so edits carry accurate paths
-            if not (source_root_resolved / rel_path).exists():
-                for candidate in [f"data/{unit.file_id}", f"www/data/{unit.file_id}"]:
-                    if (source_root_resolved / candidate).exists():
+            candidates = (
+                [f"Data/{unit.file_id}", f"data/{unit.file_id}", unit.file_id]
+                if actual_adapter_id
+                in ("rpgmaker_vx_ace", "rpgmaker_vx", "rpgmaker_xp")
+                else [
+                    f"data/{unit.file_id}",
+                    f"www/data/{unit.file_id}",
+                    f"Data/{unit.file_id}",
+                    unit.file_id,
+                ]
+            )
+            for candidate in candidates:
+                cand_path = source_root_resolved / candidate
+                if cand_path.exists():
+                    try:
+                        rel_path = str(
+                            cand_path.resolve()
+                            .relative_to(source_root_resolved)
+                            .as_posix()
+                        )
+                    except Exception:
                         rel_path = candidate
-                        break
+                    break
 
         unit_pid = getattr(unit, "project_id", None)
         if unit_pid and project_id and unit_pid != project_id and unit_pid != "default":
@@ -369,12 +439,30 @@ def create_plan(
             )
             continue
 
-        # RPG Maker JSON handling
         target_file = source_root_resolved / rel_path
         if not target_file.exists():
-            for candidate in [f"data/{unit.file_id}", f"www/data/{unit.file_id}"]:
-                if (source_root_resolved / candidate).exists():
-                    rel_path = candidate
+            candidates = (
+                [f"Data/{unit.file_id}", f"data/{unit.file_id}", unit.file_id]
+                if actual_adapter_id
+                in ("rpgmaker_vx_ace", "rpgmaker_vx", "rpgmaker_xp")
+                else [
+                    f"data/{unit.file_id}",
+                    f"www/data/{unit.file_id}",
+                    f"Data/{unit.file_id}",
+                    unit.file_id,
+                ]
+            )
+            for candidate in candidates:
+                cand_path = source_root_resolved / candidate
+                if cand_path.exists():
+                    try:
+                        rel_path = str(
+                            cand_path.resolve()
+                            .relative_to(source_root_resolved)
+                            .as_posix()
+                        )
+                    except Exception:
+                        rel_path = candidate
                     target_file = source_root_resolved / rel_path
                     break
 
@@ -402,29 +490,15 @@ def create_plan(
             )
             continue
 
-        if unit.file_id not in file_cache:
-            try:
-                with open(target_file, "r", encoding="utf-8-sig") as f:
-                    file_cache[unit.file_id] = json.load(f)
-                hash_cache[unit.file_id] = calculate_sha256(target_file)
-            except Exception:
-                plan["edits"].append(
-                    {
-                        "unit_id": unit.id,
-                        "file_id": unit.file_id,
-                        "file_path": rel_path,
-                        "status": "rejected",
-                        "reason": "file_read_error",
-                    }
-                )
-                continue
-
-        file_data = file_cache[unit.file_id]
+        if unit.file_id not in hash_cache:
+            hash_cache[unit.file_id] = calculate_sha256(target_file)
         current_hash = hash_cache[unit.file_id]
 
         try:
-            current_val = _resolve_rpgmaker_locator(file_data, unit.locator)
-        except ValueError:
+            current_val = resolve_file_locator(
+                target_file, unit.locator, file_cache=file_cache
+            )
+        except ValueError as e:
             plan["edits"].append(
                 {
                     "unit_id": unit.id,
@@ -433,6 +507,19 @@ def create_plan(
                     "locator": unit.locator,
                     "status": "rejected",
                     "reason": "locator_not_found",
+                    "details": str(e),
+                }
+            )
+            continue
+        except Exception as e:
+            plan["edits"].append(
+                {
+                    "unit_id": unit.id,
+                    "file_id": unit.file_id,
+                    "file_path": rel_path,
+                    "status": "rejected",
+                    "reason": "file_read_error",
+                    "details": str(e),
                 }
             )
             continue
@@ -655,9 +742,7 @@ def validate_plan(
             raise PlanValidationError(f"Source file not found: {file_path}")
 
         try:
-            with open(target_file, "r", encoding="utf-8-sig") as f:
-                file_data = json.load(f)
-            current_val = _resolve_rpgmaker_locator(file_data, locator)
+            current_val = resolve_file_locator(target_file, locator)
         except Exception:
             raise PlanValidationError(f"Failed to read or resolve {target}")
 

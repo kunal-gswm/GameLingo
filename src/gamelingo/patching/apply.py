@@ -4,6 +4,18 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from gamelingo.adapters.formats.lcf import (
+    apply_lcf_locator,
+    dump_lcf,
+    load_lcf,
+    resolve_lcf_locator,
+)
+from gamelingo.adapters.formats.ruby_marshal import (
+    apply_ruby_locator,
+    dump_marshal,
+    load_marshal,
+    resolve_ruby_locator,
+)
 from gamelingo.adapters.renpy import detect_renpy_runtime
 from gamelingo.adapters.renpy_strings import (
     generate_activation_rpy,
@@ -13,6 +25,7 @@ from gamelingo.adapters.renpy_strings import (
 from gamelingo.patching.planner import (
     _resolve_rpgmaker_locator,
     _tokenize_locator,
+    resolve_file_locator,
     validate_plan,
 )
 from gamelingo.safety.backup import (
@@ -185,26 +198,39 @@ def apply_plan(
                     f"Ren'Py version is unknown ({runtime_info.get('support_reason')}). Best-effort fallback applied."
                 )
 
+    plan_adapter = plan.get("adapter_id", "rpgmaker_mv_mz")
     report["diagnostics"] = {
-        "engine": "renpy" if is_renpy else "rpgmaker_mv_mz",
-        "detected_version": runtime_info.get("version") if is_renpy else "mv_mz",
+        "engine": plan_adapter if not is_renpy else "renpy",
+        "detected_version": runtime_info.get("version") if is_renpy else plan_adapter,
         "python_family": runtime_info.get("python_family") if is_renpy else "n/a",
         "support_level": runtime_info.get("support_level") if is_renpy else "verified",
         "translation_strategy": (
             "native_strings_rpy + verified_real_engine_hook"
-            if runtime_info.get("support_level") == "verified"
+            if is_renpy and runtime_info.get("support_level") == "verified"
             else (
                 "best_effort_polyglot_fallback"
-                if runtime_info.get("support_level") == "best_effort"
+                if is_renpy and runtime_info.get("support_level") == "best_effort"
                 else (
                     "native_strings_rpy + polyglot_fallback_hook"
-                    if runtime_info.get("support_level") == "supported_with_fallback"
-                    else "native_strings_rpy"
+                    if is_renpy
+                    and runtime_info.get("support_level") == "supported_with_fallback"
+                    else (
+                        "native_strings_rpy"
+                        if is_renpy
+                        else (
+                            "ruby_marshal_ast_patching"
+                            if plan_adapter
+                            in ("rpgmaker_vx_ace", "rpgmaker_vx", "rpgmaker_xp")
+                            else (
+                                "lcf_binary_ast_patching"
+                                if plan_adapter == "rpgmaker_2003"
+                                else "json_ast_patching"
+                            )
+                        )
+                    )
                 )
             )
-        )
-        if is_renpy
-        else "json_ast_patching",
+        ),
         "dynamic_text_fallback_installed": any(
             e.get("action") == "create_activation_file"
             or str(e.get("file_path", "")).endswith("gamelingo_activate.rpy")
@@ -261,9 +287,6 @@ def apply_plan(
         else:
             for fp, file_edits in edits_by_file.items():
                 target_file = source_root_resolved / fp
-                with open(target_file, "r", encoding="utf-8-sig") as f:
-                    data = json.load(f)
-
                 already_applied = True
                 for edit in file_edits:
                     locator = edit.get("locator")
@@ -271,7 +294,7 @@ def apply_plan(
                     translated = edit.get("translated_text")
 
                     try:
-                        current_val = _resolve_rpgmaker_locator(data, locator)
+                        current_val = resolve_file_locator(target_file, locator)
                         if current_val != translated:
                             already_applied = False
                         if current_val != expected and current_val != translated:
@@ -410,63 +433,180 @@ def apply_plan(
         else:
             for fp, file_edits in edits_by_file.items():
                 target_file = source_root_resolved / fp
-                has_bom = False
-                try:
-                    with open(target_file, "rb") as f_raw:
-                        has_bom = f_raw.read(3) == b"\xef\xbb\xbf"
-                    with open(target_file, "r", encoding="utf-8-sig") as f:
-                        data = json.load(f)
-                except Exception as e:
-                    report["status"] = "failed"
-                    report["errors"].append(f"Failed to read or parse '{fp}': {e}")
-                    return report
+                ext = target_file.suffix.lower()
 
-                all_applied = True
-                for edit in file_edits:
-                    locator = edit.get("locator")
-                    expected = edit.get("original_text")
-                    translated = edit.get("translated_text")
-
-                    current_val = _resolve_rpgmaker_locator(data, locator)
-                    if current_val == translated:
-                        continue  # already applied
-                    if current_val != expected:
+                if ext == ".json":
+                    has_bom = False
+                    try:
+                        with open(target_file, "rb") as f_raw:
+                            has_bom = f_raw.read(3) == b"\xef\xbb\xbf"
+                        with open(target_file, "r", encoding="utf-8-sig") as f:
+                            data = json.load(f)
+                    except Exception as e:
                         report["status"] = "failed"
-                        report["errors"].append(
-                            f"Stale source detected dynamically during staging for {fp}::{locator}"
+                        report["errors"].append(f"Failed to read or parse '{fp}': {e}")
+                        return report
+
+                    all_applied = True
+                    for edit in file_edits:
+                        locator = edit.get("locator")
+                        expected = edit.get("original_text")
+                        translated = edit.get("translated_text")
+
+                        current_val = _resolve_rpgmaker_locator(data, locator)
+                        if current_val == translated:
+                            continue  # already applied
+                        if current_val != expected:
+                            report["status"] = "failed"
+                            report["errors"].append(
+                                f"Stale source detected dynamically during staging for {fp}::{locator}"
+                            )
+                            return report  # abort!
+
+                        all_applied = False
+                        _apply_rpgmaker_locator(data, locator, translated)
+
+                    if all_applied:
+                        report["skipped_already_applied"].append(fp)
+                        continue
+
+                    fd, tmp_path_str = tempfile.mkstemp(
+                        prefix="gamelingo_", suffix=".tmp", dir=str(target_file.parent)
+                    )
+                    os.close(fd)
+                    tmp_file = Path(tmp_path_str)
+                    staged_files[fp] = tmp_file
+
+                    write_encoding = "utf-8-sig" if has_bom else "utf-8"
+                    with open(tmp_file, "w", encoding=write_encoding) as f:
+                        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+
+                    # Verify staged
+                    with open(tmp_file, "r", encoding="utf-8-sig") as f:
+                        staged_data = json.load(f)
+
+                    for edit in file_edits:
+                        loc = edit.get("locator")
+                        expected_tl = edit.get("translated_text")
+                        resolved_tl = _resolve_rpgmaker_locator(staged_data, loc)
+                        if resolved_tl != expected_tl:
+                            raise ValueError(
+                                f"Staging verification mismatch for {fp}::{loc}: expected {expected_tl!r}, found {resolved_tl!r}"
+                            )
+
+                elif ext in (".rvdata2", ".rvdata", ".rxdata"):
+                    try:
+                        with open(target_file, "rb") as f_raw:
+                            data = load_marshal(f_raw.read())
+                    except Exception as e:
+                        report["status"] = "failed"
+                        report["errors"].append(f"Failed to read or parse '{fp}': {e}")
+                        return report
+
+                    all_applied = True
+                    for edit in file_edits:
+                        locator = edit.get("locator")
+                        expected = edit.get("original_text")
+                        translated = edit.get("translated_text")
+
+                        current_val = resolve_ruby_locator(data, locator)
+                        if current_val == translated:
+                            continue  # already applied
+                        if current_val != expected:
+                            report["status"] = "failed"
+                            report["errors"].append(
+                                f"Stale source detected dynamically during staging for {fp}::{locator}"
+                            )
+                            return report  # abort!
+
+                        all_applied = False
+                        apply_ruby_locator(data, locator, translated)
+
+                    if all_applied:
+                        report["skipped_already_applied"].append(fp)
+                        continue
+
+                    fd, tmp_path_str = tempfile.mkstemp(
+                        prefix="gamelingo_", suffix=".tmp", dir=str(target_file.parent)
+                    )
+                    os.close(fd)
+                    tmp_file = Path(tmp_path_str)
+                    staged_files[fp] = tmp_file
+
+                    with open(tmp_file, "wb") as f:
+                        f.write(dump_marshal(data))
+
+                    # Verify staged
+                    with open(tmp_file, "rb") as f:
+                        staged_data = load_marshal(f.read())
+
+                    for edit in file_edits:
+                        loc = edit.get("locator")
+                        expected_tl = edit.get("translated_text")
+                        resolved_tl = resolve_ruby_locator(staged_data, loc)
+                        if resolved_tl != expected_tl:
+                            raise ValueError(
+                                f"Staging verification mismatch for {fp}::{loc}: expected {expected_tl!r}, found {resolved_tl!r}"
+                            )
+
+                elif ext in (".ldb", ".lmt", ".lmu"):
+                    try:
+                        with open(target_file, "rb") as f_raw:
+                            header, root, encoding = load_lcf(f_raw.read())
+                    except Exception as e:
+                        report["status"] = "failed"
+                        report["errors"].append(f"Failed to read or parse '{fp}': {e}")
+                        return report
+
+                    all_applied = True
+                    for edit in file_edits:
+                        locator = edit.get("locator")
+                        expected = edit.get("original_text")
+                        translated = edit.get("translated_text")
+
+                        current_val = resolve_lcf_locator(
+                            root, locator, encoding=encoding
                         )
-                        return report  # abort!
+                        if current_val == translated:
+                            continue  # already applied
+                        if current_val != expected:
+                            report["status"] = "failed"
+                            report["errors"].append(
+                                f"Stale source detected dynamically during staging for {fp}::{locator}"
+                            )
+                            return report  # abort!
 
-                    all_applied = False
-                    _apply_rpgmaker_locator(data, locator, translated)
+                        all_applied = False
+                        apply_lcf_locator(root, locator, translated, encoding=encoding)
 
-                if all_applied:
-                    report["skipped_already_applied"].append(fp)
-                    continue
+                    if all_applied:
+                        report["skipped_already_applied"].append(fp)
+                        continue
 
-                fd, tmp_path_str = tempfile.mkstemp(
-                    prefix="gamelingo_", suffix=".tmp", dir=str(target_file.parent)
-                )
-                os.close(fd)
-                tmp_file = Path(tmp_path_str)
-                staged_files[fp] = tmp_file
+                    fd, tmp_path_str = tempfile.mkstemp(
+                        prefix="gamelingo_", suffix=".tmp", dir=str(target_file.parent)
+                    )
+                    os.close(fd)
+                    tmp_file = Path(tmp_path_str)
+                    staged_files[fp] = tmp_file
 
-                write_encoding = "utf-8-sig" if has_bom else "utf-8"
-                with open(tmp_file, "w", encoding=write_encoding) as f:
-                    json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+                    with open(tmp_file, "wb") as f:
+                        f.write(dump_lcf(header, root, encoding=encoding))
 
-                # Verify staged
-                with open(tmp_file, "r", encoding="utf-8-sig") as f:
-                    staged_data = json.load(f)
+                    # Verify staged
+                    with open(tmp_file, "rb") as f:
+                        _, staged_root, _ = load_lcf(f.read(), encoding=encoding)
 
-                for edit in file_edits:
-                    loc = edit.get("locator")
-                    expected_tl = edit.get("translated_text")
-                    resolved_tl = _resolve_rpgmaker_locator(staged_data, loc)
-                    if resolved_tl != expected_tl:
-                        raise ValueError(
-                            f"Staging verification mismatch for {fp}::{loc}: expected {expected_tl!r}, found {resolved_tl!r}"
+                    for edit in file_edits:
+                        loc = edit.get("locator")
+                        expected_tl = edit.get("translated_text")
+                        resolved_tl = resolve_lcf_locator(
+                            staged_root, loc, encoding=encoding
                         )
+                        if resolved_tl != expected_tl:
+                            raise ValueError(
+                                f"Staging verification mismatch for {fp}::{loc}: expected {expected_tl!r}, found {resolved_tl!r}"
+                            )
 
         if report["status"] == "failed":
             return report
@@ -514,11 +654,9 @@ def apply_plan(
                                         f"Post-write verification failed: {orig} not found in {fp}"
                                     )
                     else:
-                        with open(target_file, "r", encoding="utf-8-sig") as f:
-                            data = json.load(f)
                         for edit in edits_by_file[fp]:
-                            if _resolve_rpgmaker_locator(
-                                data, edit.get("locator")
+                            if resolve_file_locator(
+                                target_file, edit.get("locator")
                             ) != edit.get("translated_text"):
                                 raise ValueError(
                                     "Post-write verification value mismatch"

@@ -213,6 +213,124 @@ class DashboardPage(QWidget):
 
         formats_layout.addLayout(engines_row)
 
+        # Classic RPG Maker Engines Row
+        engines_row_classic = QHBoxLayout()
+        engines_row_classic.setSpacing(12)
+
+        # VX Ace Card
+        self.card_vx_ace = QFrame()
+        self.card_vx_ace.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        vx_ace_layout = QVBoxLayout(self.card_vx_ace)
+        vx_ace_layout.setContentsMargins(12, 10, 12, 10)
+        vx_ace_layout.setSpacing(4)
+        vx_ace_header = QHBoxLayout()
+        self.lbl_vx_ace_title = QLabel("RPG Maker VX Ace")
+        self.lbl_vx_ace_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.lbl_vx_ace_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        vx_ace_header.addWidget(self.lbl_vx_ace_title)
+        vx_ace_header.addStretch()
+        self.pill_vx_ace = create_status_pill("Supported", "info")
+        vx_ace_header.addWidget(self.pill_vx_ace)
+        vx_ace_layout.addLayout(vx_ace_header)
+        self.lbl_vx_ace_desc = QLabel(
+            "Engine: RPG Maker VX Ace (Data/*.rvdata2 files)\n"
+            "Format: RGSS3 Ruby Marshal 4.8 binary serialization.\n"
+            "Safety: Pure-Python AST parser and atomic replacement."
+        )
+        self.lbl_vx_ace_desc.setFont(QFont("Segoe UI", 10))
+        self.lbl_vx_ace_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_vx_ace_desc.setWordWrap(True)
+        vx_ace_layout.addWidget(self.lbl_vx_ace_desc)
+        engines_row_classic.addWidget(self.card_vx_ace, stretch=1)
+
+        # VX Card
+        self.card_vx = QFrame()
+        self.card_vx.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        vx_layout = QVBoxLayout(self.card_vx)
+        vx_layout.setContentsMargins(12, 10, 12, 10)
+        vx_layout.setSpacing(4)
+        vx_header = QHBoxLayout()
+        self.lbl_vx_title = QLabel("RPG Maker VX")
+        self.lbl_vx_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.lbl_vx_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        vx_header.addWidget(self.lbl_vx_title)
+        vx_header.addStretch()
+        self.pill_vx = create_status_pill("Supported", "info")
+        vx_header.addWidget(self.pill_vx)
+        vx_layout.addLayout(vx_header)
+        self.lbl_vx_desc = QLabel(
+            "Engine: RPG Maker VX (Data/*.rvdata files)\n"
+            "Format: RGSS2 Ruby Marshal 4.8 binary serialization.\n"
+            "Safety: Pure-Python AST parser and atomic replacement."
+        )
+        self.lbl_vx_desc.setFont(QFont("Segoe UI", 10))
+        self.lbl_vx_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_vx_desc.setWordWrap(True)
+        vx_layout.addWidget(self.lbl_vx_desc)
+        engines_row_classic.addWidget(self.card_vx, stretch=1)
+
+        # XP Card
+        self.card_xp = QFrame()
+        self.card_xp.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        xp_layout = QVBoxLayout(self.card_xp)
+        xp_layout.setContentsMargins(12, 10, 12, 10)
+        xp_layout.setSpacing(4)
+        xp_header = QHBoxLayout()
+        self.lbl_xp_title = QLabel("RPG Maker XP")
+        self.lbl_xp_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.lbl_xp_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        xp_header.addWidget(self.lbl_xp_title)
+        xp_header.addStretch()
+        self.pill_xp = create_status_pill("Supported", "info")
+        xp_header.addWidget(self.pill_xp)
+        xp_layout.addLayout(xp_header)
+        self.lbl_xp_desc = QLabel(
+            "Engine: RPG Maker XP (Data/*.rxdata files)\n"
+            "Format: RGSS1 Ruby Marshal 4.8 binary serialization.\n"
+            "Safety: Pure-Python AST parser and atomic replacement."
+        )
+        self.lbl_xp_desc.setFont(QFont("Segoe UI", 10))
+        self.lbl_xp_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_xp_desc.setWordWrap(True)
+        xp_layout.addWidget(self.lbl_xp_desc)
+        engines_row_classic.addWidget(self.card_xp, stretch=1)
+
+        # 2003 Card
+        self.card_2003 = QFrame()
+        self.card_2003.setStyleSheet(
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+        )
+        layout_2003 = QVBoxLayout(self.card_2003)
+        layout_2003.setContentsMargins(12, 10, 12, 10)
+        layout_2003.setSpacing(4)
+        header_2003 = QHBoxLayout()
+        self.lbl_2003_title = QLabel("RPG Maker 2003")
+        self.lbl_2003_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.lbl_2003_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        header_2003.addWidget(self.lbl_2003_title)
+        header_2003.addStretch()
+        self.pill_2003 = create_status_pill("Supported", "info")
+        header_2003.addWidget(self.pill_2003)
+        layout_2003.addLayout(header_2003)
+        self.lbl_2003_desc = QLabel(
+            "Engine: RPG Maker 2003 (RPG_RT.ldb, RPG_RT.lmt, Map*.lmu)\n"
+            "Format: LCF binary database & map structures.\n"
+            "Encoding: Shift_JIS / CP932 preservation."
+        )
+        self.lbl_2003_desc.setFont(QFont("Segoe UI", 10))
+        self.lbl_2003_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_2003_desc.setWordWrap(True)
+        layout_2003.addWidget(self.lbl_2003_desc)
+        engines_row_classic.addWidget(self.card_2003, stretch=1)
+
+        formats_layout.addLayout(engines_row_classic)
+
         # Unsupported Content Advisory Card
         self.unsupported_card = QFrame()
         self.unsupported_card.setStyleSheet(
@@ -427,6 +545,38 @@ class DashboardPage(QWidget):
                 f"background-color: {BG_SURFACE_ALT}; color: {TEXT_MUTED}; border: 1px solid {BORDER_SUBTLE}; border-radius: 4px; padding: 2px 8px;"
             )
 
+    def _reset_all_engine_pills(self, status: str = "Supported", level: str = "info"):
+        for attr in [
+            "pill_mv",
+            "pill_mz",
+            "pill_renpy",
+            "pill_vx_ace",
+            "pill_vx",
+            "pill_xp",
+            "pill_2003",
+        ]:
+            if hasattr(self, attr):
+                self._update_pill(getattr(self, attr), status, level)
+
+    def _activate_single_engine_pill(
+        self, active_attr: str, status: str = "Supported", level: str = "info"
+    ):
+        for attr in [
+            "pill_mv",
+            "pill_mz",
+            "pill_renpy",
+            "pill_vx_ace",
+            "pill_vx",
+            "pill_xp",
+            "pill_2003",
+        ]:
+            if hasattr(self, attr):
+                pill = getattr(self, attr)
+                if attr == active_attr:
+                    self._update_pill(pill, status, level)
+                else:
+                    self._update_pill(pill, "Not Detected", "neutral")
+
     def _update_structure_status(self, text: str, status_type: str, details: str):
         self.lbl_structure_pill.setText(f" {text} ")
         if status_type == "success":
@@ -480,63 +630,55 @@ class DashboardPage(QWidget):
         # 3. Check game data structure
         check_path = self.selected_invalid_game_path or self.state.game_path
         if check_path is None:
-            self._update_pill(self.pill_mv, "Supported", "info")
-            self._update_pill(self.pill_mz, "Supported", "info")
-            self._update_pill(self.pill_renpy, "Supported", "info")
+            self._reset_all_engine_pills("Supported", "info")
             self._update_structure_status(
                 "No Game Selected",
                 "neutral",
-                "No game directory selected. Choose an RPG Maker MV/MZ or Ren'Py installation folder above to inspect and validate its structure.",
+                "No game directory selected. Choose a supported RPG Maker (MZ, MV, VX Ace, VX, XP, 2003) or Ren'Py installation folder above to inspect and validate its structure.",
             )
         elif not check_path.exists():
-            self._update_pill(self.pill_mv, "Not Detected", "neutral")
-            self._update_pill(self.pill_mz, "Not Detected", "neutral")
-            self._update_pill(self.pill_renpy, "Not Detected", "neutral")
+            self._reset_all_engine_pills("Not Detected", "neutral")
             self._update_structure_status(
                 "Directory Missing",
                 "danger",
-                f"Selected game directory does not exist on disk: '{check_path}'. Expected an existing directory containing a supported game engine (RPG Maker MV/MZ or Ren'Py).",
+                f"Selected game directory does not exist on disk: '{check_path}'. Expected an existing directory containing a supported game engine.",
             )
         else:
             detected_adapter, version_desc, confidence = detect_adapter(check_path)
             if detected_adapter and detected_adapter.adapter_id == "renpy":
                 diag = detected_adapter.diagnose(check_path)
-                self._update_pill(self.pill_mv, "Not Detected", "neutral")
-                self._update_pill(self.pill_mz, "Not Detected", "neutral")
                 if diag.get("has_source_scripts"):
-                    self._update_pill(self.pill_renpy, "Supported", "info")
+                    self._activate_single_engine_pill("pill_renpy", "Supported", "info")
                     self._update_structure_status(
                         "Structure Verified",
                         "info",
                         f"Valid Ren'Py visual novel structure verified ({diag['rpy_count']} .rpy source scripts found). Engine detected: {version_desc}. Native translation target: game/tl/<language>/strings.rpy.",
                     )
                 elif diag.get("has_extractable_scripts"):
-                    self._update_pill(self.pill_renpy, "Supported", "info")
+                    self._activate_single_engine_pill("pill_renpy", "Supported", "info")
                     self._update_structure_status(
                         "Structure Verified",
                         "info",
                         diag["message"],
                     )
                 else:
-                    self._update_pill(self.pill_renpy, "Source Required", "warning")
+                    self._activate_single_engine_pill(
+                        "pill_renpy", "Source Required", "warning"
+                    )
                     self._update_structure_status(
                         "Source Missing",
                         "danger",
                         diag["message"],
                     )
             elif detected_adapter and detected_adapter.adapter_id == "rpgmaker_mv_mz":
-                self._update_pill(self.pill_renpy, "Not Detected", "neutral")
                 is_mz = (
                     "MZ" in version_desc
                     or (check_path / "js" / "rmmz_core.js").exists()
                     or (check_path / "game.rmmzproject").exists()
                 )
-                if is_mz:
-                    self._update_pill(self.pill_mz, "Supported", "info")
-                    self._update_pill(self.pill_mv, "Not Detected", "neutral")
-                else:
-                    self._update_pill(self.pill_mv, "Supported", "info")
-                    self._update_pill(self.pill_mz, "Not Detected", "neutral")
+                self._activate_single_engine_pill(
+                    "pill_mz" if is_mz else "pill_mv", "Supported", "info"
+                )
 
                 data_dir = detected_adapter._get_data_dir(check_path)
                 try:
@@ -556,16 +698,99 @@ class DashboardPage(QWidget):
                         "info",
                         f"Valid RPG Maker data structure verified at '{rel_data}/' ({json_count} JSON data files found, System.json present). Engine detected: {version_desc} (Confidence: 100%).",
                     )
+            elif detected_adapter and detected_adapter.adapter_id == "rpgmaker_vx_ace":
+                diag = detected_adapter.diagnose(check_path)
+                if diag.get("is_encrypted"):
+                    self._activate_single_engine_pill(
+                        "pill_vx_ace", "Encrypted", "warning"
+                    )
+                    self._update_structure_status(
+                        "Encrypted Archive Detected",
+                        "warning",
+                        "RPG Maker VX Ace encrypted archive (Game.rgss3a) detected. Encrypted archives cannot be directly extracted or patched without decrypted .rvdata2 data files.",
+                    )
+                else:
+                    self._activate_single_engine_pill(
+                        "pill_vx_ace", "Supported", "info"
+                    )
+                    data_dir = detected_adapter._get_data_dir(check_path)
+                    rv_count = len(list(data_dir.glob("*.rvdata2"))) if data_dir else 0
+                    rel_data = data_dir.relative_to(check_path) if data_dir else "Data"
+                    self._update_structure_status(
+                        "Structure Verified",
+                        "info",
+                        f"Valid RPG Maker VX Ace data structure verified at '{rel_data}/' ({rv_count} .rvdata2 files found, System.rvdata2 present). Engine detected: {version_desc} (Confidence: {int(confidence * 100)}%).",
+                    )
+            elif detected_adapter and detected_adapter.adapter_id == "rpgmaker_vx":
+                diag = detected_adapter.diagnose(check_path)
+                if diag.get("is_encrypted"):
+                    self._activate_single_engine_pill("pill_vx", "Encrypted", "warning")
+                    self._update_structure_status(
+                        "Encrypted Archive Detected",
+                        "warning",
+                        "RPG Maker VX encrypted archive (Game.rgss2a) detected. Encrypted archives cannot be directly extracted or patched without decrypted .rvdata data files.",
+                    )
+                else:
+                    self._activate_single_engine_pill("pill_vx", "Supported", "info")
+                    data_dir = detected_adapter._get_data_dir(check_path)
+                    rv_count = len(list(data_dir.glob("*.rvdata"))) if data_dir else 0
+                    rel_data = data_dir.relative_to(check_path) if data_dir else "Data"
+                    self._update_structure_status(
+                        "Structure Verified",
+                        "info",
+                        f"Valid RPG Maker VX data structure verified at '{rel_data}/' ({rv_count} .rvdata files found, System.rvdata present). Engine detected: {version_desc} (Confidence: {int(confidence * 100)}%).",
+                    )
+            elif detected_adapter and detected_adapter.adapter_id == "rpgmaker_xp":
+                diag = detected_adapter.diagnose(check_path)
+                if diag.get("is_encrypted"):
+                    self._activate_single_engine_pill("pill_xp", "Encrypted", "warning")
+                    self._update_structure_status(
+                        "Encrypted Archive Detected",
+                        "warning",
+                        "RPG Maker XP encrypted archive (Game.rgssad) detected. Encrypted archives cannot be directly extracted or patched without decrypted .rxdata data files.",
+                    )
+                else:
+                    self._activate_single_engine_pill("pill_xp", "Supported", "info")
+                    data_dir = detected_adapter._get_data_dir(check_path)
+                    rx_count = len(list(data_dir.glob("*.rxdata"))) if data_dir else 0
+                    rel_data = data_dir.relative_to(check_path) if data_dir else "Data"
+                    self._update_structure_status(
+                        "Structure Verified",
+                        "info",
+                        f"Valid RPG Maker XP data structure verified at '{rel_data}/' ({rx_count} .rxdata files found, System.rxdata present). Engine detected: {version_desc} (Confidence: {int(confidence * 100)}%).",
+                    )
+            elif detected_adapter and detected_adapter.adapter_id == "rpgmaker_2003":
+                self._activate_single_engine_pill("pill_2003", "Supported", "info")
+                self._update_structure_status(
+                    "Structure Verified",
+                    "info",
+                    f"Valid RPG Maker 2003 data structure verified (RPG_RT.ldb database present). Engine detected: {version_desc} (Confidence: {int(confidence * 100)}%).",
+                )
             else:
-                self._update_pill(self.pill_mv, "Not Detected", "neutral")
-                self._update_pill(self.pill_mz, "Not Detected", "neutral")
-                self._update_pill(self.pill_renpy, "Not Detected", "neutral")
+                self._reset_all_engine_pills("Not Detected", "neutral")
                 missing_reasons = []
-                data_candidates = [check_path / "data", check_path / "www" / "data"]
+                if (check_path / "Game.rgss3a").exists():
+                    missing_reasons.append(
+                        "Encrypted RGSS3A archive detected. Extracted .rvdata2 data files are required."
+                    )
+                elif (check_path / "Game.rgss2a").exists():
+                    missing_reasons.append(
+                        "Encrypted RGSS2A archive detected. Extracted .rvdata data files are required."
+                    )
+                elif (check_path / "Game.rgssad").exists():
+                    missing_reasons.append(
+                        "Encrypted RGSSAD archive detected. Extracted .rxdata data files are required."
+                    )
+
+                data_candidates = [
+                    check_path / "data",
+                    check_path / "www" / "data",
+                    check_path / "Data",
+                ]
                 has_any_data_dir = any(d.is_dir() for d in data_candidates)
                 if has_any_data_dir:
                     missing_reasons.append(
-                        "Found data directory, but 'System.json' is missing."
+                        "Found data directory, but system database file is missing or unrecognized."
                     )
                 else:
                     missing_reasons.append(
@@ -585,6 +810,7 @@ class DashboardPage(QWidget):
                 has_binaries = (
                     (check_path / "Game.exe").exists()
                     or (check_path / "nw.exe").exists()
+                    or (check_path / "RPG_RT.exe").exists()
                     or (check_path / "img").is_dir()
                     or (check_path / "audio").is_dir()
                 )

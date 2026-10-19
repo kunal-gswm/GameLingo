@@ -88,12 +88,12 @@ def validate_translation(
             )
 
     # 6. Placeholders and formatting tags inventory and multiplicity comparison
-    token_regex = (
-        RPGM_PLACEHOLDER_REGEX if adapter_id == "rpgmaker_mv_mz" else PLACEHOLDER_REGEX
+    is_rpgmaker = bool(
+        adapter_id
+        and (adapter_id == "rpgmaker_mv_mz" or adapter_id.startswith("rpgmaker_"))
     )
-    if expected_tokens is not None and (
-        adapter_id == "rpgmaker_mv_mz" or expected_tokens
-    ):
+    token_regex = RPGM_PLACEHOLDER_REGEX if is_rpgmaker else PLACEHOLDER_REGEX
+    if expected_tokens is not None and (is_rpgmaker or expected_tokens):
         source_tokens = list(expected_tokens)
     else:
         source_tokens = [m.group(0) for m in token_regex.finditer(source_text)]
@@ -139,8 +139,8 @@ def validate_translation(
     # 7. Unsafe interpolation syntax:
     # Check for unescaped square brackets in target that are not matched by PLACEHOLDER_REGEX
     # or that introduce unexpected interpolation in Ren'Py dialogue.
-    # CRITICAL: In RPG Maker MV/MZ, square brackets [...] are ordinary text and MUST NOT be flagged!
-    if adapter_id != "rpgmaker_mv_mz":
+    # CRITICAL: In RPG Maker engines, square brackets [...] are ordinary text and MUST NOT be flagged!
+    if not is_rpgmaker:
         unescaped_target = re.sub(r"\[\[", "  ", target_text)
         for m in re.finditer(r"\[([^\]]+)\]", unescaped_target):
             matched_str = f"[{m.group(1)}]"
@@ -159,7 +159,7 @@ def validate_translation(
 
     # 8. Malformed markup: check for unbalanced brackets or braces
     # In RPG Maker, square brackets and braces can be ordinary text or font codes (\{, \})
-    if adapter_id != "rpgmaker_mv_mz":
+    if not is_rpgmaker:
         clean_brackets = re.sub(r"\[\[", "", target_text)
         clean_braces = re.sub(r"\{\{", "", target_text)
         if clean_brackets.count("[") != clean_brackets.count("]"):

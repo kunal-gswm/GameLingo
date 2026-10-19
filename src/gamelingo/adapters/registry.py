@@ -3,7 +3,11 @@ from typing import Dict, List, Optional, Tuple
 
 from gamelingo.adapters.base import GameAdapter
 from gamelingo.adapters.renpy import RenPyAdapter
+from gamelingo.adapters.rpgmaker_2003 import RPGMaker2003Adapter
 from gamelingo.adapters.rpgmaker_mv_mz import RPGMakerMVMZAdapter
+from gamelingo.adapters.rpgmaker_vx import RPGMakerVXAdapter
+from gamelingo.adapters.rpgmaker_vx_ace import RPGMakerVXAceAdapter
+from gamelingo.adapters.rpgmaker_xp import RPGMakerXPAdapter
 
 _ADAPTER_REGISTRY: Dict[str, GameAdapter] = {}
 
@@ -45,4 +49,8 @@ def detect_adapter(path: Path) -> Tuple[Optional[GameAdapter], str, float]:
 
 # Register built-in adapters
 register_adapter(RPGMakerMVMZAdapter())
+register_adapter(RPGMakerVXAceAdapter())
+register_adapter(RPGMakerVXAdapter())
+register_adapter(RPGMakerXPAdapter())
+register_adapter(RPGMaker2003Adapter())
 register_adapter(RenPyAdapter())

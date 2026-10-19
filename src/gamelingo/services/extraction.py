@@ -224,7 +224,14 @@ class ExtractionService:
                         if (game_path / "data" / u.file_id).exists()
                         else f"www/data/{u.file_id}"
                     )
-                fmt = "rpy" if getattr(adapter, "adapter_id", "") == "renpy" else "json"
+                if hasattr(adapter, "get_file_format"):
+                    fmt = adapter.get_file_format(u.file_id)
+                else:
+                    fmt = (
+                        "rpy"
+                        if getattr(adapter, "adapter_id", "") == "renpy"
+                        else "json"
+                    )
 
                 conn.execute(
                     "INSERT OR REPLACE INTO staging_game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
