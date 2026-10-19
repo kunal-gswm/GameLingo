@@ -13,13 +13,14 @@ from gamelingo.translation.review import ReviewService
 
 try:
     from PySide6.QtWidgets import QApplication, QLabel
-
-    from gamelingo.gui.pages.extraction_page import ExtractionPage, ExtractionWorker
-    from gamelingo.gui.state import AppState
-
-    HAS_PYSIDE6 = True
 except ImportError:
     HAS_PYSIDE6 = False
+else:
+    HAS_PYSIDE6 = True
+
+if HAS_PYSIDE6:
+    from gamelingo.gui.pages.extraction_page import ExtractionPage, ExtractionWorker
+    from gamelingo.gui.state import AppState
 
 
 @pytest.fixture
