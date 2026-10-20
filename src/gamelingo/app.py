@@ -528,7 +528,53 @@ def cmd_apply(args):
         sys.exit(1)
 
 
+def cmd_gui(args=None):
+    if getattr(args, "smoke_test", False):
+        print("Smoke test: Initializing Qt core and binary dependencies...")
+        from PySide6.QtCore import QCoreApplication
+
+        _app = QCoreApplication(sys.argv)
+        print(f"Qt initialized successfully ({_app}).")
+
+        import rpycdec
+
+        from gamelingo.adapters.renpy_decompiler import is_decompiler_available
+
+        assert is_decompiler_available() is True
+        print(f"rpycdec module {rpycdec.__name__} decompiler verified.")
+        print("Smoke test passed.")
+        return 0
+
+    try:
+        from gamelingo.gui.main import run_gui
+
+        return run_gui()
+    except ImportError as e:
+        print(f"Error: GUI components unavailable: {e}")
+        return 1
+
+
 def main() -> int:
+    if len(sys.argv) == 1:
+        if sys.platform == "win32":
+            try:
+                import ctypes
+
+                arr = (ctypes.c_uint * 4)()
+                count = ctypes.windll.kernel32.GetConsoleProcessList(arr, 4)
+                if count <= 1:
+                    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+                    if hwnd:
+                        ctypes.windll.user32.ShowWindow(hwnd, 0)
+            except Exception:
+                pass
+        try:
+            from gamelingo.gui.main import run_gui
+
+            return run_gui()
+        except ImportError:
+            pass
+
     parser = argparse.ArgumentParser(
         description=f"GameLingo v{__version__} - Local-first game translation workbench"
     )
@@ -537,7 +583,18 @@ def main() -> int:
         default=".",
         help="Workspace directory (default: current directory)",
     )
+    if len(sys.argv) == 1:
+        parser.print_help()
+        return 0
+
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # GUI command
+    p_gui = subparsers.add_parser("gui", help="Launch graphical user interface")
+    p_gui.add_argument(
+        "--smoke-test", action="store_true", help="Run GUI smoke test and exit"
+    )
+    p_gui.set_defaults(func=cmd_gui)
 
     # Project commands
     p_proj = subparsers.add_parser("project", help="Project management")
