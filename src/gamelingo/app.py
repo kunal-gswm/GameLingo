@@ -531,7 +531,11 @@ def cmd_apply(args):
 def cmd_gui(args=None):
     if getattr(args, "smoke_test", False):
         print("Smoke test: Initializing Qt core and binary dependencies...")
-        from PySide6.QtCore import QCoreApplication
+        try:
+            from PySide6.QtCore import QCoreApplication
+        except ImportError as e:
+            print(f"Error: GUI components unavailable: {e}")
+            return 1
 
         _app = QCoreApplication(sys.argv)
         print(f"Qt initialized successfully ({_app}).")
@@ -742,7 +746,9 @@ def main() -> int:
 
     args = parser.parse_args()
     try:
-        args.func(args)
+        res = args.func(args)
+        if isinstance(res, int):
+            return res
     except AttributeError:
         parser.print_help()
 
