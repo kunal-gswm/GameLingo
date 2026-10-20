@@ -6,6 +6,7 @@ from gamelingo.gui.main_window import MainWindow
 
 
 def run_gui():
+    print("Starting GameLingo GUI workbench...")
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     from gamelingo.gui.theme import APP_STYLESHEET
@@ -22,6 +23,21 @@ def run_gui():
 
     window = MainWindow()
     window.show()
+    window.raise_()
+    window.activateWindow()
+
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            hwnd = int(window.winId())
+            ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            ctypes.windll.user32.BringWindowToTop(hwnd)
+        except Exception:
+            pass
+
+    print("GameLingo window is open. Close the window or press Ctrl+C to exit.")
     return app.exec()
 
 
