@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -58,6 +58,16 @@ class MainWindow(QMainWindow):
         self.resize(1180, 760)
         self.setMinimumSize(900, 600)
         self.state = state or AppState()
+
+        try:
+            from gamelingo.assets import get_asset_path
+
+            icon_path = get_asset_path("icon.png")
+            if icon_path.exists():
+                self.setWindowIcon(QIcon(str(icon_path)))
+        except Exception:
+            pass
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -82,17 +92,43 @@ class MainWindow(QMainWindow):
         sidebar_layout.setSpacing(8)
 
         # Branding
+        brand_container = QWidget()
+        brand_layout = QHBoxLayout(brand_container)
+        brand_layout.setContentsMargins(4, 0, 4, 12)
+        brand_layout.setSpacing(10)
+
+        try:
+            from gamelingo.assets import get_asset_path
+
+            icon_path = get_asset_path("icon.png")
+            if icon_path.exists():
+                logo_lbl = QLabel()
+                pix = QPixmap(str(icon_path)).scaled(
+                    38, 38, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
+                logo_lbl.setPixmap(pix)
+                logo_lbl.setFixedSize(38, 38)
+                brand_layout.addWidget(logo_lbl)
+        except Exception:
+            pass
+
+        title_container = QVBoxLayout()
+        title_container.setContentsMargins(0, 0, 0, 0)
+        title_container.setSpacing(1)
+
         brand_title = QLabel("GameLingo")
-        brand_title.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        brand_title.setStyleSheet(f"color: {TEXT_PRIMARY}; padding-left: 6px;")
-        sidebar_layout.addWidget(brand_title)
+        brand_title.setFont(QFont("Segoe UI", 15, QFont.Bold))
+        brand_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        title_container.addWidget(brand_title)
 
         brand_subtitle = QLabel("Local Game Translator")
-        brand_subtitle.setFont(QFont("Segoe UI", 10))
-        brand_subtitle.setStyleSheet(
-            f"color: {TEXT_MUTED}; padding-left: 6px; margin-bottom: 12px;"
-        )
-        sidebar_layout.addWidget(brand_subtitle)
+        brand_subtitle.setFont(QFont("Segoe UI", 9))
+        brand_subtitle.setStyleSheet(f"color: {TEXT_MUTED};")
+        title_container.addWidget(brand_subtitle)
+
+        brand_layout.addLayout(title_container)
+        brand_layout.addStretch()
+        sidebar_layout.addWidget(brand_container)
 
         # Navigation List
         self.nav_list = QListWidget()

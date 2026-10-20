@@ -12,6 +12,14 @@ def run_gui():
 
     app.setStyleSheet(APP_STYLESHEET)
 
+    from PySide6.QtGui import QIcon
+
+    from gamelingo.assets import get_asset_path
+
+    icon_path = get_asset_path("icon.png")
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
+
     window = MainWindow()
     window.show()
     return app.exec()

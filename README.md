@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="GameLingo Logo" width="140">
+</p>
+
 # GameLingo
 
 GameLingo is a local-first Windows desktop workbench for translating game text into playable, editable translations. It safely extracts text from game data files, translates strings using local neural machine translation, provides a human review and spreadsheet interchange interface, and generates verified translation patches with isolated backups and one-click rollback.
