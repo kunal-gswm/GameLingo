@@ -30,6 +30,7 @@ from gamelingo.gui.theme import (
     create_status_pill,
     style_danger_button,
     style_primary_button,
+    style_secondary_button,
 )
 from gamelingo.patching.apply import apply_plan
 from gamelingo.patching.planner import create_plan, preview_plan, validate_plan
@@ -153,6 +154,7 @@ class PatchPage(QWidget):
         btn_restore_row.setSpacing(8)
 
         self.btn_preview_restore = QPushButton("Preview Restore")
+        style_secondary_button(self.btn_preview_restore)
         self.btn_preview_restore.clicked.connect(self.on_preview_restore)
         self.btn_preview_restore.setEnabled(False)
         btn_restore_row.addWidget(self.btn_preview_restore)

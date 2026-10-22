@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -23,13 +23,17 @@ from PySide6.QtWidgets import (
 from gamelingo.gui.state import AppState
 from gamelingo.gui.theme import (
     BG_SURFACE_ALT,
-    BORDER_SUBTLE,
+    BORDER_LIGHT,
+    DANGER,
+    SUCCESS,
     TEXT_MUTED,
     TEXT_PRIMARY,
     TEXT_SECONDARY,
+    WARNING,
     WARNING_TEXT,
     style_danger_button,
     style_primary_button,
+    style_secondary_button,
     style_success_button,
 )
 from gamelingo.translation.export_import import ExportImportService
@@ -110,10 +114,12 @@ class ReviewPage(QWidget):
         # CSV actions footer bar
         csv_bar = QHBoxLayout()
         self.btn_export = QPushButton("Export CSV")
+        style_secondary_button(self.btn_export)
         self.btn_export.clicked.connect(self.on_export)
         csv_bar.addWidget(self.btn_export)
 
         self.btn_import = QPushButton("Import CSV")
+        style_secondary_button(self.btn_import)
         self.btn_import.clicked.connect(self.on_import)
         csv_bar.addWidget(self.btn_import)
         left_layout.addLayout(csv_bar)
@@ -176,9 +182,9 @@ class ReviewPage(QWidget):
         src_layout = QVBoxLayout(src_group)
         self.txt_source = QTextEdit()
         self.txt_source.setReadOnly(True)
-        self.txt_source.setFont(QFont("Segoe UI", 12))
+        self.txt_source.setFont(QFont("Meiryo", 12))
         self.txt_source.setStyleSheet(
-            f"background-color: #17181c; border: 1px solid {BORDER_SUBTLE}; color: {TEXT_PRIMARY};"
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_LIGHT}; color: {TEXT_PRIMARY}; border-radius: 6px; padding: 6px;"
         )
         src_layout.addWidget(self.txt_source)
         right_layout.addWidget(src_group, stretch=1)
@@ -189,16 +195,25 @@ class ReviewPage(QWidget):
         self.txt_target = QTextEdit()
         self.txt_target.setFont(QFont("Segoe UI", 12))
         self.txt_target.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; color: {TEXT_PRIMARY};"
+            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_LIGHT}; color: {TEXT_PRIMARY}; border-radius: 6px; padding: 6px;"
         )
         self.txt_target.textChanged.connect(self.on_target_text_changed)
         tgt_layout.addWidget(self.txt_target)
+
+        char_row = QHBoxLayout()
+        self.lbl_char_count = QLabel("0 characters")
+        self.lbl_char_count.setFont(QFont("Segoe UI", 9))
+        self.lbl_char_count.setStyleSheet(f"color: {TEXT_MUTED};")
+        char_row.addWidget(self.lbl_char_count)
+        char_row.addStretch()
+        tgt_layout.addLayout(char_row)
+
         right_layout.addWidget(tgt_group, stretch=1)
 
         # Validation & Quality Flags
         self.lbl_validation = QLabel("")
         self.lbl_validation.setFont(QFont("Segoe UI", 10))
-        self.lbl_validation.setStyleSheet("color: #f87171;")
+        self.lbl_validation.setStyleSheet(f"color: {DANGER};")
         self.lbl_validation.setWordWrap(True)
         right_layout.addWidget(self.lbl_validation)
 
@@ -233,7 +248,18 @@ class ReviewPage(QWidget):
         splitter.setSizes([260, 480])
 
         page_layout.addWidget(splitter, stretch=1)
+        self.setup_shortcuts()
         self.set_editor_enabled(False)
+
+    def setup_shortcuts(self):
+        self.shortcut_save = QShortcut(QKeySequence("Ctrl+S"), self)
+        self.shortcut_save.activated.connect(self.on_save)
+
+        self.shortcut_approve = QShortcut(QKeySequence("Ctrl+Return"), self)
+        self.shortcut_approve.activated.connect(self.on_approve)
+
+        self.shortcut_approve2 = QShortcut(QKeySequence("Ctrl+Enter"), self)
+        self.shortcut_approve2.activated.connect(self.on_approve)
 
     def refresh(self):
         if self.state.db:
@@ -351,8 +377,12 @@ class ReviewPage(QWidget):
     def on_target_text_changed(self):
         if self._is_switching_selection:
             return
+        curr_text = self.txt_target.toPlainText()
+        chars = len(curr_text)
+        if hasattr(self, "lbl_char_count"):
+            self.lbl_char_count.setText(f"{chars} character{'s' if chars != 1 else ''}")
+
         if self.current_unit_id and self.service:
-            curr_text = self.txt_target.toPlainText()
             is_changed = curr_text != self._original_text
             self.lbl_unsaved.setVisible(is_changed)
 
@@ -382,20 +412,20 @@ class ReviewPage(QWidget):
                         lines.append(f"[WARNING] {w.message}")
                     self.lbl_validation.setText("\n".join(lines))
                     if errors:
-                        self.lbl_validation.setStyleSheet("color: #f87171;")
+                        self.lbl_validation.setStyleSheet(f"color: {DANGER};")
                         self.btn_approve.setEnabled(False)
                         self.btn_approve.setToolTip(
                             "Cannot approve: translation has blocking validation errors."
                         )
                     else:
-                        self.lbl_validation.setStyleSheet("color: #fbbf24;")
+                        self.lbl_validation.setStyleSheet(f"color: {WARNING};")
                         self.btn_approve.setEnabled(True)
                         self.btn_approve.setToolTip("")
                 else:
                     self.lbl_validation.setText(
                         "Validation: OK (All required tokens present)"
                     )
-                    self.lbl_validation.setStyleSheet("color: #81c784;")
+                    self.lbl_validation.setStyleSheet(f"color: {SUCCESS};")
                     self.btn_approve.setEnabled(True)
                     self.btn_approve.setToolTip("")
 
@@ -470,6 +500,11 @@ class ReviewPage(QWidget):
             self.txt_target.setPlainText(tgt_text)
             self._original_text = tgt_text
             self.lbl_unsaved.setVisible(False)
+            if hasattr(self, "lbl_char_count"):
+                c_len = len(tgt_text)
+                self.lbl_char_count.setText(
+                    f"{c_len} character{'s' if c_len != 1 else ''}"
+                )
 
             flags_text = ""
             if unit.get("quality_flags"):
@@ -505,6 +540,8 @@ class ReviewPage(QWidget):
             self.txt_target.clear()
             self.lbl_validation.setText("")
             self.lbl_unsaved.setVisible(False)
+            if hasattr(self, "lbl_char_count"):
+                self.lbl_char_count.setText("0 characters")
 
     def on_save(self):
         if not self.current_unit_id or not self.service:

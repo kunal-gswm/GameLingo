@@ -1,10 +1,12 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
+    QDialog,
     QHBoxLayout,
     QLabel,
     QListWidget,
     QMainWindow,
+    QPushButton,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -14,6 +16,7 @@ from gamelingo.gui.pages.dashboard import DashboardPage
 from gamelingo.gui.pages.extraction_page import ExtractionPage
 from gamelingo.gui.pages.patch_page import PatchPage
 from gamelingo.gui.pages.review_page import ReviewPage
+from gamelingo.gui.pages.settings_page import SettingsPage
 from gamelingo.gui.pages.translation_page import TranslationPage
 from gamelingo.gui.state import AppState
 from gamelingo.gui.theme import (
@@ -25,6 +28,7 @@ from gamelingo.gui.theme import (
     TEXT_PRIMARY,
     TEXT_SECONDARY,
     create_status_pill,
+    style_secondary_button,
 )
 
 PAGE_METADATA = [
@@ -49,6 +53,26 @@ PAGE_METADATA = [
         "desc": "Create dry-run patch plans, apply approved translations atomically, or restore from backups.",
     },
 ]
+
+
+class SettingsDialog(QDialog):
+    def __init__(self, state: AppState, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("GameLingo Settings & Configuration")
+        self.resize(750, 580)
+        self.setMinimumSize(600, 450)
+        self.setStyleSheet(f"background-color: {BG_APP}; color: {TEXT_PRIMARY};")
+        dlg_layout = QVBoxLayout(self)
+        dlg_layout.setContentsMargins(16, 16, 16, 16)
+        dlg_layout.setSpacing(12)
+
+        self.settings_page = SettingsPage(state)
+        dlg_layout.addWidget(self.settings_page, stretch=1)
+
+        btn_close = QPushButton("Close")
+        style_secondary_button(btn_close)
+        btn_close.clicked.connect(self.accept)
+        dlg_layout.addWidget(btn_close, alignment=Qt.AlignRight)
 
 
 class MainWindow(QMainWindow):
@@ -130,7 +154,15 @@ class MainWindow(QMainWindow):
         brand_layout.addStretch()
         sidebar_layout.addWidget(brand_container)
 
-        # Navigation List
+        # Section Header
+        lbl_section = QLabel("WORKFLOW")
+        lbl_section.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        lbl_section.setStyleSheet(
+            f"color: {TEXT_MUTED}; letter-spacing: 1px; padding-left: 6px; padding-bottom: 2px;"
+        )
+        sidebar_layout.addWidget(lbl_section)
+
+        # Navigation List (count must remain strictly 5 for test compatibility)
         self.nav_list = QListWidget()
         self.nav_list.setObjectName("nav_list")
         self.nav_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -143,13 +175,31 @@ class MainWindow(QMainWindow):
 
         sidebar_layout.addStretch()
 
-        # Sidebar footer
+        # Sidebar footer & Settings
+        bottom_box = QWidget()
+        bottom_layout = QVBoxLayout(bottom_box)
+        bottom_layout.setContentsMargins(0, 0, 0, 0)
+        bottom_layout.setSpacing(8)
+
+        self.lbl_provider_status = QLabel("● Argos NMT: Offline Ready")
+        self.lbl_provider_status.setFont(QFont("Segoe UI", 9))
+        self.lbl_provider_status.setStyleSheet("color: #43C99A; padding-left: 6px;")
+        bottom_layout.addWidget(self.lbl_provider_status)
+
+        self.btn_settings = QPushButton("⚙  Settings")
+        style_secondary_button(self.btn_settings)
+        self.btn_settings.setCursor(Qt.PointingHandCursor)
+        self.btn_settings.clicked.connect(self.open_settings_dialog)
+        bottom_layout.addWidget(self.btn_settings)
+
         self.footer_status = QLabel("v0.1.0 • Local-first")
-        self.footer_status.setFont(QFont("Segoe UI", 10))
+        self.footer_status.setFont(QFont("Segoe UI", 9))
         self.footer_status.setStyleSheet(
-            f"color: {TEXT_MUTED}; padding-left: 6px; padding-bottom: 4px;"
+            f"color: {TEXT_MUTED}; padding-left: 6px; padding-bottom: 2px;"
         )
-        sidebar_layout.addWidget(self.footer_status)
+        bottom_layout.addWidget(self.footer_status)
+
+        sidebar_layout.addWidget(bottom_box)
 
         root_layout.addWidget(sidebar)
 
@@ -223,6 +273,7 @@ class MainWindow(QMainWindow):
         # Cross-page signal bindings
         self.pages[0].workspace_opened.connect(self.refresh_all)
         self.pages[0].game_selected.connect(self.refresh_all)
+        self.pages[0].navigate_requested.connect(self.nav_list.setCurrentRow)
 
         for p in self.pages:
             self.stack.addWidget(p)
@@ -287,6 +338,10 @@ class MainWindow(QMainWindow):
         for p in self.pages:
             p.refresh()
         self.update_header()
+
+    def open_settings_dialog(self):
+        dlg = SettingsDialog(self.state, self)
+        dlg.exec()
 
     def closeEvent(self, event):
         e_page = self.pages[1]

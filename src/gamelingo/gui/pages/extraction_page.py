@@ -23,6 +23,7 @@ from gamelingo.gui.theme import (
     TEXT_SECONDARY,
     create_status_pill,
     style_primary_button,
+    style_secondary_button,
 )
 from gamelingo.services.extraction import ExtractionService
 
@@ -132,6 +133,7 @@ class ExtractionPage(QWidget):
         btn_row.addWidget(self.btn_extract)
 
         self.btn_cancel = QPushButton("Cancel")
+        style_secondary_button(self.btn_cancel)
         self.btn_cancel.setEnabled(False)
         self.btn_cancel.clicked.connect(self.on_cancel)
         btn_row.addWidget(self.btn_cancel)
