@@ -83,7 +83,7 @@ def preview_restore(
             plan["invalid_paths"].append(rel_path_str)
             continue
 
-        norm_rel = Path(rel_path_str).as_posix()
+        norm_rel = rel_path_str.replace("\\", "/")
         if norm_rel in seen:
             continue
         seen.add(norm_rel)
@@ -176,7 +176,7 @@ def execute_restore(
         ):
             raise RestoreValidationError(f"Invalid path requested: {rel_path_str}")
 
-        norm_rel = Path(rel_path_str).as_posix()
+        norm_rel = rel_path_str.replace("\\", "/")
         if norm_rel in seen:
             continue
         seen.add(norm_rel)
