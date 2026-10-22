@@ -9,7 +9,7 @@ os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 import sys
 
-from gamelingo.gui.main_window import MainWindow
+from gamelingo.gui.main_window import LibraryDialog, MainWindow, SettingsDialog
 from gamelingo.gui.state import AppState
 
 try:
@@ -1237,3 +1237,175 @@ def test_gui_review_page_untranslated_filter_and_import(qapp, tmp_path):
     u2_data = rev_page.service.get_unit("u2")
     assert u2_data["translated_text"] == "Item [Medicine]"
     assert u2_data["status"] == "draft"
+
+
+def test_translation_page_token_validation_and_status_refresh(qapp, app_state):
+    conn = app_state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("f_tokens.json", "default", "data/System.json", "json", "hash_tok", 0, 0),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "u_tokens",
+                "f_tokens.json",
+                "terms.messages[0]",
+                "Gold: \\V[1] \\C[2]",
+                "Shop gold display",
+                '["\\\\V[1]", "\\\\C[2]"]',
+                "hash_tok",
+                "untranslated",
+            ),
+        )
+
+    window = MainWindow(app_state)
+    window.refresh_all()
+    window.nav_list.setCurrentRow(2)
+    trans_page = window.pages[2]
+
+    # Select the token unit
+    assert trans_page.list_units.count() >= 1
+    trans_page.list_units.setCurrentRow(0)
+    assert trans_page.current_unit_id == "u_tokens"
+
+    # Edit target without required tokens -> blocking error
+    trans_page.txt_target.setPlainText("Gold: 100 coins")
+    assert "[BLOCKING ERROR]" in trans_page.lbl_validation.text()
+    assert not trans_page.btn_approve_unit.isEnabled()
+
+    # Edit target with all required tokens present -> validation OK
+    trans_page.txt_target.setPlainText("Gold count: \\V[1] \\C[2]")
+    assert "Validation: OK" in trans_page.lbl_validation.text()
+    assert trans_page.btn_approve_unit.isEnabled()
+
+    # Save draft -> status tag in list item refreshes to [DRAFT]
+    trans_page.on_save_current_unit()
+    assert "[DRAFT]" in trans_page.list_units.item(0).text()
+
+    # Approve -> status tag in list item refreshes to [APPROVED]
+    trans_page.on_approve_current_unit()
+    assert "[APPROVED]" in trans_page.list_units.item(0).text()
+
+
+def test_navigation_unsaved_dirty_tracking_flow(qapp, app_state):
+    conn = app_state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("f_nav.json", "default", "f_nav.json", "json", "h_nav", 0, 0),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "u_nav1",
+                "f_nav.json",
+                "loc_nav",
+                "Hello World",
+                "",
+                "[]",
+                "h_nav",
+                "draft",
+            ),
+        )
+        conn.execute(
+            "INSERT INTO translation_records (id, unit_id, provider, model, draft_text, final_text, quality_flags, source_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "rec_nav1",
+                "u_nav1",
+                "p",
+                "m",
+                "Konnichiwa",
+                "Konnichiwa",
+                "[]",
+                "h_nav",
+                0,
+                0,
+            ),
+        )
+
+    window = MainWindow(app_state)
+    window.refresh_all()
+    window.nav_list.setCurrentRow(2)
+    trans_page = window.pages[2]
+
+    trans_page.list_units.setCurrentRow(0)
+    trans_page.txt_target.setPlainText("Konnichiwa edited")
+    assert not trans_page.lbl_unsaved_indicator.isHidden()
+
+    # Attempt to switch to Dashboard (index 0) but user clicks Cancel -> stays on page 2
+    with patch(
+        "PySide6.QtWidgets.QMessageBox.question", return_value=QMessageBox.Cancel
+    ):
+        window.nav_list.setCurrentRow(0)
+        assert window.stack.currentIndex() == 2
+        assert not trans_page.lbl_unsaved_indicator.isHidden()
+
+    # User clicks Save -> saves edit and proceeds to Dashboard
+    with patch("PySide6.QtWidgets.QMessageBox.question", return_value=QMessageBox.Save):
+        window.nav_list.setCurrentRow(0)
+        assert window.stack.currentIndex() == 0
+        cur = conn.execute(
+            "SELECT final_text FROM translation_records WHERE unit_id = 'u_nav1'"
+        )
+        assert cur.fetchone()["final_text"] == "Konnichiwa edited"
+
+
+def test_dashboard_metrics_without_game_path_selected(qapp, tmp_path):
+    state = AppState()
+    ws = tmp_path / "ws_dash_metrics"
+    state.open_workspace(ws)
+    conn = state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            ("default", "Default", "", "rpgmaker_mv_mz", "1.0", 0),
+        )
+        conn.execute(
+            "INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("f_metric.json", "default", "data/Map.json", "json", "hm", 0, 0),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("u_m1", "f_metric.json", "loc1", "Text 1", "", "[]", "hm1", "approved"),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "u_m2",
+                "f_metric.json",
+                "loc2",
+                "Text 2",
+                "",
+                "[]",
+                "hm2",
+                "untranslated",
+            ),
+        )
+
+    # game_path is NOT set on state
+    assert state.game_path is None
+    window = MainWindow(state)
+    window.refresh_all()
+    dash = window.pages[0]
+
+    # Metrics must be calculated from database even before game folder is re-selected
+    assert dash.lbl_metric_extracted.text() == "2"
+    assert dash.lbl_metric_approved.text() == "1"
+    assert dash.lbl_metric_untranslated.text() == "1"
+
+
+def test_library_dialog_project_flow(qapp, app_state):
+    dlg = LibraryDialog(app_state)
+    dlg.library_page.refresh()
+    assert dlg.library_page.lbl_count.text() != ""
+    dlg.close()
+
+
+def test_settings_vacuum_database(qapp, app_state):
+    dlg = SettingsDialog(app_state)
+    with patch("PySide6.QtWidgets.QMessageBox.information") as mock_info:
+        dlg.settings_page.on_vacuum_db()
+        assert mock_info.called
+    dlg.close()

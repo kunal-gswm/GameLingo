@@ -35,6 +35,7 @@ from gamelingo.gui.theme import (
     BG_SURFACE_ALT,
     BORDER_LIGHT,
     BORDER_SUBTLE,
+    DANGER,
     SUCCESS,
     TEXT_MUTED,
     TEXT_PRIMARY,
@@ -48,6 +49,7 @@ from gamelingo.gui.theme import (
 )
 from gamelingo.translation.pipeline import TranslationPipeline
 from gamelingo.translation.review import ReviewService
+from gamelingo.translation.validation import validate_translation
 
 
 class TranslationWorker(QThread):
@@ -498,18 +500,26 @@ class TranslationPage(QWidget):
     def setup_shortcuts(self):
         # Ctrl+S: Save
         self.sc_save = QShortcut(QKeySequence("Ctrl+S"), self)
+        self.sc_save.setContext(Qt.WidgetWithChildrenShortcut)
         self.sc_save.activated.connect(self.on_save_current_unit)
 
-        # Ctrl+Return: Approve
+        # Ctrl+Return / Ctrl+Enter: Approve
         self.sc_approve = QShortcut(QKeySequence("Ctrl+Return"), self)
+        self.sc_approve.setContext(Qt.WidgetWithChildrenShortcut)
         self.sc_approve.activated.connect(self.on_approve_current_unit)
+
+        self.sc_approve2 = QShortcut(QKeySequence("Ctrl+Enter"), self)
+        self.sc_approve2.setContext(Qt.WidgetWithChildrenShortcut)
+        self.sc_approve2.activated.connect(self.on_approve_current_unit)
 
         # Alt+Left: Previous unit
         self.sc_prev = QShortcut(QKeySequence("Alt+Left"), self)
+        self.sc_prev.setContext(Qt.WidgetWithChildrenShortcut)
         self.sc_prev.activated.connect(self.on_prev_unit)
 
         # Alt+Right: Next unit
         self.sc_next = QShortcut(QKeySequence("Alt+Right"), self)
+        self.sc_next.setContext(Qt.WidgetWithChildrenShortcut)
         self.sc_next.activated.connect(self.on_next_unit)
 
     def on_toggle_inspector(self):
@@ -591,7 +601,7 @@ class TranslationPage(QWidget):
         curr_row = self.list_units.currentRow()
         if (
             self.current_unit_id
-            and self.lbl_unsaved_indicator.isVisible()
+            and not self.lbl_unsaved_indicator.isHidden()
             and self._prev_row != -1
             and curr_row != self._prev_row
         ):
@@ -661,6 +671,50 @@ class TranslationPage(QWidget):
             is_changed = curr_text != self._original_text
             self.lbl_unsaved_indicator.setVisible(is_changed)
 
+            # Real-time token validation feedback
+            if self.service:
+                unit = self.service.get_unit(self.current_unit_id)
+                if unit:
+                    adapter_id = self.service._resolve_adapter_id(unit)
+                    expected_tokens = None
+                    if unit.get("tokens_json"):
+                        try:
+                            expected_tokens = json.loads(unit["tokens_json"])
+                        except Exception:
+                            expected_tokens = None
+                    issues = validate_translation(
+                        unit["source_text"],
+                        curr_text,
+                        adapter_id=adapter_id,
+                        expected_tokens=expected_tokens,
+                    )
+                    errors = [i for i in issues if i.severity == "error"]
+                    warnings = [i for i in issues if i.severity == "warning"]
+                    if errors or warnings:
+                        lines = []
+                        for e in errors:
+                            lines.append(f"[BLOCKING ERROR] {e.message}")
+                        for w in warnings:
+                            lines.append(f"[WARNING] {w.message}")
+                        self.lbl_validation.setText("\n".join(lines))
+                        if errors:
+                            self.lbl_validation.setStyleSheet(f"color: {DANGER};")
+                            self.btn_approve_unit.setEnabled(False)
+                            self.btn_approve_unit.setToolTip(
+                                "Cannot approve: translation has blocking validation errors."
+                            )
+                        else:
+                            self.lbl_validation.setStyleSheet(f"color: {WARNING};")
+                            self.btn_approve_unit.setEnabled(True)
+                            self.btn_approve_unit.setToolTip("")
+                    else:
+                        self.lbl_validation.setText(
+                            "Validation: OK (All required tokens present)"
+                        )
+                        self.lbl_validation.setStyleSheet(f"color: {SUCCESS};")
+                        self.btn_approve_unit.setEnabled(True)
+                        self.btn_approve_unit.setToolTip("")
+
     def on_prev_unit(self):
         curr = self.list_units.currentRow()
         if curr > 0:
@@ -681,11 +735,12 @@ class TranslationPage(QWidget):
         self.lbl_editor_status.setText(
             f"Editing Unit: {self.current_unit_id} (DRAFT SAVED)"
         )
+        self._refresh_current_item_display("DRAFT")
 
     def on_approve_current_unit(self):
         if not self.current_unit_id or not self.service:
             return
-        if self.lbl_unsaved_indicator.isVisible():
+        if not self.lbl_unsaved_indicator.isHidden():
             self.on_save_current_unit()
         try:
             self.service.approve(self.current_unit_id)
@@ -694,8 +749,38 @@ class TranslationPage(QWidget):
             )
             self.lbl_validation.setText("✓ Unit approved successfully.")
             self.lbl_validation.setStyleSheet(f"color: {SUCCESS};")
+            self._refresh_current_item_display("APPROVED")
         except Exception as e:
             QMessageBox.critical(self, "Approval Error", str(e))
+
+    def _refresh_current_item_display(self, new_status: str):
+        items = self.list_units.selectedItems()
+        if items:
+            u_id = self.current_unit_id
+            src = self.txt_source.toPlainText().replace("\n", " ").strip()
+            if len(src) > 30:
+                src = src[:28] + "..."
+            items[0].setText(f"[{new_status}] {u_id} — {src}")
+
+    def check_unsaved_changes(self) -> bool:
+        if self.current_unit_id and not self.lbl_unsaved_indicator.isHidden():
+            reply = QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                "You have unsaved changes in the translation editor.\n\n"
+                "Do you want to save your edits before leaving this view?",
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                QMessageBox.Save,
+            )
+            if reply == QMessageBox.Save:
+                self.on_save_current_unit()
+                return True
+            elif reply == QMessageBox.Discard:
+                self.lbl_unsaved_indicator.setVisible(False)
+                return True
+            else:
+                return False
+        return True
 
     def on_revert_current_unit(self):
         self.txt_target.setPlainText(self._original_text)

@@ -297,7 +297,7 @@ class PatchPage(QWidget):
         for r in rec_rows:
             records.append(
                 TranslationRecord(
-                    id=r["id"],
+                    id=r["id"] or f"rec_{r['unit_id']}",
                     unit_id=r["unit_id"],
                     provider=r["provider"],
                     model=r["model"],

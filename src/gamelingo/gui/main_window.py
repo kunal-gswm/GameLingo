@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 
 from gamelingo.gui.pages.dashboard import DashboardPage
 from gamelingo.gui.pages.extraction_page import ExtractionPage
+from gamelingo.gui.pages.library_page import LibraryPage
 from gamelingo.gui.pages.patch_page import PatchPage
 from gamelingo.gui.pages.review_page import ReviewPage
 from gamelingo.gui.pages.settings_page import SettingsPage
@@ -72,6 +73,27 @@ class SettingsDialog(QDialog):
         btn_close = QPushButton("Close")
         style_secondary_button(btn_close)
         btn_close.clicked.connect(self.accept)
+        dlg_layout.addWidget(btn_close, alignment=Qt.AlignRight)
+
+
+class LibraryDialog(QDialog):
+    def __init__(self, state: AppState, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("GameLingo Game Library")
+        self.resize(800, 600)
+        self.setMinimumSize(650, 480)
+        self.setStyleSheet(f"background-color: {BG_APP}; color: {TEXT_PRIMARY};")
+        dlg_layout = QVBoxLayout(self)
+        dlg_layout.setContentsMargins(16, 16, 16, 16)
+        dlg_layout.setSpacing(12)
+
+        self.library_page = LibraryPage(state)
+        self.library_page.project_opened.connect(lambda _: self.accept())
+        dlg_layout.addWidget(self.library_page, stretch=1)
+
+        btn_close = QPushButton("Close")
+        style_secondary_button(btn_close)
+        btn_close.clicked.connect(self.reject)
         dlg_layout.addWidget(btn_close, alignment=Qt.AlignRight)
 
 
@@ -186,6 +208,12 @@ class MainWindow(QMainWindow):
         self.lbl_provider_status.setStyleSheet("color: #43C99A; padding-left: 6px;")
         bottom_layout.addWidget(self.lbl_provider_status)
 
+        self.btn_library = QPushButton("📚  Game Library")
+        style_secondary_button(self.btn_library)
+        self.btn_library.setCursor(Qt.PointingHandCursor)
+        self.btn_library.clicked.connect(self.open_library_dialog)
+        bottom_layout.addWidget(self.btn_library)
+
         self.btn_settings = QPushButton("⚙  Settings")
         style_secondary_button(self.btn_settings)
         self.btn_settings.setCursor(Qt.PointingHandCursor)
@@ -287,6 +315,17 @@ class MainWindow(QMainWindow):
 
     def on_nav_changed(self, index: int):
         if 0 <= index < len(self.pages):
+            curr_idx = self.stack.currentIndex()
+            if curr_idx != index and 0 <= curr_idx < len(self.pages):
+                curr_page = self.pages[curr_idx]
+                if (
+                    hasattr(curr_page, "check_unsaved_changes")
+                    and not curr_page.check_unsaved_changes()
+                ):
+                    self.nav_list.blockSignals(True)
+                    self.nav_list.setCurrentRow(curr_idx)
+                    self.nav_list.blockSignals(False)
+                    return
             self.stack.setCurrentIndex(index)
             self.pages[index].refresh()
             self.update_header()
@@ -338,6 +377,11 @@ class MainWindow(QMainWindow):
         for p in self.pages:
             p.refresh()
         self.update_header()
+
+    def open_library_dialog(self):
+        dlg = LibraryDialog(self.state, self)
+        if dlg.exec() == QDialog.Accepted:
+            self.refresh_all()
 
     def open_settings_dialog(self):
         dlg = SettingsDialog(self.state, self)

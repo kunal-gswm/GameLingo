@@ -959,20 +959,35 @@ class DashboardPage(QWidget):
         if self.state.db:
             try:
                 conn = self.state.db.connect()
-                project_id = self.state.get_project_id()
-                if project_id and self.state.game_path:
-                    query = "SELECT status, COUNT(*) as c FROM translation_units WHERE is_active = 1 AND project_id = ? GROUP BY status"
-                    cur = conn.execute(query, (project_id,))
-                    for r in cur.fetchall():
-                        st = r["status"]
-                        c = r["c"]
-                        total_units += c
-                        if st == "untranslated":
-                            untranslated_units += c
-                        elif st in ("draft", "needs_review", "rejected", "failed"):
-                            draft_units += c
-                        elif st == "approved":
-                            approved_units += c
+                project_id = self.state.get_project_id() or "default"
+                query = """
+                    SELECT status, COUNT(*) as c 
+                    FROM translation_units 
+                    WHERE (is_active = 1 OR is_active IS NULL) 
+                      AND (
+                          CASE 
+                              WHEN (project_id IS NOT NULL AND project_id != '' AND project_id != 'default')
+                              THEN project_id
+                              ELSE COALESCE(
+                                  (SELECT gf.project_id FROM game_files gf WHERE gf.id = translation_units.file_id LIMIT 1),
+                                  project_id,
+                                  'default'
+                              )
+                          END
+                      ) = ?
+                    GROUP BY status
+                """
+                cur = conn.execute(query, (project_id,))
+                for r in cur.fetchall():
+                    st = r["status"]
+                    c = r["c"]
+                    total_units += c
+                    if st == "untranslated":
+                        untranslated_units += c
+                    elif st in ("draft", "needs_review", "rejected", "failed"):
+                        draft_units += c
+                    elif st == "approved":
+                        approved_units += c
             except Exception:
                 pass
 

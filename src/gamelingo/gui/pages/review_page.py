@@ -253,13 +253,19 @@ class ReviewPage(QWidget):
 
     def setup_shortcuts(self):
         self.shortcut_save = QShortcut(QKeySequence("Ctrl+S"), self)
+        self.shortcut_save.setContext(Qt.WidgetWithChildrenShortcut)
         self.shortcut_save.activated.connect(self.on_save)
 
         self.shortcut_approve = QShortcut(QKeySequence("Ctrl+Return"), self)
+        self.shortcut_approve.setContext(Qt.WidgetWithChildrenShortcut)
         self.shortcut_approve.activated.connect(self.on_approve)
 
         self.shortcut_approve2 = QShortcut(QKeySequence("Ctrl+Enter"), self)
+        self.shortcut_approve2.setContext(Qt.WidgetWithChildrenShortcut)
         self.shortcut_approve2.activated.connect(self.on_approve)
+
+    def check_unsaved_changes(self) -> bool:
+        return self._check_unsaved_discard()
 
     def refresh(self):
         if self.state.db:
@@ -336,7 +342,7 @@ class ReviewPage(QWidget):
 
     def _check_unsaved_discard(self) -> bool:
         """Returns True if safe to continue, False if action was cancelled."""
-        if self.current_unit_id and self.lbl_unsaved.isVisible():
+        if self.current_unit_id and not self.lbl_unsaved.isHidden():
             reply = QMessageBox.question(
                 self,
                 "Unsaved Changes",
@@ -440,7 +446,7 @@ class ReviewPage(QWidget):
         # Check for unsaved changes before switching away from current record
         if (
             self.current_unit_id
-            and self.lbl_unsaved.isVisible()
+            and not self.lbl_unsaved.isHidden()
             and self._prev_row != -1
             and curr_row != self._prev_row
         ):

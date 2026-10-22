@@ -300,8 +300,7 @@ class SettingsPage(QWidget):
             return
         try:
             conn = self.state.db.connect()
-            with conn:
-                conn.execute("VACUUM")
+            conn.execute("VACUUM")
             QMessageBox.information(
                 self,
                 "Database Optimized",
