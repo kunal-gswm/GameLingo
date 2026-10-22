@@ -180,21 +180,36 @@ If you encounter an issue during testing, please submit a bug report on the [Gam
 ## 9. External Beta Pilot Protocol & Feedback Template
 
 > [!IMPORTANT]
-> **Current Pilot Status:** **`NOT YET RUN`**  
-> External human pilot validation has not yet been executed. Automated tests and synthetic test suites do not substitute for external tester feedback.
+> **Pilot Execution Status:** **`NOT YET RUN — RECRUITMENT PENDING`**  
+> External human pilot validation has not yet been executed. Automated test suites and synthetic workflows do not substitute for real external human tester evidence.
 
-### Beta Tester Checklist
-- [ ] Windows 10/11 x64 environment confirmed.
-- [ ] VC++ 2015–2022 redistributable present.
-- [ ] ZIP archive SHA-256 verified against `SHA256SUMS.txt`.
-- [ ] Standalone test copy of game created (original untouched).
-- [ ] Engine detection matched actual game engine.
-- [ ] Text extraction completed without error.
-- [ ] Protected tokens (`\V[...]`, `\C[...]`, etc.) preserved properly.
-- [ ] CSV export and re-import verified.
-- [ ] Patch plan created and applied successfully.
-- [ ] In-game dialogue verified in the game test copy.
-- [ ] Restoration from backup snapshot tested and verified.
+### Pilot Plan & Cohort Targets
+- **Target Size:** 3 to 5 voluntary external testers.
+- **Cohort A (RPG Maker MZ):** 2 testers targeting standalone, non-encrypted Japanese RPG Maker MZ games.
+- **Cohort B (Ren'Py):** 2 testers targeting Japanese Ren'Py 7.x or 8.x visual novels (unpacked or `.rpa` archives).
+- **Explicit Untested Engines Notice:** RPG Maker MV, VX Ace, VX, XP, and 2003 are verified at the format specification and AST round-trip level only. External testers testing these formats should expect experimental/unverified runtime behavior.
+
+### Comprehensive Beta Tester Checklist
+- [ ] **System:** Windows 10 (64-bit) or Windows 11 (64-bit) with VC++ 2015–2022 redistributable.
+- [ ] **Authenticity:** Downloaded `GameLingo-Windows-x64.zip` and verified SHA-256 against `SHA256SUMS.txt`.
+- [ ] **Installation:** Extracted archive to a writable user directory (not `Program Files`).
+- [ ] **Sandbox Safety:** Created a standalone copy of the game folder in a test directory (original untouched).
+- [ ] **Launch & Detection:** Launched `GameLingo.exe`, created project workspace, and confirmed engine detection.
+- [ ] **Extraction:** Extracted all dialogue units without crashing or unhandled exceptions.
+- [ ] **Protected Tokens:** Verified that control tags (`\V[...]`, `\C[...]`, `[player]`, `{b}`) are preserved and invalid tags block approval.
+- [ ] **Review & Interchange:** Tested manual editing or exported/imported CSV spreadsheet.
+- [ ] **Patching Copy:** Created patch plan, inspected file preview, and applied patch to the game copy.
+- [ ] **In-Game Verification:** Launched the patched game executable copy and confirmed translated dialogue appears correctly.
+- [ ] **Restoration:** Tested restoring the game copy from the automated backup snapshot and verified bit-for-bit return to original state.
+- [ ] **Error Recovery:** Confirmed that interrupting or rejecting an invalid patch leaves game files undamaged.
+
+### Feedback Register
+
+When issues are reported by beta testers, they are logged in the following format:
+
+| Issue ID | Severity (Critical/High/Med/Low) | Reproducibility (Always/Intermittent) | Engine Family | Game Version | Observed Behavior | Expected Behavior | Resolution Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| *GL-ISSUE-001* | *Pending Pilot* | *Pending Pilot* | *MZ / Ren'Py* | *Pending Pilot* | *No reports yet* | *N/A* | *Open* |
 
 ### Tester Feedback Template
 Copy and fill out this markdown template when submitting feedback:
@@ -206,7 +221,7 @@ Copy and fill out this markdown template when submitting feedback:
 - **Engine Family:** RPG Maker MZ / MV / VX Ace / VX / XP / 2003 / Ren'Py
 - **Game Name (or genre):** ___________________________
 - **Game Engine Version:** ____________________________
-- **GameLingo Version:** v0.1.0 (Commit: _____________)
+- **GameLingo Version:** v0.1.0 (Commit: `acd87c6`)
 
 #### 1. Setup & Launch
 - [ ] Executable launched without SmartScreen blocker

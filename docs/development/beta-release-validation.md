@@ -1,8 +1,8 @@
-# GameLingo: Beta Release Gate Closure & Validation Report (GL-BETA-004)
+# GameLingo: Release Candidate Rebuild & External Beta Report (GL-BETA-005)
 
-**Task ID:** GL-BETA-004  
+**Task ID:** GL-BETA-005  
 **Date:** 2026-10-22  
-**Platform Tested:** Windows 11 Pro x64 (Build 26300), Python 3.12.15, PySide6 6.9.1, PowerShell 5.1 & Core  
+**Platform Tested:** Windows 11 Pro x64 (Build 26300), Python 3.12.15, PySide6 6.9.1, PyInstaller 6.22.3, PowerShell 5.1 & Core  
 **Final Release Gate Decision:** **`READY FOR CONTROLLED BETA`**
 
 ---
@@ -12,104 +12,83 @@
 | Attribute | Recorded Evidence | Verification Status |
 | :--- | :--- | :--- |
 | **Active Branch** | `main` | Clean working tree; tracked to `origin/main` |
-| **Release Candidate Code Commit** | `acd87c68a411548e89cf8b1a3eec5d6b8849b28a` | Cross-platform path safety, fail-closed tests, invariants |
-| **Prior Code Commit (Built Binary)**| `2528d2badc0a645518807c60e4f83790b6d77a11` | Built `dist/GameLingo.exe` & distribution archives |
-| **Documentation Baseline Commit** | `b497a3759026b01899b684179a3684981f19bf8e` | Previous validation log |
-| **Hardening Code Commit CI Run** | Run ID [`39771807086`](https://github.com/kunal-gswm/GameLingo/actions/runs/39771807086) | **100% Green** (GUI Tests: 23s, Core Tests & Linting: 15s) |
-| **Prior Code Commit Remote CI Run** | Run ID [`39765780438`](https://github.com/kunal-gswm/GameLingo/actions/runs/39765780438) | **100% Green** (GUI Tests: 29s, Core Tests & Linting: 15s) |
-| **Prior Docs Commit Remote CI Run** | Run ID [`39765949482`](https://github.com/kunal-gswm/GameLingo/actions/runs/39765949482) | **100% Green** (GUI Tests: 26s, Core Tests & Linting: 14s) |
-| **Git Tag `v0.1` Status** | Points to `b37db3e0da4c5e8b772f9a8852b8ef7f83e884bb` | **Untouched** (pre-audit historical tag; no tags modified) |
+| **Exact Source Code Commit** | `acd87c6824a898c342d315ccbc821292ab2538b2` | Hardened path security, fail-closed tests, release invariants |
+| **Documentation Baseline Commit** | `447335634ba235a110674aaa793ef49106cd45f2` | Pre-rebuild validation report update |
+| **Binary Rebuild Provenance** | Built from `acd87c6824a898c342d315ccbc821292ab2538b2` | Rebuilt on Windows 11 x64 via `build_windows.ps1` |
+| **Code Commit Remote CI Run** | Run ID [`39771807086`](https://github.com/kunal-gswm/GameLingo/actions/runs/39771807086) | **100% Green** (GUI Tests: 23s, Core Tests & Linting: 15s) |
+| **Docs Commit Remote CI Run** | Run ID [`39771936944`](https://github.com/kunal-gswm/GameLingo/actions/runs/39771936944) | **100% Green** (GUI Tests: 3m24s, Core Tests & Linting: 14s) |
+| **Git Tag `v0.1` Status** | Points to `b37db3e0da4c5e8b772f9a8852b8ef7f83e884bb` | **Untouched** (historical pre-audit tag; no tags created or moved) |
 | **Release Gate Mode** | `GAMELINGO_RELEASE_GATE=1` | Enforces fail-closed presence of distribution files |
 
 ---
 
-## 2. Fail-Closed Distribution Verification
+## 2. Rebuilt Windows Distribution & Checksum Integrity
 
-### Root Cause Analysis of Previous Fail-Open Checks
-In earlier test iterations, `test_distribution_checksum_manifest_and_zip_safety` contained:
-1. `if not dist_dir.exists(): pytest.skip(...)`
-2. `if target_path.exists(): assert computed == sha.upper()`
-3. `if zip_path.exists(): with zipfile.ZipFile(...)`
+### Rebuild Provenance & Environment
+- **Host OS:** Windows 11 Pro 64-bit (10.0.26300)
+- **Compiler/Toolchain:** Python 3.12.15 x64 (`cpython-3.12-windows-x86_64-none`), PyInstaller 6.22.3, `uv 0.6.14`
+- **Rebuild Command:** `powershell -ExecutionPolicy Bypass -File .\build_windows.ps1`
+- **Source SHA at Build:** `acd87c6824a898c342d315ccbc821292ab2538b2` (contains all cross-platform path security and fail-closed distribution checks)
 
-If a distribution artifact was missing or unbuilt during release verification, the tests skipped the missing files or passed without verifying hashes.
+### Rebuilt Artifacts & Cryptographic Checksums
+All release artifacts rebuilt on Windows strictly verify against the published UTF-8 (No BOM) manifest:
 
-### Implemented Hardening
-1. **`parse_and_validate_manifest`:**
-   - Enforces valid 64-character hexadecimal SHA-256 strings (`^[0-9a-fA-F]{64}$`).
-   - Rejects duplicate manifest entries.
-   - Rejects UTF-8 Byte Order Marks (BOM).
-   - Requires every referenced file in the manifest to exist on disk (`FileNotFoundError` if absent).
-   - Computes SHA-256 byte-for-byte and verifies hash equality.
-   - Enforces presence of all required distribution artifacts (`GameLingo.exe`, `GameLingo-Windows-x64.zip`, `GameLingo-v0.1-windows-x64.zip`).
-2. **`validate_distribution_zip`:**
-   - Strictly validates archive existence and readability.
-   - Rejects directory traversal (`../` and `..\`).
-   - Rejects Unix absolute (`/...`), Windows root (`\...`), Windows drive paths (`C:\...`), UNC network paths (`\\...`, `//...`), and colons (`:`).
-   - Rejects duplicate normalized entry paths.
-   - Enforces absence of `.db`, `.pyc`, `.tmp`, and `__pycache__` leakage.
-   - Enforces presence of required bundle contents: `GameLingo.exe`, `LICENSE`, `README.md`, `THIRD_PARTY_NOTICES.txt`.
-3. **Release Gate Environment Enforcement:**
-   - Setting `GAMELINGO_RELEASE_GATE=1` guarantees that missing distribution directories or manifests fail the test with `pytest.fail()` rather than skipping.
+| Artifact Name | Exact Size (bytes) | SHA-256 Checksum | Content Verification |
+| :--- | :--- | :--- | :--- |
+| **`GameLingo.exe`** | 124,125,205 | `7DCEC39278EFC3DCCFA9C8A774D083553FECF5279AFB628EA5F65C365ED65A7C` | Standalone executable |
+| **`GameLingo-Windows-x64.zip`** | 123,065,813 | `E90A6C5C21F8A6B20CF472A60F5FDB977CEC85B810E40BAFD16681C4F38C6FC9` | Portable ZIP archive |
+| **`GameLingo-v0.1-windows-x64.zip`** | 123,065,813 | `E90A6C5C21F8A6B20CF472A60F5FDB977CEC85B810E40BAFD16681C4F38C6FC9` | Distribution alias copy |
+| **`SHA256SUMS.txt`** | 272 | *(UTF-8, No BOM manifest)* | Verified against all 3 files |
 
-### Published Artifact Checksums
-All release artifacts built on Windows match the published UTF-8 (No BOM) manifest:
-
-| Artifact Name | Size | SHA-256 Checksum |
-| :--- | :--- | :--- |
-| **`GameLingo.exe`** | 124,115,102 bytes | `A67FC5ADF23F108950947606A94E3E489C86FB915702ADFBC24D1A1D5E8D1B46` |
-| **`GameLingo-Windows-x64.zip`** | 123,054,561 bytes | `3C03BA8387926CA2B3FC4DDC0F4649B49729202A643F08C90D2A2450777B6CEA` |
-| **`GameLingo-v0.1-windows-x64.zip`** | 123,054,561 bytes | `3C03BA8387926CA2B3FC4DDC0F4649B49729202A643F08C90D2A2450777B6CEA` |
+### Manifest & Archive Cleanliness
+- **Manifest Format:** Zero UTF-8 BOM bytes (`\xef\xbb\xbf`). Standard `sha256sum -c` passes without warning.
+- **Fail-Closed Verification:** `tests/integration/test_beta_release_file_safety.py` passed with `GAMELINGO_RELEASE_GATE=1`, strictly validating every referenced entry and enforcing that referenced files exist on disk with matching hashes.
+- **Archive Contents:** Verified via `zipfile` inspection:
+  - Contains strictly: `GameLingo.exe`, `LICENSE`, `README.md`, `THIRD_PARTY_NOTICES.txt`.
+  - Zero `.db` databases, zero `.tmp` files, zero `__pycache__` directories, and zero `.pyc` files.
+  - Zero path traversal entries (`..`), leading slashes, drive letters, or duplicate normalized entries.
 
 ---
 
-## 3. Cross-Platform Path Security
+## 3. Packaged Executable Verification & Synthetic End-to-End Workflow
 
-### Architectural Enhancement: `gamelingo.safety.path_security`
-Untrusted game-relative paths can present severe security hazards when evaluated across platforms. On POSIX systems (such as Linux CI runners):
-- `Path("C:\\Windows\\cmd.exe").is_absolute()` returns `False`.
-- `Path("..\\escape.txt")` is treated as a single filename containing a backslash, bypassing naive traversal checks.
+The rebuilt `dist/GameLingo.exe` was tested directly in an isolated temporary directory without relying on the development environment:
 
-`src/gamelingo/safety/path_security.py` establishes platform-independent invariants:
-- **`validate_game_relative_path(path_str)`:**
-  - Rejects empty, whitespace, and null-byte paths.
-  - Normalizes backslashes to forward slashes before parsing.
-  - Rejects Unix absolute (`/...`) and Windows root (`\...`) paths.
-  - Rejects Windows drive letters (`C:...`, `c:...`) and UNC paths (`\\...`, `//...`).
-  - Rejects colon characters (`:`) preventing NTFS alternate data streams (`file.txt::$DATA`).
-  - Rejects `..` and `.` segments across all path separators.
-  - Rejects Windows reserved device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9`).
-  - Rejects trailing spaces and dots (preventing NTFS truncation vulnerabilities).
-  - Returns sanitized POSIX-style relative path string.
-- **`safe_resolve_target(root, untrusted_rel_path)`:**
-  - Resolves path strictly against root directory.
-  - Rejects symlinks and Windows reparse points along the path.
-- **`check_case_collisions(paths)`:**
-  - Detects case-insensitive collisions (e.g. `data/Actors.json` vs `data/actors.json`).
-
-Wired into:
-- `src/gamelingo/safety/restore.py` (`preview_restore`, `execute_restore`)
-- `src/gamelingo/patching/planner.py` (`create_plan`, `validate_plan`)
-- `src/gamelingo/patching/apply.py` (`apply_plan`)
+```
+[Isolated Temporary Directory: C:\Users\amvbl\AppData\Local\Temp\gamelingo_lifecycle_pt1531yk]
+Step 1:  project init               -> Initialized workspace database & tables
+Step 2:  game detect                -> Detected RPG Maker MV/MZ (Ambiguous Family) (confidence: 0.70)
+Step 3:  extract                    -> Extracted 34 dialogue units from game fixture copy
+Step 4:  review list                -> Listed extracted units with source text
+Step 5:  export csv                 -> Exported 34 records to export.csv
+Step 6:  review edit & approve      -> Edited draft text & approved unit 'Actors.json::[1].name'
+Step 7:  plan create                -> Generated patch_plan.json with 1 valid approved edit
+Step 8:  apply (execute=yes)         -> Created backup snapshot & patched Actors.json
+Step 9:  verify patched text        -> In-game file verified: 'Harold Translated' written successfully
+Step 10: restore (execute=yes)      -> Restored game copy from backup snapshot 331f38b5-...
+Step 11: verify restored content    -> Bit-for-bit identity match with original baseline!
+```
 
 ---
 
-## 4. Patch & Restore Invariants Verification
+## 4. Release-Gate Verification Suite Summary
 
-| Invariant | Implementation Mechanism | Verification Result |
-| :--- | :--- | :--- |
-| **Pre-Write Hash Validation** | `validate_plan` runs immediately before backup and write; checks dynamic hashes during staging. | **PASS** — Stale source files abort before modification. |
-| **Pre-Restore Backup Integrity** | `execute_restore` validates backup file existence, file size, and SHA-256 before staging replacements. | **PASS** — Corrupted backup files abort restore without touching game. |
-| **Partial Failure Isolation** | `apply_plan` returns `status="partial_failure"`. Never reports success if any file write fails. | **PASS** — Verified via multi-file failure simulation. |
-| **Separation of Recovery Errors** | Recovery outcome recorded in `recovery_status` ("success", "partial", "failed") and distinct error messages. | **PASS** — Original replacement error and recovery exception tracked separately. |
-| **Rollback Preserves Untouched Files** | Rollback restores only `replaced` files. Untouched files and external edits made to unrelated files are preserved bit-for-bit. | **PASS** — Verified via `test_apply_rollback_preserves_untouched_files_after_backup`. |
-| **Stale Plans Fail Safely** | Locator re-resolution and source string comparison executed immediately before write. | **PASS** — Mismatches abort before destructive operations. |
-| **Temporary Staging Cleanup** | Atomic staging files (`gamelingo_*.tmp`) cleaned up in `finally:` blocks. | **PASS** — Zero temporary files leaked after success or failure. |
+| Suite / Check | Command | Result | Notes |
+| :--- | :--- | :---: | :--- |
+| **Full Automated Test Suite** | `uv run pytest` | **531 passed** in 35.17s | Zero failures or errors |
+| **GUI Integration Suite** | `uv run pytest tests/integration/test_gui.py` | **28 passed** in 12.30s | Complete navigation, review, patch tests |
+| **File Safety & Distribution** | `uv run pytest tests/integration/test_beta_release_file_safety.py` | **25 passed** in 0.93s | Path traversal, BOM, manifest, rollback |
+| **Dedicated Release Gate Mode** | `GAMELINGO_RELEASE_GATE=1 uv run pytest` | **100% passed** | Enforces fail-closed artifact presence |
+| **Ruff Code Linter** | `uv run ruff check .` | **0 errors (166 files)** | Clean across all project files |
+| **Ruff Code Formatter** | `uv run ruff format --check .` | **100% formatted (166 files)** | Clean formatting compliance |
+| **Executable Smoke Test** | `dist\GameLingo.exe gui --smoke-test` | **PASS** | Qt core and `rpycdec` verified |
+| **Full Lifecycle Synthetic Run** | Standalone `GameLingo.exe` in clean tempdir | **PASS** | Init, detect, extract, review, export, plan, apply, restore |
 
 ---
 
-## 5. Engine Compatibility & Verification Tiers
+## 5. Engine Verification Tiers
 
-GameLingo enforces clear boundaries regarding engine compatibility:
+GameLingo maintains a transparent, evidence-based distinction between engine compatibility tiers:
 
 ```mermaid
 flowchart TD
@@ -126,45 +105,38 @@ flowchart TD
     end
 ```
 
-- **Live Runtime Pilots:** Only RPG Maker MZ and Ren'Py are certified via live process execution with rendered dialogue and screenshot evidence.
-- **AST Round-Trip Formats:** RPG Maker MV, VX Ace, VX, XP, and 2003 are verified via syntax tree parsing, serialization fidelity, and SHA-256 round-trips. They have not been subjected to live-runtime pilots.
-- **Offline Model Clarification:** Configuring an offline provider (Argos Translate) does not pre-bundle neural models. The Japanese-to-English package must be downloaded via Settings before offline translation can run.
+- **Live-Runtime Pilots:** Only **RPG Maker MZ** (Pilots 1–7) and **Ren'Py** (7.x/8.x) have been validated through live process execution, dialogue display, and screenshot capture.
+- **AST Round-Trip Formats:** **RPG Maker MV**, **VX Ace**, **VX**, **XP**, and **2003** are verified at the syntax tree parser and serialization round-trip level. They are labeled as experimental/unverified runtime formats.
+- **Offline Model Availability:** Configuring an offline provider (Argos Translate) does not pre-bundle neural models. Pre-trained packages (`ja_en`) must be downloaded via Settings before offline translation can execute.
 
 ---
 
-## 6. External Beta Pilot Protocol
+## 6. External Beta Pilot Plan
 
-- **Pilot Execution Status:** **`NOT YET RUN`**  
-  No external human tester evidence has been collected yet. Automated tests and synthetic workflows are not substituted for external human validation.
-- **Tester Checklist & Template:** Documented in `docs/user-guide/beta-testing-guide.md` (Section 9), covering OS environment, engine version, extraction fidelity, token preservation, patching against a game copy, restoration, and reproduction logs.
-
----
-
-## 7. Automated Test & Lint Summary
-
-| Suite / Check | Command | Result | Duration |
-| :--- | :--- | :---: | :---: |
-| **Full Automated Test Suite** | `uv run pytest` | **531 passed** | 35.17s |
-| **GUI Integration Suite** | `uv run pytest tests/integration/test_gui.py` | **28 passed** | 11.17s |
-| **File Safety & Distribution** | `uv run pytest tests/integration/test_beta_release_file_safety.py` | **25 passed** | 1.02s |
-| **Release Gate Mode** | `GAMELINGO_RELEASE_GATE=1 uv run pytest` | **100% passed** | 0.65s |
-| **Ruff Code Linter** | `uv run ruff check .` | **0 errors (166 files)** | 0.45s |
-| **Ruff Code Formatter** | `uv run ruff format --check .` | **100% formatted (166 files)** | 0.12s |
+- **Current Status:** **`NOT YET RUN — RECRUITMENT PENDING`**  
+  No external human tester evidence has been collected yet. Automated tests and synthetic test suites do not substitute for external human validation.
+- **Pilot Target:** 3 to 5 voluntary external testers.
+  - Cohort A (RPG Maker MZ): 2 testers on standalone non-encrypted games.
+  - Cohort B (Ren'Py): 2 testers on Ren'Py 7.x / 8.x visual novels.
+- **Tester Guide & Protocol:** Fully documented in `docs/user-guide/beta-testing-guide.md` (Section 9), featuring:
+  - Step-by-step checklist (authenticity, sandbox copy, extraction, token guard, CSV interchange, patching, restoration).
+  - Standardized feedback template and issue tracking register.
+  - Copyright protection guidance (strictly prohibiting upload of commercial game files).
 
 ---
 
-## 8. Release Gate Decision
+## 7. Release Decision & Final Verdict
 
-### Final Verdict: **`READY FOR CONTROLLED BETA`**
+### Verdict: **`READY FOR CONTROLLED BETA`**
 
 ### Release Gate Criteria Checklist
-- [x] Full automated test suite passes: **531 passed**.
-- [x] GUI and file safety suites pass: **28 GUI + 25 file-safety passed**.
-- [x] Lint and format checks clean: **166 files clean**.
-- [x] Required distribution artifacts exist, are non-empty, and verify against SHA-256 manifest.
-- [x] Standalone executable passes smoke tests (`gui --smoke-test`) on Windows.
-- [x] Fail-closed distribution tests reject missing targets, malformed hashes, duplicates, and traversal.
-- [x] Cross-platform path safety enforced independently of host OS (`Path.is_absolute()` bypasses resolved).
-- [x] Patch and restore invariants verified with dedicated regression tests.
-- [x] External beta pilot protocol authored with status marked explicitly as `NOT YET RUN`.
-- [x] Existing tag `v0.1` preserved untouched; no releases or tags created without user authorization.
+- [x] Windows executable and archives rebuilt from exact hardened code commit (`acd87c6824a898c342d315ccbc821292ab2538b2`).
+- [x] Checksum manifest (`SHA256SUMS.txt`) has no BOM and matches every file byte-for-byte.
+- [x] ZIP archive contains strictly release files with zero development leakage or path traversal.
+- [x] Packaged executable smoke test passed (`gui --smoke-test`).
+- [x] Packaged executable synthetic workflow passed (init, detect, extract, review, edit, approve, export, plan, apply, restore).
+- [x] Full automated test suite passes (531 tests).
+- [x] GUI integration test suite passes (28 tests).
+- [x] Dedicated release-gate mode passes with fail-closed checks (`GAMELINGO_RELEASE_GATE=1`).
+- [x] Ruff lint and format checks 100% clean across all 166 files.
+- [x] Historical tag `v0.1` preserved untouched; no releases published without explicit user authorization.
