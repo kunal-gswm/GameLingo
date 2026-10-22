@@ -13,10 +13,10 @@
 | :--- | :--- | :--- |
 | **Active Branch** | `main` | Clean working tree; tracked to `origin/main` |
 | **Exact Source Code Commit** | `acd87c6824a898c342d315ccbc821292ab2538b2` | Hardened path security, fail-closed tests, release invariants |
-| **Documentation Baseline Commit** | `447335634ba235a110674aaa793ef49106cd45f2` | Pre-rebuild validation report update |
+| **Final Documentation Commit** | `a66180c9d0ba0717701d01692930b8e73072b5b6` | Records rebuilt binaries, exact hashes, and pilot register |
 | **Binary Rebuild Provenance** | Built from `acd87c6824a898c342d315ccbc821292ab2538b2` | Rebuilt on Windows 11 x64 via `build_windows.ps1` |
 | **Code Commit Remote CI Run** | Run ID [`39771807086`](https://github.com/kunal-gswm/GameLingo/actions/runs/39771807086) | **100% Green** (GUI Tests: 23s, Core Tests & Linting: 15s) |
-| **Docs Commit Remote CI Run** | Run ID [`39771936944`](https://github.com/kunal-gswm/GameLingo/actions/runs/39771936944) | **100% Green** (GUI Tests: 3m24s, Core Tests & Linting: 14s) |
+| **Final Docs Commit Remote CI Run** | Run ID [`39783956476`](https://github.com/kunal-gswm/GameLingo/actions/runs/39783956476) | **100% Green** (GUI Tests: 21s, Core Tests & Linting: 14s) |
 | **Git Tag `v0.1` Status** | Points to `b37db3e0da4c5e8b772f9a8852b8ef7f83e884bb` | **Untouched** (historical pre-audit tag; no tags created or moved) |
 | **Release Gate Mode** | `GAMELINGO_RELEASE_GATE=1` | Enforces fail-closed presence of distribution files |
 
