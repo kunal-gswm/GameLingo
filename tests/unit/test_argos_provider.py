@@ -127,3 +127,61 @@ def test_argos_provider_masking_error(monkeypatch):
     assert res[0].error is not None
     assert "Placeholder error" in res[0].error
     assert res[0].target_text == ""
+
+
+def test_translate_unit_success_and_empty(monkeypatch):
+    import sys
+
+    class FakeTranslator:
+        def translate(self, text):
+            return text.replace("Hello", "Bonjour") + " TR"
+
+    class FakeTranslate:
+        def get_installed_languages(self):
+            class Lang:
+                def __init__(self, c):
+                    self.code = c
+
+                def get_translation(self, o):
+                    return FakeTranslator()
+
+            return [Lang("ja"), Lang("en")]
+
+    class FakeArgosTranslate:
+        translate = FakeTranslate()
+
+    monkeypatch.setitem(sys.modules, "argostranslate", FakeArgosTranslate())
+    monkeypatch.setitem(sys.modules, "argostranslate.translate", FakeTranslate())
+
+    provider = ArgosTranslateProvider()
+    assert provider.translate_unit("") == ""
+    assert provider.translate_unit("Hello") == "Bonjour TR"
+
+
+def test_translate_unit_error_raises(monkeypatch):
+    import sys
+
+    class FakeTranslatorEatPlaceholder:
+        def translate(self, text):
+            return "No tokens"
+
+    class FakeTranslate:
+        def get_installed_languages(self):
+            class Lang:
+                def __init__(self, c):
+                    self.code = c
+
+                def get_translation(self, o):
+                    return FakeTranslatorEatPlaceholder()
+
+            return [Lang("ja"), Lang("en")]
+
+    class FakeArgosTranslate:
+        translate = FakeTranslate()
+
+    monkeypatch.setitem(sys.modules, "argostranslate", FakeArgosTranslate())
+    monkeypatch.setitem(sys.modules, "argostranslate.translate", FakeTranslate())
+
+    provider = ArgosTranslateProvider()
+    with pytest.raises(RuntimeError, match="Placeholder error"):
+        provider.translate_unit("Hello %1")

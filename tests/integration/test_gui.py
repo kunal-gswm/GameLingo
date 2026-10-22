@@ -1289,6 +1289,65 @@ def test_translation_page_token_validation_and_status_refresh(qapp, app_state):
     assert "[APPROVED]" in trans_page.list_units.item(0).text()
 
 
+def test_translation_page_single_unit_translate(qapp, app_state, monkeypatch):
+    conn = app_state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                "f_single.json",
+                "default",
+                "data/CommonEvents.json",
+                "json",
+                "hash_single",
+                0,
+                0,
+            ),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "u_single",
+                "f_single.json",
+                "[1].list[0]",
+                "こんにちは",
+                "Greeting",
+                "[]",
+                "hash_single",
+                "untranslated",
+            ),
+        )
+
+    import sys
+    from types import ModuleType
+
+    from gamelingo.translation.provider import FakeProvider
+
+    mock_module = ModuleType("gamelingo.translation.argos_provider")
+    mock_module.ArgosTranslateProvider = FakeProvider
+    monkeypatch.setitem(
+        sys.modules, "gamelingo.translation.argos_provider", mock_module
+    )
+
+    window = MainWindow(app_state)
+    window.refresh_all()
+    window.nav_list.setCurrentRow(2)
+    trans_page = window.pages[2]
+
+    # Select the unit
+    assert trans_page.list_units.count() >= 1
+    trans_page.list_units.setCurrentRow(0)
+    assert trans_page.current_unit_id == "u_single"
+    assert trans_page.txt_source.toPlainText() == "こんにちは"
+
+    # Click Translate Unit button
+    trans_page.btn_translate_single.click()
+
+    # Verify target text is populated with translation and saved as draft
+    assert "こんにちは TR" in trans_page.txt_target.toPlainText()
+    assert "[DRAFT]" in trans_page.list_units.item(0).text()
+
+
 def test_navigation_unsaved_dirty_tracking_flow(qapp, app_state):
     conn = app_state.db.connect()
     with conn:

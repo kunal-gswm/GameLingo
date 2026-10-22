@@ -793,10 +793,12 @@ class TranslationPage(QWidget):
         if not src_text:
             return
         try:
-            from gamelingo.translation.argos_provider import ArgosTranslateProvider
+            if getattr(self, "_single_provider", None) is None:
+                from gamelingo.translation.argos_provider import ArgosTranslateProvider
 
-            provider = ArgosTranslateProvider()
-            result = provider.translate_unit(src_text, "ja", "en")
+                self._single_provider = ArgosTranslateProvider()
+
+            result = self._single_provider.translate_unit(src_text, "ja", "en")
             if result:
                 self.txt_target.setPlainText(result)
                 self.on_save_current_unit()

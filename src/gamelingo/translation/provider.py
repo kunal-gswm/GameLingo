@@ -35,6 +35,26 @@ class TranslationProvider(ABC):
     ) -> List[TranslationResult]:
         pass
 
+    def translate_unit(
+        self, text: str, source_lang: str = "ja", target_lang: str = "en"
+    ) -> str:
+        """Translate a single text string using translate_batch."""
+        if not text:
+            return ""
+        req = TranslationRequest(
+            id="single_unit",
+            source_text=text,
+            source_lang=source_lang,
+            target_lang=target_lang,
+        )
+        results = self.translate_batch([req])
+        if not results:
+            return ""
+        res = results[0]
+        if res.error:
+            raise RuntimeError(res.error)
+        return res.target_text
+
 
 class FakeProvider(TranslationProvider):
     def __init__(self, simulate_error_for: List[str] = None, batch_limit: int = 100):
