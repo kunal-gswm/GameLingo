@@ -48,13 +48,14 @@ GameLingo is a local-first Windows desktop workbench for translating game text i
 
 Pre-built portable releases are available on the [GitHub Releases](https://github.com/kunal-gswm/GameLingo/releases) page.
 
-1. **Download:** Download `GameLingo-Windows-x64.zip` and `GameLingo-Windows-x64.zip.sha256`.
+1. **Download:** Download `GameLingo.exe` or `GameLingo-Windows-x64.zip` (also available as `GameLingo-v0.1-windows-x64.zip`) and `SHA256SUMS.txt`.
 2. **Verify Checksum:** Open PowerShell in your download folder and verify the archive hash:
    ```powershell
+   Get-FileHash GameLingo.exe -Algorithm SHA256
    Get-FileHash GameLingo-Windows-x64.zip -Algorithm SHA256
-   Get-Content GameLingo-Windows-x64.zip.sha256
+   Get-Content SHA256SUMS.txt
    ```
-3. **Extract:** Extract the ZIP to a writable location (e.g., `C:\Tools\GameLingo\` or your Documents folder). Do not extract inside `Program Files` or system directories requiring elevated permissions.
+3. **Extract:** If using the ZIP archive, extract to a writable location (e.g., `C:\Tools\GameLingo\` or your Documents folder). Do not extract inside `Program Files` or system directories requiring elevated permissions.
 4. **Launch:** Double-click `GameLingo.exe`.
    - *Windows SmartScreen Note:* Because GameLingo is an unsigned open-source application, Windows SmartScreen may show a prompt ("Windows protected your PC"). Click **More info** $\rightarrow$ **Run anyway** after verifying the release source and checksum.
 
@@ -89,10 +90,15 @@ gamelingo review list --status needs_review,draft
 gamelingo export csv --output translations.csv
 
 # 6. Generate and preview patch plan
-gamelingo patch plan --plan-file patch.json
+gamelingo plan create --plan-file patch.json
+# (convenience alias: gamelingo patch plan --plan-file patch.json)
 
 # 7. Apply patch with isolated backup
-gamelingo patch apply patch.json --execute --yes
+gamelingo apply patch.json --execute --yes
+# (convenience alias: gamelingo patch apply patch.json --execute --yes)
+
+# 8. Restore backup snapshot if needed
+gamelingo restore <backup-id> --execute --overwrite
 ```
 
 ---

@@ -528,6 +528,141 @@ def cmd_apply(args):
         sys.exit(1)
 
 
+def cmd_restore(args):
+    from gamelingo.safety.restore import (
+        RestoreValidationError,
+        execute_restore,
+        preview_restore,
+    )
+
+    workspace_path = Path(args.workspace)
+    backup_root = workspace_path / "backups"
+    backup_id_input = args.backup_id
+
+    # Resolve backup directory
+    backup_dir = Path(backup_id_input)
+    if not (backup_dir.is_dir() and (backup_dir / "manifest.json").exists()):
+        backup_dir = backup_root / backup_id_input
+        if not (backup_dir.is_dir() and (backup_dir / "manifest.json").exists()):
+            # Try prefix matching
+            matches = []
+            if backup_root.exists():
+                for d in backup_root.iterdir():
+                    if (
+                        d.is_dir()
+                        and d.name.startswith(backup_id_input)
+                        and (d / "manifest.json").exists()
+                    ):
+                        matches.append(d)
+            if len(matches) == 1:
+                backup_dir = matches[0]
+            elif len(matches) > 1:
+                print(
+                    f"Ambiguous backup ID prefix '{backup_id_input}'. Matches: {[m.name for m in matches]}"
+                )
+                sys.exit(1)
+            else:
+                print(
+                    f"Backup '{backup_id_input}' not found in {backup_root.absolute()}."
+                )
+                sys.exit(1)
+
+    manifest_path = backup_dir / "manifest.json"
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    except Exception as e:
+        print(f"Failed to read backup manifest: {e}")
+        sys.exit(1)
+
+    # Determine target root
+    target_root_str = getattr(args, "target", None)
+    if target_root_str:
+        target_root = Path(target_root_str)
+    else:
+        project_id = getattr(args, "project_id", None) or manifest.get(
+            "project_id", "default"
+        )
+        db = get_db(args.workspace)
+        conn = db.connect()
+        cur = conn.execute(
+            "SELECT install_path FROM projects WHERE id = ?", (project_id,)
+        )
+        row = cur.fetchone()
+        if row and row["install_path"]:
+            target_root = Path(row["install_path"])
+        else:
+            print(
+                "Target game root not specified and could not be determined from project database. Use --target <path>."
+            )
+            sys.exit(1)
+
+    if not target_root.exists():
+        print(f"Target directory {target_root} does not exist.")
+        sys.exit(1)
+
+    files_arg = getattr(args, "files", None)
+    if files_arg:
+        selected_files = [f.strip() for f in files_arg.split(",") if f.strip()]
+    else:
+        selected_files = [f["original_path"] for f in manifest.get("files", [])]
+
+    execute = getattr(args, "execute", False)
+    overwrite = getattr(args, "overwrite", False) or getattr(args, "yes", False)
+
+    if not execute:
+        print("--- RESTORE PREVIEW MODE --- (Use --execute --overwrite to apply)")
+        try:
+            plan = preview_restore(backup_dir, target_root, selected_files)
+            print(f"Backup ID: {manifest.get('backup_id', backup_dir.name)}")
+            print(f"Target Root: {target_root.absolute()}")
+            print(f"Files valid to restore ({len(plan['valid_to_restore'])}):")
+            for f in plan["valid_to_restore"]:
+                print(f"  + {f}")
+            print(f"Files with conflicts (will overwrite) ({len(plan['conflicts'])}):")
+            for f in plan["conflicts"]:
+                print(f"  * {f}")
+            if plan.get("missing_in_backup"):
+                print(f"Missing in backup ({len(plan['missing_in_backup'])}):")
+                for f in plan["missing_in_backup"]:
+                    print(f"  ! {f}")
+            if plan.get("invalid_paths"):
+                print(f"Invalid paths ({len(plan['invalid_paths'])}):")
+                for f in plan["invalid_paths"]:
+                    print(f"  ! {f}")
+            return 0
+        except RestoreValidationError as e:
+            print(f"Restore preview validation error: {e}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Restore preview failed: {e}")
+            sys.exit(1)
+
+    try:
+        res = execute_restore(
+            backup_dir,
+            target_root,
+            selected_files,
+            overwrite=overwrite,
+            execute=True,
+        )
+        restored = res.get("restored", [])
+        verified = res.get("verified_hashes", {})
+        print(
+            f"Successfully restored {len(restored)} files from backup {manifest.get('backup_id', backup_dir.name)}."
+        )
+        print(
+            f"Verified {len(verified)} files against cryptographic manifest checksums."
+        )
+        return 0
+    except RestoreValidationError as e:
+        print(f"Restore validation error: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Restore failed: {e}")
+        sys.exit(1)
+
+
 def cmd_gui(args=None):
     if getattr(args, "smoke_test", False):
         print("Smoke test: Initializing Qt core and binary dependencies...")
@@ -537,7 +672,9 @@ def cmd_gui(args=None):
             print(f"Error: GUI components unavailable: {e}")
             return 1
 
-        _app = QCoreApplication(sys.argv)
+        _app = QCoreApplication.instance()
+        if _app is None:
+            _app = QCoreApplication(sys.argv)
         print(f"Qt initialized successfully ({_app}).")
 
         import rpycdec
@@ -559,6 +696,18 @@ def cmd_gui(args=None):
 
 
 def main() -> int:
+    if "--smoke-test" in sys.argv:
+        return cmd_gui(argparse.Namespace(smoke_test=True))
+
+    if "--test-workflow" in sys.argv:
+        try:
+            from gamelingo.gui.main import run_test_workflow
+
+            return run_test_workflow()
+        except Exception as e:
+            print(f"Error during test workflow: {e}")
+            return 1
+
     if len(sys.argv) == 1:
         if sys.platform == "win32":
             try:
@@ -743,6 +892,51 @@ def main() -> int:
         "--yes", action="store_true", help="Confirm execution non-interactively"
     )
     p_apply.set_defaults(func=cmd_apply)
+
+    # Restore
+    p_restore = subparsers.add_parser("restore", help="Restore backup snapshot")
+    p_restore.add_argument("backup_id", help="Backup snapshot ID or path")
+    p_restore.add_argument("--target", help="Target game root directory")
+    p_restore.add_argument("--project-id", default=None, help="Project identifier")
+    p_restore.add_argument(
+        "--files",
+        default=None,
+        help="Comma-separated list of relative files to restore",
+    )
+    p_restore.add_argument(
+        "--execute", action="store_true", help="Execute restore instead of preview"
+    )
+    p_restore.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing files in target",
+    )
+    p_restore.add_argument("--yes", action="store_true", help="Alias for --overwrite")
+    p_restore.set_defaults(func=cmd_restore)
+
+    # Patch (convenience alias)
+    p_patch = subparsers.add_parser("patch", help="Patch management")
+    patch_sub = p_patch.add_subparsers(dest="patch_cmd", required=True)
+    c_pp = patch_sub.add_parser("plan", help="Create patch plan")
+    c_pp.add_argument("--project-id", default="default", help="Project identifier")
+    c_pp.add_argument("--plan-file", default="patch_plan.json")
+    c_pp.add_argument(
+        "--activate-language",
+        action="store_true",
+        help="Include Ren'Py language activation script (gamelingo_activate.rpy)",
+    )
+    c_pp.set_defaults(func=cmd_plan_create)
+
+    c_pa = patch_sub.add_parser("apply", help="Apply patch")
+    c_pa.add_argument("plan_file")
+    c_pa.add_argument("--project-id", default="default", help="Project identifier")
+    c_pa.add_argument(
+        "--execute", action="store_true", help="Execute the patch instead of preview"
+    )
+    c_pa.add_argument(
+        "--yes", action="store_true", help="Confirm execution non-interactively"
+    )
+    c_pa.set_defaults(func=cmd_apply)
 
     args = parser.parse_args()
     try:

@@ -14,14 +14,24 @@ if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
 uv run --python 3.12 pyinstaller GameLingo.spec --noconfirm
 
 Write-Host "Build complete! Preparing distribution..."
-Copy-Item README.md dist/GameLingo/
-Copy-Item LICENSE dist/GameLingo/
-Copy-Item THIRD_PARTY_NOTICES.txt dist/GameLingo/
-Start-Sleep -Seconds 3
-Compress-Archive -Path "dist\GameLingo" -DestinationPath "dist\GameLingo-Windows-x64.zip" -Force
+New-Item -ItemType Directory -Force -Path "dist\GameLingo"
+Copy-Item "dist\GameLingo.exe" "dist\GameLingo\"
+Copy-Item README.md "dist\GameLingo\"
+Copy-Item LICENSE "dist\GameLingo\"
+Copy-Item THIRD_PARTY_NOTICES.txt "dist\GameLingo\"
+Start-Sleep -Seconds 2
 
-Write-Host "Generating Checksum..."
-$hash = Get-FileHash "dist\GameLingo-Windows-x64.zip" -Algorithm SHA256
-$hash.Hash | Out-File "dist\GameLingo-Windows-x64.zip.sha256" -Encoding UTF8
+Compress-Archive -Path "dist\GameLingo\*" -DestinationPath "dist\GameLingo-Windows-x64.zip" -Force
+Copy-Item "dist\GameLingo-Windows-x64.zip" "dist\GameLingo-v0.1-windows-x64.zip" -Force
+
+Write-Host "Generating Checksums..."
+$hashZip = (Get-FileHash "dist\GameLingo-Windows-x64.zip" -Algorithm SHA256).Hash
+$hashZip | Out-File "dist\GameLingo-Windows-x64.zip.sha256" -Encoding UTF8
+
+$hashExe = (Get-FileHash "dist\GameLingo.exe" -Algorithm SHA256).Hash
+$hashV01Zip = (Get-FileHash "dist\GameLingo-v0.1-windows-x64.zip" -Algorithm SHA256).Hash
+
+$checksumLines = "$hashExe  GameLingo.exe`r`n$hashZip  GameLingo-Windows-x64.zip`r`n$hashV01Zip  GameLingo-v0.1-windows-x64.zip"
+$checksumLines | Out-File "dist\SHA256SUMS.txt" -Encoding UTF8
 
 Write-Host "Done!"
