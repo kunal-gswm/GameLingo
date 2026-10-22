@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "GameLingo Beta Testing Guide"
+    url: "https://github.com/kunal-gswm/GameLingo/blob/main/docs/user-guide/beta-testing-guide.md"
+    about: "Read installation, checksum verification, engine tiers, and sandbox testing instructions."

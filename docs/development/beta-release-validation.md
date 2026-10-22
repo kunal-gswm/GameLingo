@@ -111,17 +111,19 @@ flowchart TD
 
 ---
 
-## 6. External Beta Pilot Plan
+## 6. External Beta Pilot Plan & Feedback Operations (GL-BETA-006)
 
 - **Current Status:** **`NOT YET RUN — RECRUITMENT PENDING`**  
   No external human tester evidence has been collected yet. Automated tests and synthetic test suites do not substitute for external human validation.
 - **Pilot Target:** 3 to 5 voluntary external testers.
   - Cohort A (RPG Maker MZ): 2 testers on standalone non-encrypted games.
   - Cohort B (Ren'Py): 2 testers on Ren'Py 7.x / 8.x visual novels.
-- **Tester Guide & Protocol:** Fully documented in `docs/user-guide/beta-testing-guide.md` (Section 9), featuring:
-  - Step-by-step checklist (authenticity, sandbox copy, extraction, token guard, CSV interchange, patching, restoration).
-  - Standardized feedback template and issue tracking register.
-  - Copyright protection guidance (strictly prohibiting upload of commercial game files).
+  - Cohort C / Flex: 1 tester on external CSV/Excel translation workflow.
+- **Pilot Operations Tracker:** Established in [`docs/development/beta-pilot-operations.md`](file:///e:/GameLingo/docs/development/beta-pilot-operations.md) containing the active 8-step lifecycle tracking matrix, recruitment invitation text, and explicit Stop-Ship rules.
+- **Beta Release Notes:** Authored in [`docs/releases/v0.1.0-beta-release-notes.md`](file:///e:/GameLingo/docs/releases/v0.1.0-beta-release-notes.md) detailing download verification, engine tiers, Golden Rule (dedicated copy), offline model requirements, and safe bug reporting.
+- **Feedback Triage & Issue Templates:** Configured in `.github/ISSUE_TEMPLATE/` (`beta_bug_report.md`, `beta_feedback.md`, and `config.yml`) with 4-tier severity levels (Critical, High, Medium, Low) and strict non-copyright enforcement.
+- **Stop-Ship Protocol:** Defined with immediate distribution pause triggers for data loss, path traversal outside game root, misleading restore/broken rollback, fatal token corruption, or distribution checksum mismatch.
+- **Tester Guide & Protocol:** Fully documented in `docs/user-guide/beta-testing-guide.md` (Section 9).
 
 ---
 
