@@ -26,12 +26,13 @@ Copy-Item "dist\GameLingo-Windows-x64.zip" "dist\GameLingo-v0.1-windows-x64.zip"
 
 Write-Host "Generating Checksums..."
 $hashZip = (Get-FileHash "dist\GameLingo-Windows-x64.zip" -Algorithm SHA256).Hash
-$hashZip | Out-File "dist\GameLingo-Windows-x64.zip.sha256" -Encoding UTF8
-
 $hashExe = (Get-FileHash "dist\GameLingo.exe" -Algorithm SHA256).Hash
 $hashV01Zip = (Get-FileHash "dist\GameLingo-v0.1-windows-x64.zip" -Algorithm SHA256).Hash
 
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText("dist\GameLingo-Windows-x64.zip.sha256", "$hashZip  GameLingo-Windows-x64.zip`r`n", $utf8NoBom)
+
 $checksumLines = "$hashExe  GameLingo.exe`r`n$hashZip  GameLingo-Windows-x64.zip`r`n$hashV01Zip  GameLingo-v0.1-windows-x64.zip"
-$checksumLines | Out-File "dist\SHA256SUMS.txt" -Encoding UTF8
+[System.IO.File]::WriteAllText("dist\SHA256SUMS.txt", "$checksumLines`r`n", $utf8NoBom)
 
 Write-Host "Done!"

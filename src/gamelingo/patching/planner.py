@@ -698,7 +698,14 @@ def validate_plan(
                         f"Safety validation failed for {target}: {err_msg}"
                     )
 
-        if ".." in file_path or file_path.startswith("/") or file_path.startswith("\\"):
+        if (
+            not file_path
+            or Path(file_path).is_absolute()
+            or ":" in file_path
+            or ".." in file_path
+            or file_path.startswith("/")
+            or file_path.startswith("\\")
+        ):
             raise PlanValidationError(f"Invalid path in plan: {file_path}")
 
         target_file = source_root_resolved / file_path
@@ -716,7 +723,14 @@ def validate_plan(
             # For Ren'Py, destination file (strings.rpy) does not need to exist yet,
             # but source script must exist and be safe.
             source_file_rel = edit.get("source_file_path", edit.get("file_id"))
-            if not source_file_rel or ".." in source_file_rel:
+            if (
+                not source_file_rel
+                or Path(source_file_rel).is_absolute()
+                or ":" in source_file_rel
+                or ".." in source_file_rel
+                or source_file_rel.startswith("/")
+                or source_file_rel.startswith("\\")
+            ):
                 raise PlanValidationError(
                     f"Invalid source script path: {source_file_rel}"
                 )

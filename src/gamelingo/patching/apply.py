@@ -255,7 +255,8 @@ def apply_plan(
     # Group edits by destination file
     edits_by_file: Dict[str, List[Dict[str, Any]]] = {}
     for edit in valid_edits:
-        fp = edit.get("file_path", edit.get("file_id"))
+        raw_fp = edit.get("file_path", edit.get("file_id"))
+        fp = Path(raw_fp).as_posix() if raw_fp else ""
         edits_by_file.setdefault(fp, []).append(edit)
 
     affected_files = list(edits_by_file.keys())

@@ -66,27 +66,33 @@ def preview_restore(
         "invalid_paths": [],
     }
 
-    backup_file_map = {f["original_path"]: f for f in manifest.get("files", [])}
+    backup_file_map = {
+        Path(f["original_path"]).as_posix(): f for f in manifest.get("files", [])
+    }
 
     seen = set()
     for rel_path_str in selected_files:
-        if rel_path_str in seen:
-            continue
-        seen.add(rel_path_str)
-
         if (
-            ".." in rel_path_str
+            not rel_path_str
+            or Path(rel_path_str).is_absolute()
+            or ":" in rel_path_str
+            or ".." in rel_path_str
             or rel_path_str.startswith("/")
             or rel_path_str.startswith("\\")
         ):
             plan["invalid_paths"].append(rel_path_str)
             continue
 
-        if rel_path_str not in backup_file_map:
+        norm_rel = Path(rel_path_str).as_posix()
+        if norm_rel in seen:
+            continue
+        seen.add(norm_rel)
+
+        if norm_rel not in backup_file_map:
             plan["missing_in_backup"].append(rel_path_str)
             continue
 
-        target_file = target_root / rel_path_str
+        target_file = target_root / norm_rel
 
         # We can't resolve target_file strictly if it doesn't exist, but we can check if it's within root safely.
         # So we resolve the path without strict=True (which is what resolve() does in python 3.6+)
@@ -102,7 +108,7 @@ def preview_restore(
             plan["invalid_paths"].append(rel_path_str)
             continue
 
-        meta = backup_file_map[rel_path_str]
+        meta = backup_file_map[norm_rel]
 
         if meta.get("existed") is False:
             if target_file.exists():
@@ -151,30 +157,36 @@ def execute_restore(
     except OSError:
         raise RestoreValidationError("Target root does not exist.")
 
-    backup_file_map = {f["original_path"]: f for f in manifest.get("files", [])}
+    backup_file_map = {
+        Path(f["original_path"]).as_posix(): f for f in manifest.get("files", [])
+    }
 
     # 1. Validate everything first
     to_restore = []
     seen = set()
 
     for rel_path_str in selected_files:
-        if rel_path_str in seen:
-            continue
-        seen.add(rel_path_str)
-
         if (
-            ".." in rel_path_str
+            not rel_path_str
+            or Path(rel_path_str).is_absolute()
+            or ":" in rel_path_str
+            or ".." in rel_path_str
             or rel_path_str.startswith("/")
             or rel_path_str.startswith("\\")
         ):
             raise RestoreValidationError(f"Invalid path requested: {rel_path_str}")
 
-        if rel_path_str not in backup_file_map:
+        norm_rel = Path(rel_path_str).as_posix()
+        if norm_rel in seen:
+            continue
+        seen.add(norm_rel)
+
+        if norm_rel not in backup_file_map:
             raise RestoreValidationError(f"File not in backup manifest: {rel_path_str}")
 
-        meta = backup_file_map[rel_path_str]
+        meta = backup_file_map[norm_rel]
 
-        target_file = target_root / rel_path_str
+        target_file = target_root / norm_rel
         target_resolved = target_file.resolve()
 
         try:

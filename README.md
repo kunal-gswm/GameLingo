@@ -59,6 +59,9 @@ Pre-built portable releases are available on the [GitHub Releases](https://githu
 4. **Launch:** Double-click `GameLingo.exe`.
    - *Windows SmartScreen Note:* Because GameLingo is an unsigned open-source application, Windows SmartScreen may show a prompt ("Windows protected your PC"). Click **More info** $\rightarrow$ **Run anyway** after verifying the release source and checksum.
 
+> [!TIP]
+> For a comprehensive walkthrough on safe game copying, first-project translation, backup restoration, and bug reporting, see the [Public Beta Testing & Verification Guide](docs/user-guide/beta-testing-guide.md).
+
 ---
 
 ## 5. Quick Start
