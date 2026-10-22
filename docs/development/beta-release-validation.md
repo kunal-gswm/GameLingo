@@ -1,7 +1,7 @@
 # GameLingo: Beta Release Candidate & Real-World Validation Report (GL-BETA-003)
 
 **Task ID:** GL-BETA-003  
-**Target Commit:** `19dc43fa26598c199d79900222a00908ea0e8544` (plus focused beta hardening commits)  
+**Target Commit:** `2528d2badc0a645518807c60e4f83790b6d77a11` (HEAD of `main`)  
 **Date:** 2026-10-22  
 **Platform Tested:** Windows 11 Pro x64 (Build 26300), Python 3.12.15, PySide6 6.9.1, PowerShell 5.1 & Core  
 **Final Release Gate Verdict:** **`READY FOR BETA`**
@@ -13,7 +13,8 @@
 ### Baseline & Working Tree Status
 - **Active Branch:** `main` tracking `origin/main`.
 - **Target Baseline Commit:** `19dc43f` (*fix(gui): resolve post-overhaul audit defects, add regression tests, and record audit report*).
-- **Remote CI Status:** GitHub Actions Run ID [`39757853059`](https://github.com/kunal-gswm/GameLingo/actions/runs/39757853059) passed 100% green across both Core & Linting and GUI Integration jobs.
+- **Final Hardening Commit:** `2528d2b` (*fix(safety): normalize Windows backslashes across platforms in restore*).
+- **Remote CI Status:** GitHub Actions Run ID [`39765780438`](https://github.com/kunal-gswm/GameLingo/actions/runs/39765780438) passed 100% green across both Core & Linting and GUI Integration jobs.
 - **Tag Status Analysis:** The public tag `v0.1` currently references commit `d66c4e8` (Oct 20). Commits `ee5b0e5` (branding), `8fe0a1c` (startup fixes), `1b707dc` (audit fixes), `c857af7` (UI overhaul), and `19dc43f` (audit defects) were subsequently developed and validated on `main`.
 - **Release Authorization Boundary:** No release tags were created or modified during this audit. The repository is staged for a clean `v0.1.0` beta release once explicit user authorization is provided.
 
