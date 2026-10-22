@@ -159,8 +159,9 @@ class SettingsPage(QWidget):
 
         for title, desc in safety_points:
             item_frame = QFrame()
+            item_frame.setObjectName("setting_safety_item")
             item_frame.setStyleSheet(f"""
-                QFrame {{
+                QFrame#setting_safety_item {{
                     background-color: {BG_SURFACE_ALT};
                     border: 1px solid {BORDER_SUBTLE};
                     border-radius: 6px;

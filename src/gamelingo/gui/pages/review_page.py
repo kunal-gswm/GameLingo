@@ -142,6 +142,7 @@ class ReviewPage(QWidget):
         self.lbl_id = QLabel("ID: None")
         self.lbl_id.setFont(QFont("Segoe UI", 11, QFont.Bold))
         self.lbl_id.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_id.setStyleSheet("background: transparent; border: none;")
         meta_top_row.addWidget(self.lbl_id, stretch=1)
 
         self.lbl_unsaved = QLabel("• Unsaved Changes")
@@ -157,20 +158,26 @@ class ReviewPage(QWidget):
 
         self.lbl_locator = QLabel("File / Locator: -")
         self.lbl_locator.setFont(QFont("Segoe UI", 10))
-        self.lbl_locator.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_locator.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         self.lbl_locator.setTextInteractionFlags(Qt.TextSelectableByMouse)
         meta_layout.addWidget(self.lbl_locator)
 
         self.lbl_context = QLabel("Context: -")
         self.lbl_context.setFont(QFont("Segoe UI", 10))
-        self.lbl_context.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_context.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.lbl_context.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.lbl_context.setWordWrap(True)
         meta_layout.addWidget(self.lbl_context)
 
         self.lbl_tokens = QLabel("Required Tokens: None")
         self.lbl_tokens.setFont(QFont("Segoe UI", 10))
-        self.lbl_tokens.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_tokens.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         self.lbl_tokens.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.lbl_tokens.setWordWrap(True)
         meta_layout.addWidget(self.lbl_tokens)
@@ -498,7 +505,9 @@ class ReviewPage(QWidget):
                 self.lbl_tokens.setStyleSheet("color: #90caf9;")
             else:
                 self.lbl_tokens.setText("Required Tokens: None")
-                self.lbl_tokens.setStyleSheet(f"color: {TEXT_MUTED};")
+                self.lbl_tokens.setStyleSheet(
+                    f"color: {TEXT_MUTED}; background: transparent; border: none;"
+                )
 
             self.txt_source.setPlainText(unit.get("source_text", ""))
 
@@ -541,7 +550,9 @@ class ReviewPage(QWidget):
             self.lbl_locator.setText("File / Locator: -")
             self.lbl_context.setText("Context: -")
             self.lbl_tokens.setText("Required Tokens: None")
-            self.lbl_tokens.setStyleSheet(f"color: {TEXT_MUTED};")
+            self.lbl_tokens.setStyleSheet(
+                f"color: {TEXT_MUTED}; background: transparent; border: none;"
+            )
             self.txt_source.clear()
             self.txt_target.clear()
             self.lbl_validation.setText("")

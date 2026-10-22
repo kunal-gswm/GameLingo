@@ -70,16 +70,16 @@ class DashboardPage(QWidget):
         # =========================================================================
         # 1. TOP ACTION & WELCOME BAR
         # =========================================================================
-        top_bar = QFrame()
-        top_bar.setStyleSheet(f"""
-            QFrame {{
+        self.top_bar = QFrame()
+        self.top_bar.setObjectName("top_bar")
+        self.top_bar.setStyleSheet(f"""
+            QFrame#top_bar {{
                 background-color: {BG_SURFACE};
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 8px;
-                padding: 4px;
             }}
         """)
-        top_layout = QHBoxLayout(top_bar)
+        top_layout = QHBoxLayout(self.top_bar)
         top_layout.setContentsMargins(16, 12, 16, 12)
         top_layout.setSpacing(16)
 
@@ -87,14 +87,18 @@ class DashboardPage(QWidget):
         welcome_layout.setSpacing(2)
         self.lbl_welcome_title = QLabel("Workspace Overview")
         self.lbl_welcome_title.setFont(QFont("Segoe UI", 14, QFont.Bold))
-        self.lbl_welcome_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        self.lbl_welcome_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         welcome_layout.addWidget(self.lbl_welcome_title)
 
         self.lbl_welcome_subtitle = QLabel(
             "Japanese Game Translation & Localization Workbench"
         )
         self.lbl_welcome_subtitle.setFont(QFont("Segoe UI", 10))
-        self.lbl_welcome_subtitle.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_welcome_subtitle.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         welcome_layout.addWidget(self.lbl_welcome_subtitle)
         top_layout.addLayout(welcome_layout, stretch=1)
 
@@ -117,7 +121,7 @@ class DashboardPage(QWidget):
         self.btn_resume.clicked.connect(lambda: self.navigate_requested.emit(2))
         top_layout.addWidget(self.btn_resume)
 
-        self.main_layout.addWidget(top_bar)
+        self.main_layout.addWidget(self.top_bar)
 
         # =========================================================================
         # 2. EMPTY ONBOARDING STATE
@@ -127,6 +131,8 @@ class DashboardPage(QWidget):
             subtitle="Select a Japanese RPG Maker (MZ, MV, VX Ace, VX, XP, 2003) or Ren'Py game folder to begin string extraction and localization.",
             action_text="Open Game Folder",
             on_action=self.on_select_game,
+            secondary_action_text="Open Workspace",
+            on_secondary_action=self.on_open_workspace,
             icon="🎮",
         )
         self.main_layout.addWidget(self.empty_state_widget)
@@ -150,11 +156,14 @@ class DashboardPage(QWidget):
         ap_header = QHBoxLayout()
         ap_title_icon = QLabel("🎮")
         ap_title_icon.setFont(QFont("Segoe UI Emoji", 14))
+        ap_title_icon.setStyleSheet("background: transparent; border: none;")
         ap_header.addWidget(ap_title_icon)
 
         self.lbl_active_game_title = QLabel("No game selected.")
         self.lbl_active_game_title.setFont(QFont("Segoe UI", 13, QFont.Bold))
-        self.lbl_active_game_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        self.lbl_active_game_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         ap_header.addWidget(self.lbl_active_game_title, stretch=1)
 
         self.pill_active_engine = create_status_pill("No Game", "warning")
@@ -167,14 +176,18 @@ class DashboardPage(QWidget):
 
         self.game_label = QLabel("No game selected.")
         self.game_label.setFont(QFont("Segoe UI", 10))
-        self.game_label.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.game_label.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.game_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.game_label.setWordWrap(True)
         paths_row.addWidget(self.game_label)
 
         self.ws_label = QLabel("No workspace open.")
         self.ws_label.setFont(QFont("Segoe UI", 10))
-        self.ws_label.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.ws_label.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         self.ws_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.ws_label.setWordWrap(True)
         paths_row.addWidget(self.ws_label)
@@ -208,8 +221,9 @@ class DashboardPage(QWidget):
         # 5. SEGMENTED PROGRESS BAR & LEGEND
         # =========================================================================
         self.progress_container = QFrame()
+        self.progress_container.setObjectName("progress_container")
         self.progress_container.setStyleSheet(f"""
-            QFrame {{
+            QFrame#progress_container {{
                 background-color: {BG_SURFACE};
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 8px;
@@ -222,13 +236,17 @@ class DashboardPage(QWidget):
         prog_header = QHBoxLayout()
         prog_title = QLabel("Translation Pipeline Progress")
         prog_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        prog_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        prog_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         prog_header.addWidget(prog_title)
         prog_header.addStretch()
 
         self.lbl_progress_pct = QLabel("0% Complete")
         self.lbl_progress_pct.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        self.lbl_progress_pct.setStyleSheet(f"color: {ACCENT_PRIMARY};")
+        self.lbl_progress_pct.setStyleSheet(
+            f"color: {ACCENT_PRIMARY}; background: transparent; border: none;"
+        )
         prog_header.addWidget(self.lbl_progress_pct)
         prog_layout.addLayout(prog_header)
 
@@ -242,22 +260,30 @@ class DashboardPage(QWidget):
 
         self.lbl_legend_approved = QLabel("● Approved: 0")
         self.lbl_legend_approved.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        self.lbl_legend_approved.setStyleSheet(f"color: {SUCCESS};")
+        self.lbl_legend_approved.setStyleSheet(
+            f"color: {SUCCESS}; background: transparent; border: none;"
+        )
         legend_row.addWidget(self.lbl_legend_approved)
 
         self.lbl_legend_review = QLabel("● Needs Review: 0")
         self.lbl_legend_review.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        self.lbl_legend_review.setStyleSheet(f"color: {WARNING};")
+        self.lbl_legend_review.setStyleSheet(
+            f"color: {WARNING}; background: transparent; border: none;"
+        )
         legend_row.addWidget(self.lbl_legend_review)
 
         self.lbl_legend_draft = QLabel("● Draft: 0")
         self.lbl_legend_draft.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        self.lbl_legend_draft.setStyleSheet("color: #8B7CFF;")
+        self.lbl_legend_draft.setStyleSheet(
+            "color: #8B7CFF; background: transparent; border: none;"
+        )
         legend_row.addWidget(self.lbl_legend_draft)
 
         self.lbl_legend_untranslated = QLabel("● Untranslated: 0")
         self.lbl_legend_untranslated.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        self.lbl_legend_untranslated.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_legend_untranslated.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         legend_row.addWidget(self.lbl_legend_untranslated)
         legend_row.addStretch()
 
@@ -268,8 +294,9 @@ class DashboardPage(QWidget):
         # 6. RECOMMENDED ACTION GUIDANCE CARD
         # =========================================================================
         self.action_card = QFrame()
+        self.action_card.setObjectName("action_card")
         self.action_card.setStyleSheet(f"""
-            QFrame {{
+            QFrame#action_card {{
                 background-color: {BG_SURFACE};
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 8px;
@@ -280,12 +307,15 @@ class DashboardPage(QWidget):
         action_layout.setSpacing(12)
 
         action_icon = QLabel("💡")
+        action_icon.setStyleSheet("background: transparent; border: none;")
         action_icon.setFont(QFont("Segoe UI Emoji", 12))
         action_layout.addWidget(action_icon)
 
         self.lbl_next_action = QLabel("Open or create a workspace directory to begin.")
         self.lbl_next_action.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        self.lbl_next_action.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        self.lbl_next_action.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         action_layout.addWidget(self.lbl_next_action, stretch=1)
         self.main_layout.addWidget(self.action_card)
 
@@ -301,8 +331,9 @@ class DashboardPage(QWidget):
 
         # Live Data Structure Verification Status Card
         self.structure_card = QFrame()
+        self.structure_card.setObjectName("structure_card")
         self.structure_card.setStyleSheet(f"""
-            QFrame {{
+            QFrame#structure_card {{
                 background-color: {BG_SURFACE_ALT};
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 6px;
@@ -315,7 +346,9 @@ class DashboardPage(QWidget):
         struct_header_row = QHBoxLayout()
         struct_title = QLabel("Selected Game Data Structure")
         struct_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        struct_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        struct_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         struct_header_row.addWidget(struct_title)
         struct_header_row.addStretch()
 
@@ -327,7 +360,9 @@ class DashboardPage(QWidget):
             "No game directory selected. Choose an RPG Maker MV/MZ or Ren'Py installation folder above to inspect and validate its structure."
         )
         self.lbl_structure_desc.setFont(QFont("Segoe UI", 10))
-        self.lbl_structure_desc.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_structure_desc.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         self.lbl_structure_desc.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.lbl_structure_desc.setWordWrap(True)
         structure_layout.addWidget(self.lbl_structure_desc)
@@ -339,15 +374,18 @@ class DashboardPage(QWidget):
 
         # MV Card
         self.card_mv = QFrame()
+        self.card_mv.setObjectName("card_mv")
         self.card_mv.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+            f"QFrame#card_mv {{ background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px; }}"
         )
         mv_layout = QVBoxLayout(self.card_mv)
         mv_layout.setContentsMargins(10, 8, 10, 8)
         mv_header = QHBoxLayout()
         self.lbl_mv_title = QLabel("RPG Maker MV")
         self.lbl_mv_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        self.lbl_mv_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        self.lbl_mv_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         mv_header.addWidget(self.lbl_mv_title)
         mv_header.addStretch()
         self.pill_mv = create_status_pill("Supported (Core Scope)", "info")
@@ -360,22 +398,27 @@ class DashboardPage(QWidget):
             "Evidence: Standard schema and representative branch/choice patch safety benchmarked across 5 real projects (GL-RPGM-009A.2). Native runtime compatibility is not universally verified."
         )
         self.lbl_mv_desc.setFont(QFont("Segoe UI", 9))
-        self.lbl_mv_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_mv_desc.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.lbl_mv_desc.setWordWrap(True)
         mv_layout.addWidget(self.lbl_mv_desc)
         engines_row_1.addWidget(self.card_mv, stretch=1)
 
         # MZ Card
         self.card_mz = QFrame()
+        self.card_mz.setObjectName("card_mz")
         self.card_mz.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+            f"QFrame#card_mz {{ background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px; }}"
         )
         mz_layout = QVBoxLayout(self.card_mz)
         mz_layout.setContentsMargins(10, 8, 10, 8)
         mz_header = QHBoxLayout()
         self.lbl_mz_title = QLabel("RPG Maker MZ")
         self.lbl_mz_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        self.lbl_mz_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        self.lbl_mz_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         mz_header.addWidget(self.lbl_mz_title)
         mz_header.addStretch()
         self.pill_mz = create_status_pill("Supported (Core Scope)", "info")
@@ -388,22 +431,27 @@ class DashboardPage(QWidget):
             "Evidence: Standard schema and representative branch/choice patch safety benchmarked across 5 real projects (GL-RPGM-009A.2). Native runtime compatibility is not universally verified."
         )
         self.lbl_mz_desc.setFont(QFont("Segoe UI", 9))
-        self.lbl_mz_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_mz_desc.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.lbl_mz_desc.setWordWrap(True)
         mz_layout.addWidget(self.lbl_mz_desc)
         engines_row_1.addWidget(self.card_mz, stretch=1)
 
         # Ren'Py Card
         self.card_renpy = QFrame()
+        self.card_renpy.setObjectName("card_renpy")
         self.card_renpy.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+            f"QFrame#card_renpy {{ background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px; }}"
         )
         renpy_layout = QVBoxLayout(self.card_renpy)
         renpy_layout.setContentsMargins(10, 8, 10, 8)
         renpy_header = QHBoxLayout()
         self.lbl_renpy_title = QLabel("Ren'Py Visual Novel")
         self.lbl_renpy_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        self.lbl_renpy_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        self.lbl_renpy_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         renpy_header.addWidget(self.lbl_renpy_title)
         renpy_header.addStretch()
         self.pill_renpy = create_status_pill("Supported", "info")
@@ -417,7 +465,9 @@ class DashboardPage(QWidget):
             "Features: Safe read-only RPA archive reading, isolated .rpyc script decompilation, and patch generation."
         )
         self.lbl_renpy_desc.setFont(QFont("Segoe UI", 9))
-        self.lbl_renpy_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_renpy_desc.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.lbl_renpy_desc.setWordWrap(True)
         renpy_layout.addWidget(self.lbl_renpy_desc)
         engines_row_1.addWidget(self.card_renpy, stretch=1)
@@ -429,8 +479,9 @@ class DashboardPage(QWidget):
 
         # VX Ace
         self.card_vx_ace = QFrame()
+        self.card_vx_ace.setObjectName("card_vx_ace")
         self.card_vx_ace.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+            f"QFrame#card_vx_ace {{ background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px; }}"
         )
         vxa_layout = QVBoxLayout(self.card_vx_ace)
         vxa_layout.setContentsMargins(8, 6, 8, 6)
@@ -443,14 +494,17 @@ class DashboardPage(QWidget):
         vxa_layout.addLayout(vxa_h)
         self.lbl_vx_ace_desc = QLabel("Format: RGSS3 Ruby Marshal 4.8 (.rvdata2)")
         self.lbl_vx_ace_desc.setFont(QFont("Segoe UI", 9))
-        self.lbl_vx_ace_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_vx_ace_desc.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         vxa_layout.addWidget(self.lbl_vx_ace_desc)
         engines_row_2.addWidget(self.card_vx_ace)
 
         # VX
         self.card_vx = QFrame()
+        self.card_vx.setObjectName("card_vx")
         self.card_vx.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+            f"QFrame#card_vx {{ background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px; }}"
         )
         vx_layout = QVBoxLayout(self.card_vx)
         vx_layout.setContentsMargins(8, 6, 8, 6)
@@ -463,14 +517,17 @@ class DashboardPage(QWidget):
         vx_layout.addLayout(vx_h)
         self.lbl_vx_desc = QLabel("Format: RGSS2 Ruby Marshal 4.8 (.rvdata)")
         self.lbl_vx_desc.setFont(QFont("Segoe UI", 9))
-        self.lbl_vx_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_vx_desc.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         vx_layout.addWidget(self.lbl_vx_desc)
         engines_row_2.addWidget(self.card_vx)
 
         # XP
         self.card_xp = QFrame()
+        self.card_xp.setObjectName("card_xp")
         self.card_xp.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+            f"QFrame#card_xp {{ background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px; }}"
         )
         xp_layout = QVBoxLayout(self.card_xp)
         xp_layout.setContentsMargins(8, 6, 8, 6)
@@ -483,14 +540,17 @@ class DashboardPage(QWidget):
         xp_layout.addLayout(xp_h)
         self.lbl_xp_desc = QLabel("Format: RGSS1 Ruby Marshal 4.8 (.rxdata)")
         self.lbl_xp_desc.setFont(QFont("Segoe UI", 9))
-        self.lbl_xp_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_xp_desc.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         xp_layout.addWidget(self.lbl_xp_desc)
         engines_row_2.addWidget(self.card_xp)
 
         # 2003
         self.card_2003 = QFrame()
+        self.card_2003.setObjectName("card_2003")
         self.card_2003.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+            f"QFrame#card_2003 {{ background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px; }}"
         )
         l2003_layout = QVBoxLayout(self.card_2003)
         l2003_layout.setContentsMargins(8, 6, 8, 6)
@@ -503,21 +563,26 @@ class DashboardPage(QWidget):
         l2003_layout.addLayout(h2003)
         self.lbl_2003_desc = QLabel("Format: LCF binary database (.ldb, .lmt, .lmu)")
         self.lbl_2003_desc.setFont(QFont("Segoe UI", 9))
-        self.lbl_2003_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_2003_desc.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         l2003_layout.addWidget(self.lbl_2003_desc)
         engines_row_2.addWidget(self.card_2003)
         diag_layout.addLayout(engines_row_2)
 
         # Unsupported Content Advisory
         self.unsupported_card = QFrame()
+        self.unsupported_card.setObjectName("unsupported_card")
         self.unsupported_card.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+            f"QFrame#unsupported_card {{ background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px; }}"
         )
         unsupported_layout = QVBoxLayout(self.unsupported_card)
         unsupported_layout.setContentsMargins(10, 8, 10, 8)
         unsupported_title = QLabel("Unsupported Content Scope")
         unsupported_title.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        unsupported_title.setStyleSheet("color: #fbbf24;")
+        unsupported_title.setStyleSheet(
+            "color: #fbbf24; background: transparent; border: none;"
+        )
         unsupported_layout.addWidget(unsupported_title)
 
         self.lbl_unsupported_notice = QLabel(
@@ -528,7 +593,9 @@ class DashboardPage(QWidget):
             "• Compiled & Archived Scripts Limited: Ren'Py games with only compiled .rpyc files or .rpa archives require original .rpy source files or decompiler tools for text extraction."
         )
         self.lbl_unsupported_notice.setFont(QFont("Segoe UI", 9))
-        self.lbl_unsupported_notice.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_unsupported_notice.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.lbl_unsupported_notice.setWordWrap(True)
         unsupported_layout.addWidget(self.lbl_unsupported_notice)
         diag_layout.addWidget(self.unsupported_card)
@@ -670,27 +737,37 @@ class DashboardPage(QWidget):
             self.lbl_structure_pill.setStyleSheet(
                 "background-color: #0D2E23; color: #68E0B5; border: 1px solid #1A523E; border-radius: 4px; padding: 2px 8px;"
             )
-            self.lbl_structure_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+            self.lbl_structure_desc.setStyleSheet(
+                f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+            )
         elif status_type == "info":
             self.lbl_structure_pill.setStyleSheet(
                 "background-color: #0E243D; color: #70B8FF; border: 1px solid #1A4674; border-radius: 4px; padding: 2px 8px;"
             )
-            self.lbl_structure_desc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+            self.lbl_structure_desc.setStyleSheet(
+                f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+            )
         elif status_type == "danger":
             self.lbl_structure_pill.setStyleSheet(
                 "background-color: #2E1014; color: #F7949C; border: 1px solid #5C1D24; border-radius: 4px; padding: 2px 8px;"
             )
-            self.lbl_structure_desc.setStyleSheet("color: #F7949C;")
+            self.lbl_structure_desc.setStyleSheet(
+                "color: #F7949C; background: transparent; border: none;"
+            )
         elif status_type == "warning":
             self.lbl_structure_pill.setStyleSheet(
                 "background-color: #2E220D; color: #F7CF8B; border: 1px solid #5C441A; border-radius: 4px; padding: 2px 8px;"
             )
-            self.lbl_structure_desc.setStyleSheet("color: #F7CF8B;")
+            self.lbl_structure_desc.setStyleSheet(
+                "color: #F7CF8B; background: transparent; border: none;"
+            )
         else:
             self.lbl_structure_pill.setStyleSheet(
                 f"background-color: {BG_SURFACE_ALT}; color: {TEXT_MUTED}; border: 1px solid {BORDER_SUBTLE}; border-radius: 4px; padding: 2px 8px;"
             )
-            self.lbl_structure_desc.setStyleSheet(f"color: {TEXT_MUTED};")
+            self.lbl_structure_desc.setStyleSheet(
+                f"color: {TEXT_MUTED}; background: transparent; border: none;"
+            )
         self.lbl_structure_desc.setText(details)
 
     def refresh(self):
@@ -699,12 +776,14 @@ class DashboardPage(QWidget):
 
         # Toggle empty onboarding vs active project card
         if not has_ws and not has_game:
+            self.top_bar.setVisible(False)
             self.empty_state_widget.setVisible(True)
-            self.active_project_card.setVisible(True)  # Keep visible for tests
-            self.metrics_container.setVisible(True)
-            self.progress_container.setVisible(True)
+            self.active_project_card.setVisible(False)
+            self.metrics_container.setVisible(False)
+            self.progress_container.setVisible(False)
             self.btn_resume.setEnabled(False)
         else:
+            self.top_bar.setVisible(True)
             self.empty_state_widget.setVisible(False)
             self.active_project_card.setVisible(True)
             self.metrics_container.setVisible(True)

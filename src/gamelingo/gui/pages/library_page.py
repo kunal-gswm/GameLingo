@@ -52,8 +52,9 @@ class LibraryPage(QWidget):
 
         # Filter & Search Toolbar
         toolbar = QFrame()
+        toolbar.setObjectName("library_toolbar")
         toolbar.setStyleSheet(f"""
-            QFrame {{
+            QFrame#library_toolbar {{
                 background-color: {BG_SURFACE};
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 8px;
@@ -85,7 +86,9 @@ class LibraryPage(QWidget):
 
         self.lbl_count = QLabel("0 Projects")
         self.lbl_count.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        self.lbl_count.setStyleSheet(f"color: {TEXT_MUTED}; padding-right: 6px;")
+        self.lbl_count.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none; padding-right: 6px;"
+        )
         tb_layout.addWidget(self.lbl_count)
 
         page_layout.addWidget(toolbar)

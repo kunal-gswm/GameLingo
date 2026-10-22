@@ -9,8 +9,9 @@ def run_gui():
     print("Starting GameLingo GUI workbench...")
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
-    from gamelingo.gui.theme import APP_STYLESHEET
+    from gamelingo.gui.theme import APP_STYLESHEET, setup_app_palette
 
+    setup_app_palette(app)
     app.setStyleSheet(APP_STYLESHEET)
 
     from PySide6.QtGui import QIcon

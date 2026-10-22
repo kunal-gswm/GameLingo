@@ -69,7 +69,9 @@ class PatchPage(QWidget):
 
         self.lbl_target_path = QLabel("No game selected.")
         self.lbl_target_path.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        self.lbl_target_path.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        self.lbl_target_path.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         self.lbl_target_path.setTextInteractionFlags(Qt.TextSelectableByMouse)
         target_layout.addWidget(self.lbl_target_path)
 

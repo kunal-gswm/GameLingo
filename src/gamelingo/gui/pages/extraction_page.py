@@ -174,8 +174,9 @@ class ExtractionPage(QWidget):
 
     def _create_summary_box(self, label: str, val: str) -> QFrame:
         frame = QFrame()
+        frame.setObjectName("summary_box")
         frame.setStyleSheet(
-            f"background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px;"
+            f"QFrame#summary_box {{ background-color: {BG_SURFACE_ALT}; border: 1px solid {BORDER_SUBTLE}; border-radius: 6px; }}"
         )
         vbox = QVBoxLayout(frame)
         vbox.setContentsMargins(14, 10, 14, 10)
@@ -183,13 +184,17 @@ class ExtractionPage(QWidget):
 
         t_lbl = QLabel(label)
         t_lbl.setFont(QFont("Segoe UI", 10))
-        t_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
+        t_lbl.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         vbox.addWidget(t_lbl)
 
         v_lbl = QLabel(val)
         v_lbl.setObjectName("val_label")
         v_lbl.setFont(QFont("Segoe UI", 14, QFont.Bold))
-        v_lbl.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        v_lbl.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         vbox.addWidget(v_lbl)
         return frame
 

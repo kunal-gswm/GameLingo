@@ -225,8 +225,9 @@ class TranslationPage(QWidget):
 
         # Japanese Source Card (Read-only, high contrast, readable typography)
         src_card = QFrame()
+        src_card.setObjectName("src_card")
         src_card.setStyleSheet(f"""
-            QFrame {{
+            QFrame#src_card {{
                 background-color: {BG_SURFACE};
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 6px;
@@ -239,13 +240,17 @@ class TranslationPage(QWidget):
         src_hdr = QHBoxLayout()
         src_title = QLabel("Japanese Source Text")
         src_title.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        src_title.setStyleSheet(f"color: {ACCENT_PRIMARY};")
+        src_title.setStyleSheet(
+            f"color: {ACCENT_PRIMARY}; background: transparent; border: none;"
+        )
         src_hdr.addWidget(src_title)
         src_hdr.addStretch()
 
         self.lbl_src_chars = QLabel("0 chars")
         self.lbl_src_chars.setFont(QFont("Segoe UI", 9))
-        self.lbl_src_chars.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_src_chars.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         src_hdr.addWidget(self.lbl_src_chars)
         src_card_layout.addLayout(src_hdr)
 
@@ -260,8 +265,9 @@ class TranslationPage(QWidget):
 
         # English Target Editor Card
         tgt_card = QFrame()
+        tgt_card.setObjectName("tgt_card")
         tgt_card.setStyleSheet(f"""
-            QFrame {{
+            QFrame#tgt_card {{
                 background-color: {BG_SURFACE};
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 6px;
@@ -274,13 +280,17 @@ class TranslationPage(QWidget):
         tgt_hdr = QHBoxLayout()
         tgt_title = QLabel("English Translation (Editable)")
         tgt_title.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        tgt_title.setStyleSheet(f"color: {SUCCESS};")
+        tgt_title.setStyleSheet(
+            f"color: {SUCCESS}; background: transparent; border: none;"
+        )
         tgt_hdr.addWidget(tgt_title)
         tgt_hdr.addStretch()
 
         self.lbl_tgt_chars = QLabel("0 chars")
         self.lbl_tgt_chars.setFont(QFont("Segoe UI", 9))
-        self.lbl_tgt_chars.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_tgt_chars.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         tgt_hdr.addWidget(self.lbl_tgt_chars)
         tgt_card_layout.addLayout(tgt_hdr)
 
@@ -338,10 +348,11 @@ class TranslationPage(QWidget):
         # PANEL 3: RIGHT COLLAPSIBLE CONTEXT & INSPECTOR
         # =========================================================================
         self.inspector_widget = QFrame()
+        self.inspector_widget.setObjectName("inspector_widget")
         self.inspector_widget.setMinimumWidth(220)
         self.inspector_widget.setMaximumWidth(320)
         self.inspector_widget.setStyleSheet(f"""
-            QFrame {{
+            QFrame#inspector_widget {{
                 background-color: {BG_SURFACE};
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 6px;
@@ -354,37 +365,49 @@ class TranslationPage(QWidget):
 
         insp_title = QLabel("Unit Metadata")
         insp_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        insp_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        insp_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; background: transparent; border: none;"
+        )
         insp_layout.addWidget(insp_title)
 
         self.lbl_meta_id = QLabel("ID: None")
         self.lbl_meta_id.setFont(QFont("Segoe UI", 9))
-        self.lbl_meta_id.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_meta_id.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.lbl_meta_id.setTextInteractionFlags(Qt.TextSelectableByMouse)
         insp_layout.addWidget(self.lbl_meta_id)
 
         self.lbl_meta_file = QLabel("File: -")
         self.lbl_meta_file.setFont(QFont("Segoe UI", 9))
-        self.lbl_meta_file.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_meta_file.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.lbl_meta_file.setTextInteractionFlags(Qt.TextSelectableByMouse)
         insp_layout.addWidget(self.lbl_meta_file)
 
         self.lbl_meta_loc = QLabel("Locator: -")
         self.lbl_meta_loc.setFont(QFont("Segoe UI", 9))
-        self.lbl_meta_loc.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_meta_loc.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.lbl_meta_loc.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.lbl_meta_loc.setWordWrap(True)
         insp_layout.addWidget(self.lbl_meta_loc)
 
         self.lbl_meta_context = QLabel("Context: -")
         self.lbl_meta_context.setFont(QFont("Segoe UI", 9))
-        self.lbl_meta_context.setStyleSheet(f"color: {TEXT_SECONDARY};")
+        self.lbl_meta_context.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
+        )
         self.lbl_meta_context.setWordWrap(True)
         insp_layout.addWidget(self.lbl_meta_context)
 
         self.lbl_meta_tokens = QLabel("Protected Tokens: None")
         self.lbl_meta_tokens.setFont(QFont("Segoe UI", 9))
-        self.lbl_meta_tokens.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.lbl_meta_tokens.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         self.lbl_meta_tokens.setWordWrap(True)
         insp_layout.addWidget(self.lbl_meta_tokens)
 
@@ -647,7 +670,9 @@ class TranslationPage(QWidget):
                 self.lbl_meta_tokens.setStyleSheet("color: #70B8FF;")
             else:
                 self.lbl_meta_tokens.setText("Protected Tokens: None")
-                self.lbl_meta_tokens.setStyleSheet(f"color: {TEXT_MUTED};")
+                self.lbl_meta_tokens.setStyleSheet(
+                    f"color: {TEXT_MUTED}; background: transparent; border: none;"
+                )
 
             src_text = unit.get("source_text", "")
             self.txt_source.setPlainText(src_text)

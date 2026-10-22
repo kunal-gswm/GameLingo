@@ -21,6 +21,7 @@ from gamelingo.gui.pages.settings_page import SettingsPage
 from gamelingo.gui.pages.translation_page import TranslationPage
 from gamelingo.gui.state import AppState
 from gamelingo.gui.theme import (
+    ACCENT_PRIMARY,
     BG_APP,
     BG_SIDEBAR,
     BG_SURFACE,
@@ -162,14 +163,19 @@ class MainWindow(QMainWindow):
         title_container.setContentsMargins(0, 0, 0, 0)
         title_container.setSpacing(1)
 
-        brand_title = QLabel("GameLingo")
-        brand_title.setFont(QFont("Segoe UI", 15, QFont.Bold))
-        brand_title.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        brand_title = QLabel()
+        brand_title.setText(
+            f"<span style='color: {TEXT_PRIMARY}; font-weight: 700; font-size: 16px;'>Game</span>"
+            f"<span style='color: {ACCENT_PRIMARY}; font-weight: 700; font-size: 16px;'>Lingo</span>"
+        )
+        brand_title.setStyleSheet("background: transparent; border: none;")
         title_container.addWidget(brand_title)
 
-        brand_subtitle = QLabel("Local Game Translator")
+        brand_subtitle = QLabel("Localization Workbench")
         brand_subtitle.setFont(QFont("Segoe UI", 9))
-        brand_subtitle.setStyleSheet(f"color: {TEXT_MUTED};")
+        brand_subtitle.setStyleSheet(
+            f"color: {TEXT_MUTED}; background: transparent; border: none;"
+        )
         title_container.addWidget(brand_subtitle)
 
         brand_layout.addLayout(title_container)
@@ -185,13 +191,19 @@ class MainWindow(QMainWindow):
         sidebar_layout.addWidget(lbl_section)
 
         # Navigation List (count must remain strictly 5 for test compatibility)
+        from PySide6.QtCore import QSize
+        from PySide6.QtWidgets import QListWidgetItem
+
         self.nav_list = QListWidget()
         self.nav_list.setObjectName("nav_list")
         self.nav_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.nav_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.nav_list.setFixedHeight(235)
+        self.nav_list.setFixedHeight(215)
         nav_items = ["Dashboard", "Extract", "Translate", "Review", "Patch"]
-        self.nav_list.addItems(nav_items)
+        for title in nav_items:
+            item = QListWidgetItem(title)
+            item.setSizeHint(QSize(200, 38))
+            self.nav_list.addItem(item)
         self.nav_list.currentRowChanged.connect(self.on_nav_changed)
         sidebar_layout.addWidget(self.nav_list)
 
@@ -208,13 +220,13 @@ class MainWindow(QMainWindow):
         self.lbl_provider_status.setStyleSheet("color: #43C99A; padding-left: 6px;")
         bottom_layout.addWidget(self.lbl_provider_status)
 
-        self.btn_library = QPushButton("📚  Game Library")
+        self.btn_library = QPushButton("Game Library")
         style_secondary_button(self.btn_library)
         self.btn_library.setCursor(Qt.PointingHandCursor)
         self.btn_library.clicked.connect(self.open_library_dialog)
         bottom_layout.addWidget(self.btn_library)
 
-        self.btn_settings = QPushButton("⚙  Settings")
+        self.btn_settings = QPushButton("Settings")
         style_secondary_button(self.btn_settings)
         self.btn_settings.setCursor(Qt.PointingHandCursor)
         self.btn_settings.clicked.connect(self.open_settings_dialog)
@@ -349,7 +361,7 @@ class MainWindow(QMainWindow):
 
             self.status_pill.setText(" Game Selected ")
             self.status_pill.setStyleSheet(
-                "background-color: #162b42; color: #90caf9; border: 1px solid #3d72a4; border-radius: 4px; padding: 2px 8px;"
+                "background-color: #0E243D; color: #70B8FF; border: 1px solid #1A4674; border-radius: 4px; padding: 2px 8px;"
             )
         elif self.state.workspace_path:
             ws_name = self.state.workspace_path.name
@@ -363,14 +375,14 @@ class MainWindow(QMainWindow):
 
             self.status_pill.setText(" Workspace Open ")
             self.status_pill.setStyleSheet(
-                "background-color: #27292f; color: #9ba1a6; border: 1px solid #32353d; border-radius: 4px; padding: 2px 8px;"
+                "background-color: #0D2E23; color: #68E0B5; border: 1px solid #1A523E; border-radius: 4px; padding: 2px 8px;"
             )
         else:
             self.context_path_lbl.setText("No active workspace")
             self.context_path_lbl.setToolTip("Open or create a workspace in Dashboard")
             self.status_pill.setText(" No Workspace ")
             self.status_pill.setStyleSheet(
-                "background-color: #38240f; color: #fbbf24; border: 1px solid #b45309; border-radius: 4px; padding: 2px 8px;"
+                "background-color: #2E220D; color: #F7CF8B; border: 1px solid #5C441A; border-radius: 4px; padding: 2px 8px;"
             )
 
     def refresh_all(self):

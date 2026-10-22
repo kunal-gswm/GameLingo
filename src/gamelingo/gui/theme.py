@@ -4,8 +4,9 @@ Defines unified palettes, typography, spacing, and stylesheets for PySide6 GUI.
 Follows a restrained, professional desktop creative-tool aesthetic.
 """
 
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QColor, QFont, QPalette
 from PySide6.QtWidgets import (
+    QApplication,
     QFrame,
     QLabel,
     QPushButton,
@@ -23,12 +24,12 @@ BG_SURFACE_HOVER = "#1E2D47"  # Interactive hover
 BG_SURFACE_ACTIVE = "#243654"  # Pressed / active surface
 
 BORDER_SUBTLE = "#1C2942"  # Subtle dividers and low-contrast borders
-BORDER_LIGHT = "#293750"  # Standard container borders
+BORDER_LIGHT = "#24334E"  # Standard container borders
 BORDER_FOCUS = "#45BFFF"  # Active focus outline (Primary accent)
 
 TEXT_PRIMARY = "#F1F5FC"  # High-contrast primary text
 TEXT_SECONDARY = "#9EADC4"  # Readable secondary text
-TEXT_MUTED = "#5C6B8A"  # Dimmed labels, hints, and disabled text
+TEXT_MUTED = "#6B7C99"  # Dimmed labels, hints, and disabled text
 TEXT_ON_ACCENT = "#0B1020"  # Dark contrast text on bright accent buttons
 TEXT_ON_DARK_ACCENT = "#FFFFFF"
 
@@ -77,6 +78,22 @@ QWidget {{
     font-family: {FONT_FAMILY_MAIN};
 }}
 
+/* Universal Label Reset: Never inherit frame borders, backgrounds, or padding */
+QLabel {{
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    color: {TEXT_PRIMARY};
+}}
+
+QLabel:disabled {{
+    color: {TEXT_MUTED};
+}}
+
+.QFrame {{
+    border: none;
+}}
+
 QToolTip {{
     background-color: {BG_ELEVATED};
     color: {TEXT_PRIMARY};
@@ -91,17 +108,17 @@ QListWidget#nav_list {{
     background-color: {BG_SIDEBAR};
     border: none;
     border-right: 1px solid {BORDER_LIGHT};
-    padding: 10px 8px;
+    padding: 6px 8px;
     font-size: 13px;
     font-weight: 500;
     outline: none;
 }}
 
 QListWidget#nav_list::item {{
-    height: 40px;
+    height: 38px;
     padding-left: 14px;
     border-radius: 6px;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     color: {TEXT_SECONDARY};
 }}
 
@@ -596,3 +613,23 @@ def create_page_header(title: str, description: str) -> QWidget:
     layout.addWidget(divider)
 
     return container
+
+
+def setup_app_palette(app: QApplication):
+    """Configures the global Qt palette to match the dark creative-tool theme."""
+    palette = QPalette()
+    palette.setColor(QPalette.Window, QColor(BG_APP))
+    palette.setColor(QPalette.WindowText, QColor(TEXT_PRIMARY))
+    palette.setColor(QPalette.Base, QColor(BG_SURFACE_ALT))
+    palette.setColor(QPalette.AlternateBase, QColor(BG_SURFACE))
+    palette.setColor(QPalette.ToolTipBase, QColor(BG_ELEVATED))
+    palette.setColor(QPalette.ToolTipText, QColor(TEXT_PRIMARY))
+    palette.setColor(QPalette.Text, QColor(TEXT_PRIMARY))
+    palette.setColor(QPalette.Button, QColor(BG_ELEVATED))
+    palette.setColor(QPalette.ButtonText, QColor(TEXT_PRIMARY))
+    palette.setColor(QPalette.BrightText, QColor(ACCENT_PRIMARY))
+    palette.setColor(QPalette.Highlight, QColor(ACCENT_PRIMARY))
+    palette.setColor(QPalette.HighlightedText, QColor(TEXT_ON_ACCENT))
+    palette.setColor(QPalette.Disabled, QPalette.Text, QColor(TEXT_MUTED))
+    palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(TEXT_MUTED))
+    app.setPalette(palette)
