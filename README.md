@@ -21,8 +21,12 @@ GameLingo is a local-first Windows desktop workbench for translating game text i
 
 | Engine | Source Formats | Output Format | Capabilities & Constraints |
 | :--- | :--- | :--- | :--- |
-| **RPG Maker MV & MZ** | `data/*.json`, `www/data/*.json` | Serialized Engine JSON | Extracts dialogue, names, descriptions, common events, and map info. Patches modify JSON data with isolated backup. Encrypted assets (`.rpgmvp`) must be decrypted prior to translation. |
-| **Ren'Py Visual Novels** | `game/**/*.rpy` (scripts), `game/*.rpa` archives (RPA-3.0, RPA-2.0, RPA-1.0), compiled `*.rpyc` | `game/tl/<lang>/strings.rpy` | Extracts dialogue, narration, and choices from loose `.rpy` scripts, read-only `.rpa` archives, or compiled `.rpyc` files (via pure-Python `rpycdec`). Applies deterministic precedence (`loose .rpy` > `loose .rpyc` > `archive .rpy` > `archive .rpyc`). Generates non-destructive native Ren'Py string translations without altering original archives or script files. Optional language activation script (`gamelingo_activate.rpy`). |
+| **RPG Maker MV & MZ** | `data/*.json`, `www/data/*.json` | Serialized Engine JSON | Extracts dialogue, names, descriptions, common events, and map info. Patches modify JSON data with isolated backup. Encrypted assets (`.rpgmvp`) must be decrypted prior to translation. MZ is live-runtime verified; MV is AST-level verified. |
+| **RPG Maker Legacy (VX Ace, VX, XP, 2003)** | `Data/*.rvdata2`, `*.rvdata`, `*.rxdata`, `*.ldb` | Serialized Ruby Marshal / LCF Binary | Binary AST round-trip verified. Pure-Python serializers for RGSS Ruby Marshal and 2003 LCF binary structures. Encrypted archives (`RGSS3A`, etc.) require unpacking before extraction. |
+| **Ren'Py Visual Novels** | `game/**/*.rpy` (scripts), `game/*.rpa` archives (RPA-3.0, RPA-2.0, RPA-1.0), compiled `*.rpyc` | `game/tl/<lang>/strings.rpy` | Live-runtime verified. Extracts dialogue, narration, and choices from loose `.rpy` scripts, read-only `.rpa` archives, or compiled `.rpyc` files (via pure-Python `rpycdec`). Generates non-destructive native Ren'Py string translations without altering original archives or script files. Optional language activation script (`gamelingo_activate.rpy`). |
+
+> [!NOTE]
+> **Verification Levels:** RPG Maker MZ and Ren'Py (7.x/8.x) are verified in live runtime game processes with rendered dialogue. Other RPG Maker formats are verified at the format specification and binary/JSON AST round-trip level.
 
 ### Out of Scope
 - Save file editing and live memory injection.
@@ -36,7 +40,7 @@ GameLingo is a local-first Windows desktop workbench for translating game text i
 - **Desktop UI & CLI:** Modern PySide6 dark-graphite desktop interface and full-featured command-line interface.
 - **Smart Text Extraction:** Preserves hierarchical locators, character tags, and scene context.
 - **Placeholder & Markup Protection:** Detects and protects variable interpolation (`\N[1]`, `%1`, `[player_name]`), formatting tags (`\C[0]`, `{i}`, `{b}`, `{color=...}`), and escaped control characters.
-- **Local Machine Translation:** Integrated offline translation powered by Argos Translate (CTranslate2 NMT runtime).
+- **Local Machine Translation:** Integrated offline translation powered by Argos Translate (CTranslate2 NMT runtime). *Note: Offline models must be downloaded once on initial setup before offline translation can run.*
 - **Translation Memory & Deduplication:** Caches translated units in a local SQLite database to prevent duplicate work.
 - **Review & Quality Validation:** Split-view review interface with search, status filtering, warning checks (length mismatch, corrupted placeholders, untranslated Japanese text), and approval actions.
 - **Spreadsheet Interchange:** UTF-8-BOM CSV export/import compatible with Microsoft Excel, featuring formula-injection protection and immutable metadata validation.

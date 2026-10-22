@@ -8,6 +8,10 @@ from typing import Any, Dict, List, Optional
 from gamelingo.safety.backup import (
     calculate_sha256,
 )
+from gamelingo.safety.path_security import (
+    safe_resolve_target,
+    validate_game_relative_path,
+)
 
 
 class RestoreError(Exception):
@@ -55,7 +59,7 @@ def preview_restore(
     manifest = _load_and_validate_manifest(backup_dir)
 
     try:
-        target_root_resolved = target_root.resolve(strict=True)
+        _ = target_root.resolve(strict=True)
     except OSError:
         raise RestoreValidationError("Target root does not exist.")
 
@@ -72,40 +76,19 @@ def preview_restore(
 
     seen = set()
     for rel_path_str in selected_files:
-        if (
-            not rel_path_str
-            or Path(rel_path_str).is_absolute()
-            or ":" in rel_path_str
-            or ".." in rel_path_str
-            or rel_path_str.startswith("/")
-            or rel_path_str.startswith("\\")
-        ):
+        try:
+            norm_rel = validate_game_relative_path(rel_path_str)
+            target_file = safe_resolve_target(target_root, rel_path_str)
+        except Exception:
             plan["invalid_paths"].append(rel_path_str)
             continue
 
-        norm_rel = rel_path_str.replace("\\", "/")
         if norm_rel in seen:
             continue
         seen.add(norm_rel)
 
         if norm_rel not in backup_file_map:
             plan["missing_in_backup"].append(rel_path_str)
-            continue
-
-        target_file = target_root / norm_rel
-
-        # We can't resolve target_file strictly if it doesn't exist, but we can check if it's within root safely.
-        # So we resolve the path without strict=True (which is what resolve() does in python 3.6+)
-        target_resolved = target_file.resolve()
-
-        try:
-            target_resolved.relative_to(target_root_resolved)
-        except ValueError:
-            plan["invalid_paths"].append(rel_path_str)
-            continue
-
-        if target_file.is_symlink():
-            plan["invalid_paths"].append(rel_path_str)
             continue
 
         meta = backup_file_map[norm_rel]
@@ -166,17 +149,14 @@ def execute_restore(
     seen = set()
 
     for rel_path_str in selected_files:
-        if (
-            not rel_path_str
-            or Path(rel_path_str).is_absolute()
-            or ":" in rel_path_str
-            or ".." in rel_path_str
-            or rel_path_str.startswith("/")
-            or rel_path_str.startswith("\\")
-        ):
-            raise RestoreValidationError(f"Invalid path requested: {rel_path_str}")
+        try:
+            norm_rel = validate_game_relative_path(rel_path_str)
+            target_file = safe_resolve_target(target_root, rel_path_str)
+        except Exception as e:
+            raise RestoreValidationError(
+                f"Invalid path requested ({rel_path_str}): {e}"
+            )
 
-        norm_rel = rel_path_str.replace("\\", "/")
         if norm_rel in seen:
             continue
         seen.add(norm_rel)
@@ -185,19 +165,6 @@ def execute_restore(
             raise RestoreValidationError(f"File not in backup manifest: {rel_path_str}")
 
         meta = backup_file_map[norm_rel]
-
-        target_file = target_root / norm_rel
-        target_resolved = target_file.resolve()
-
-        try:
-            target_resolved.relative_to(target_root_resolved)
-        except ValueError:
-            raise RestoreValidationError(
-                f"Target path outside approved root: {rel_path_str}"
-            )
-
-        if target_file.is_symlink():
-            raise RestoreValidationError(f"Target path is a symlink: {rel_path_str}")
 
         if target_file.exists() and not target_file.is_file():
             raise RestoreValidationError(

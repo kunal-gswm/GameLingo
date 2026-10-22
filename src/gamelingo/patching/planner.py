@@ -10,6 +10,12 @@ from gamelingo.adapters.formats.ruby_marshal import load_marshal, resolve_ruby_l
 from gamelingo.adapters.renpy import detect_renpy_runtime
 from gamelingo.domain.models import TranslationRecord, TranslationUnit
 from gamelingo.safety.backup import calculate_sha256, is_safe_path
+from gamelingo.safety.path_security import (
+    check_case_collisions,
+    is_safe_game_relative_path,
+    safe_resolve_target,
+    validate_game_relative_path,
+)
 from gamelingo.translation.validation import validate_translation
 
 
@@ -439,6 +445,18 @@ def create_plan(
             )
             continue
 
+        if not is_safe_game_relative_path(rel_path):
+            plan["edits"].append(
+                {
+                    "unit_id": unit.id,
+                    "file_id": unit.file_id,
+                    "file_path": rel_path,
+                    "status": "rejected",
+                    "reason": "unsafe_path",
+                }
+            )
+            continue
+
         target_file = source_root_resolved / rel_path
         if not target_file.exists():
             candidates = (
@@ -661,6 +679,16 @@ def validate_plan(
     edits = plan.get("edits", [])
     valid_edits = [e for e in edits if e.get("status") == "valid"]
 
+    file_paths_in_plan = set()
+    for edit in valid_edits:
+        fp = edit.get("file_path", edit.get("file_id"))
+        if fp:
+            file_paths_in_plan.add(fp)
+    try:
+        check_case_collisions(file_paths_in_plan)
+    except Exception as e:
+        raise PlanValidationError(f"Invalid path in plan: {e}")
+
     seen_targets = set()
 
     for edit in valid_edits:
@@ -698,22 +726,11 @@ def validate_plan(
                         f"Safety validation failed for {target}: {err_msg}"
                     )
 
-        if (
-            not file_path
-            or Path(file_path).is_absolute()
-            or ":" in file_path
-            or ".." in file_path
-            or file_path.startswith("/")
-            or file_path.startswith("\\")
-        ):
+        try:
+            validate_game_relative_path(file_path)
+            target_file = safe_resolve_target(source_root_resolved, file_path)
+        except Exception:
             raise PlanValidationError(f"Invalid path in plan: {file_path}")
-
-        target_file = source_root_resolved / file_path
-        if not is_safe_path(source_root_resolved, target_file):
-            raise PlanValidationError(f"Path outside source root: {file_path}")
-
-        if target_file.is_symlink():
-            raise PlanValidationError(f"Path is a symlink: {file_path}")
 
         if is_renpy:
             # Language activation file does not have an original source script
@@ -723,21 +740,12 @@ def validate_plan(
             # For Ren'Py, destination file (strings.rpy) does not need to exist yet,
             # but source script must exist and be safe.
             source_file_rel = edit.get("source_file_path", edit.get("file_id"))
-            if (
-                not source_file_rel
-                or Path(source_file_rel).is_absolute()
-                or ":" in source_file_rel
-                or ".." in source_file_rel
-                or source_file_rel.startswith("/")
-                or source_file_rel.startswith("\\")
-            ):
+            try:
+                validate_game_relative_path(source_file_rel)
+                source_file = safe_resolve_target(source_root_resolved, source_file_rel)
+            except Exception:
                 raise PlanValidationError(
                     f"Invalid source script path: {source_file_rel}"
-                )
-            source_file = source_root_resolved / source_file_rel
-            if not is_safe_path(source_root_resolved, source_file):
-                raise PlanValidationError(
-                    f"Source script outside source root: {source_file_rel}"
                 )
             if not source_file.exists():
                 rpyc_file = source_file.with_suffix(".rpyc")

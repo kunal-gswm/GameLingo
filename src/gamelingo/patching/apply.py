@@ -33,6 +33,7 @@ from gamelingo.safety.backup import (
     create_backup,
     verify_backup,
 )
+from gamelingo.safety.path_security import validate_game_relative_path
 from gamelingo.safety.restore import execute_restore
 
 
@@ -256,8 +257,15 @@ def apply_plan(
     edits_by_file: Dict[str, List[Dict[str, Any]]] = {}
     for edit in valid_edits:
         raw_fp = edit.get("file_path", edit.get("file_id"))
-        fp = Path(raw_fp).as_posix() if raw_fp else ""
-        edits_by_file.setdefault(fp, []).append(edit)
+        if not raw_fp:
+            continue
+        try:
+            norm_fp = validate_game_relative_path(raw_fp)
+        except Exception as e:
+            report["status"] = "failed"
+            report["errors"].append(f"Invalid path in plan edit: {raw_fp} ({e})")
+            return report
+        edits_by_file.setdefault(norm_fp, []).append(edit)
 
     affected_files = list(edits_by_file.keys())
     report["affected_files"] = affected_files
@@ -672,28 +680,35 @@ def apply_plan(
 
         if replacement_failed:
             report["status"] = "partial_failure"
-            # 5. Recovery
-            try:
-                restore_res = execute_restore(
-                    backup_dir,
-                    source_root_resolved,
-                    affected_files,
-                    overwrite=True,
-                    execute=True,
+            # 5. Recovery - restore only files that were actually modified
+            files_to_recover = [fp for fp in replaced if fp in affected_files]
+            if not files_to_recover:
+                report["recovery_status"] = "not_needed"
+                report["errors"].append(
+                    "Application failed before any files were modified. No rollback needed."
                 )
-                if restore_res["status"] == "success":
-                    report["recovery_status"] = "success"
-                    report["errors"].append(
-                        "Application failed but recovery succeeded completely."
+            else:
+                try:
+                    restore_res = execute_restore(
+                        backup_dir,
+                        source_root_resolved,
+                        files_to_recover,
+                        overwrite=True,
+                        execute=True,
                     )
-                else:
-                    report["recovery_status"] = "partial"
-                    report["errors"].append(
-                        f"Application failed and recovery failed partially: {restore_res.get('errors')}"
-                    )
-            except Exception as e:
-                report["recovery_status"] = "failed"
-                report["errors"].append(f"Recovery threw exception: {e}")
+                    if restore_res["status"] == "success":
+                        report["recovery_status"] = "success"
+                        report["errors"].append(
+                            "Application failed but recovery succeeded completely."
+                        )
+                    else:
+                        report["recovery_status"] = "partial"
+                        report["errors"].append(
+                            f"Application failed and recovery failed partially: {restore_res.get('errors')}"
+                        )
+                except Exception as e:
+                    report["recovery_status"] = "failed"
+                    report["errors"].append(f"Recovery threw exception: {e}")
 
         return report
     finally:
