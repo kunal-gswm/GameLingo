@@ -12,12 +12,12 @@
 | Attribute | Recorded Evidence | Verification Status |
 | :--- | :--- | :--- |
 | **Active Branch** | `main` | Clean working tree; tracked to `origin/main` |
-| **Exact Source Code Commit** | `acd87c6824a898c342d315ccbc821292ab2538b2` | Hardened path security, fail-closed tests, release invariants |
-| **Final Documentation Commit** | `a66180c9d0ba0717701d01692930b8e73072b5b6` | Records rebuilt binaries, exact hashes, and pilot register |
-| **Binary Rebuild Provenance** | Built from `acd87c6824a898c342d315ccbc821292ab2538b2` | Rebuilt on Windows 11 x64 via `build_windows.ps1` |
+| **Exact Source Code Commit** | `68e76c5b9678c187fcebdafc3cfbfe3b5c37cb80` | Hardened path security, fail-closed tests, single-unit translation |
+| **Final Documentation Commit** | `c204caf18563eb6b876fc6d61f1c7908c6fa2685` | Records rebuilt binaries, exact hashes, and pilot register |
+| **Binary Rebuild Provenance** | Built from `68e76c5b9678c187fcebdafc3cfbfe3b5c37cb80` | Rebuilt on Windows 11 x64 via `build_windows.ps1` |
 | **Code Commit Remote CI Run** | Run ID [`39771807086`](https://github.com/kunal-gswm/GameLingo/actions/runs/39771807086) | **100% Green** (GUI Tests: 23s, Core Tests & Linting: 15s) |
-| **Final Docs Commit Remote CI Run** | Run ID [`39783956476`](https://github.com/kunal-gswm/GameLingo/actions/runs/39783956476) | **100% Green** (GUI Tests: 21s, Core Tests & Linting: 14s) |
-| **Git Tag `v0.1` Status** | Points to `b37db3e0da4c5e8b772f9a8852b8ef7f83e884bb` | **Untouched** (historical pre-audit tag; no tags created or moved) |
+| **Final Docs Commit Remote CI Run** | Run ID [`39790978014`](https://github.com/kunal-gswm/GameLingo/actions/runs/39790978014) | **100% Green** (GUI Tests: 23s, Core Tests & Linting: 15s) |
+| **Git Tag `v0.1` Status** | Points to `d66c4e8099ca4a3555a85196ed0f9bc4103a7f2b` | **Untouched** (historical pre-audit tag; no tags created or moved) |
 | **Release Gate Mode** | `GAMELINGO_RELEASE_GATE=1` | Enforces fail-closed presence of distribution files |
 
 ---
@@ -28,16 +28,16 @@
 - **Host OS:** Windows 11 Pro 64-bit (10.0.26300)
 - **Compiler/Toolchain:** Python 3.12.15 x64 (`cpython-3.12-windows-x86_64-none`), PyInstaller 6.22.3, `uv 0.6.14`
 - **Rebuild Command:** `powershell -ExecutionPolicy Bypass -File .\build_windows.ps1`
-- **Source SHA at Build:** `acd87c6824a898c342d315ccbc821292ab2538b2` (contains all cross-platform path security and fail-closed distribution checks)
+- **Source SHA at Build:** `68e76c5b9678c187fcebdafc3cfbfe3b5c37cb80` (contains single-unit translation fix and path security)
 
 ### Rebuilt Artifacts & Cryptographic Checksums
 All release artifacts rebuilt on Windows strictly verify against the published UTF-8 (No BOM) manifest:
 
 | Artifact Name | Exact Size (bytes) | SHA-256 Checksum | Content Verification |
 | :--- | :--- | :--- | :--- |
-| **`GameLingo.exe`** | 124,125,205 | `7DCEC39278EFC3DCCFA9C8A774D083553FECF5279AFB628EA5F65C365ED65A7C` | Standalone executable |
-| **`GameLingo-Windows-x64.zip`** | 123,065,813 | `E90A6C5C21F8A6B20CF472A60F5FDB977CEC85B810E40BAFD16681C4F38C6FC9` | Portable ZIP archive |
-| **`GameLingo-v0.1-windows-x64.zip`** | 123,065,813 | `E90A6C5C21F8A6B20CF472A60F5FDB977CEC85B810E40BAFD16681C4F38C6FC9` | Distribution alias copy |
+| **`GameLingo.exe`** | 124,128,112 | `7C153606FFCE952291EFAA407D4AB3E272B7E17B39121BB0E72DBB9E9EBA32E5` | Standalone executable |
+| **`GameLingo-Windows-x64.zip`** | 123,068,260 | `AFE97D26B253805EF0C33AEF055AA804132E83967F88B2EB79F245670796D1FA` | Portable ZIP archive |
+| **`GameLingo-v0.1-windows-x64.zip`** | 123,068,260 | `AFE97D26B253805EF0C33AEF055AA804132E83967F88B2EB79F245670796D1FA` | Distribution alias copy |
 | **`SHA256SUMS.txt`** | 272 | *(UTF-8, No BOM manifest)* | Verified against all 3 files |
 
 ### Manifest & Archive Cleanliness
@@ -75,12 +75,12 @@ Step 11: verify restored content    -> Bit-for-bit identity match with original 
 
 | Suite / Check | Command | Result | Notes |
 | :--- | :--- | :---: | :--- |
-| **Full Automated Test Suite** | `uv run pytest` | **531 passed** in 35.17s | Zero failures or errors |
-| **GUI Integration Suite** | `uv run pytest tests/integration/test_gui.py` | **28 passed** in 12.30s | Complete navigation, review, patch tests |
-| **File Safety & Distribution** | `uv run pytest tests/integration/test_beta_release_file_safety.py` | **25 passed** in 0.93s | Path traversal, BOM, manifest, rollback |
+| **Full Automated Test Suite** | `uv run pytest` | **534 passed** in 41.64s | Zero failures or errors |
+| **GUI Integration Suite** | `uv run pytest tests/integration/test_gui.py` | **29 passed** in 12.05s | Complete navigation, single-unit translation, review, patch tests |
+| **File Safety & Distribution** | `uv run pytest tests/integration/test_beta_release_file_safety.py` | **25 passed** in 2.45s | Path traversal, BOM, manifest, rollback |
 | **Dedicated Release Gate Mode** | `GAMELINGO_RELEASE_GATE=1 uv run pytest` | **100% passed** | Enforces fail-closed artifact presence |
-| **Ruff Code Linter** | `uv run ruff check .` | **0 errors (166 files)** | Clean across all project files |
-| **Ruff Code Formatter** | `uv run ruff format --check .` | **100% formatted (166 files)** | Clean formatting compliance |
+| **Ruff Code Linter** | `uv run ruff check .` | **0 errors (170 files)** | Clean across all project files |
+| **Ruff Code Formatter** | `uv run ruff format --check .` | **100% formatted (170 files)** | Clean formatting compliance |
 | **Executable Smoke Test** | `dist\GameLingo.exe gui --smoke-test` | **PASS** | Qt core and `rpycdec` verified |
 | **Full Lifecycle Synthetic Run** | Standalone `GameLingo.exe` in clean tempdir | **PASS** | Init, detect, extract, review, export, plan, apply, restore |
 
@@ -132,13 +132,13 @@ flowchart TD
 ### Verdict: **`READY FOR CONTROLLED BETA`**
 
 ### Release Gate Criteria Checklist
-- [x] Windows executable and archives rebuilt from exact hardened code commit (`acd87c6824a898c342d315ccbc821292ab2538b2`).
+- [x] Windows executable and archives rebuilt from exact hardened code commit (`68e76c5b9678c187fcebdafc3cfbfe3b5c37cb80`).
 - [x] Checksum manifest (`SHA256SUMS.txt`) has no BOM and matches every file byte-for-byte.
 - [x] ZIP archive contains strictly release files with zero development leakage or path traversal.
 - [x] Packaged executable smoke test passed (`gui --smoke-test`).
 - [x] Packaged executable synthetic workflow passed (init, detect, extract, review, edit, approve, export, plan, apply, restore).
-- [x] Full automated test suite passes (531 tests).
-- [x] GUI integration test suite passes (28 tests).
+- [x] Full automated test suite passes (534 tests).
+- [x] GUI integration test suite passes (29 tests).
 - [x] Dedicated release-gate mode passes with fail-closed checks (`GAMELINGO_RELEASE_GATE=1`).
-- [x] Ruff lint and format checks 100% clean across all 166 files.
+- [x] Ruff lint and format checks 100% clean across all 170 files.
 - [x] Historical tag `v0.1` preserved untouched; no releases published without explicit user authorization.

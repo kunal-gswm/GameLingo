@@ -3,8 +3,8 @@
 **Task ID:** GL-BETA-006  
 **Document Type:** Pilot Operations & Triage Protocol  
 **Operational Status:** **`NOT YET RUN — RECRUITMENT PENDING`**  
-**Audited Binary Build SHA:** `acd87c6824a898c342d315ccbc821292ab2538b2`  
-**Distribution Artifact:** `dist/GameLingo-Windows-x64.zip` (SHA-256: `E90A6C5C21F8A6B20CF472A60F5FDB977CEC85B810E40BAFD16681C4F38C6FC9`)
+**Audited Binary Build SHA:** `68e76c5b9678c187fcebdafc3cfbfe3b5c37cb80`  
+**Distribution Artifact:** `dist/GameLingo-Windows-x64.zip` (SHA-256: `AFE97D26B253805EF0C33AEF055AA804132E83967F88B2EB79F245670796D1FA`)
 
 ---
 
@@ -63,7 +63,7 @@ GameLingo extracts translatable dialogue from game projects, provides an in-app 
 1. Review the Beta Testing Guide: [docs/user-guide/beta-testing-guide.md]
 2. Download the portable zip from the release page and verify the SHA-256 checksum:
    `GameLingo-Windows-x64.zip`
-   SHA-256: `E90A6C5C21F8A6B20CF472A60F5FDB977CEC85B810E40BAFD16681C4F38C6FC9`
+   SHA-256: `AFE97D26B253805EF0C33AEF055AA804132E83967F88B2EB79F245670796D1FA`
 3. Follow the test checklist and report findings using the GitHub Beta Issue Templates!
 
 Thank you for helping make open-source game localization reliable and accessible.
