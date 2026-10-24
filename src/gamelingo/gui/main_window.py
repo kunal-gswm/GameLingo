@@ -324,6 +324,50 @@ class MainWindow(QMainWindow):
         root_layout.addWidget(content_container, stretch=1)
         self.nav_list.setCurrentRow(0)
         self.update_header()
+        self.update_provider_status()
+
+    def update_provider_status(self):
+        try:
+            from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
+
+            res = ArgosSetupService.check_status("ja", "en")
+            st = res.get("status")
+            if st == ModelStatus.READY:
+                self.lbl_provider_status.setText("● Argos NMT: Offline Ready")
+                self.lbl_provider_status.setStyleSheet(
+                    "color: #43C99A; padding-left: 6px;"
+                )
+                self.lbl_provider_status.setToolTip(
+                    "Argos ja->en translation model is installed and ready offline."
+                )
+            elif st == ModelStatus.NOT_INSTALLED:
+                self.lbl_provider_status.setText("● Argos NMT: Model Required")
+                self.lbl_provider_status.setStyleSheet(
+                    "color: #F5A623; padding-left: 6px;"
+                )
+                self.lbl_provider_status.setToolTip(
+                    "Argos ja->en model package is not installed. Download or import in Settings."
+                )
+            elif st == ModelStatus.DEPENDENCY_MISSING:
+                self.lbl_provider_status.setText("● Argos NMT: Lib Missing")
+                self.lbl_provider_status.setStyleSheet(
+                    "color: #E24A4A; padding-left: 6px;"
+                )
+                self.lbl_provider_status.setToolTip(
+                    "argostranslate library is not installed in the environment."
+                )
+            else:
+                self.lbl_provider_status.setText("● Argos NMT: Not Configured")
+                self.lbl_provider_status.setStyleSheet(
+                    "color: #8C96A5; padding-left: 6px;"
+                )
+                self.lbl_provider_status.setToolTip(
+                    res.get("message", "Status unknown")
+                )
+        except Exception as e:
+            self.lbl_provider_status.setText("● Translation: Offline")
+            self.lbl_provider_status.setStyleSheet("color: #8C96A5; padding-left: 6px;")
+            self.lbl_provider_status.setToolTip(str(e))
 
     def on_nav_changed(self, index: int):
         if 0 <= index < len(self.pages):
@@ -389,6 +433,7 @@ class MainWindow(QMainWindow):
         for p in self.pages:
             p.refresh()
         self.update_header()
+        self.update_provider_status()
 
     def open_library_dialog(self):
         dlg = LibraryDialog(self.state, self)
@@ -398,6 +443,7 @@ class MainWindow(QMainWindow):
     def open_settings_dialog(self):
         dlg = SettingsDialog(self.state, self)
         dlg.exec()
+        self.update_provider_status()
 
     def closeEvent(self, event):
         e_page = self.pages[1]

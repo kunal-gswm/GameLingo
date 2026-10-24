@@ -1468,3 +1468,209 @@ def test_settings_vacuum_database(qapp, app_state):
         dlg.settings_page.on_vacuum_db()
         assert mock_info.called
     dlg.close()
+
+
+def test_main_window_dynamic_provider_status(qapp, app_state):
+    from gamelingo.translation.argos_setup import ArgosSetupService, ModelStatus
+
+    window = MainWindow(app_state)
+
+    # Test READY
+    with patch.object(
+        ArgosSetupService,
+        "check_status",
+        return_value={"status": ModelStatus.READY, "message": "Ready"},
+    ):
+        window.update_provider_status()
+        assert "Offline Ready" in window.lbl_provider_status.text()
+
+    # Test NOT_INSTALLED
+    with patch.object(
+        ArgosSetupService,
+        "check_status",
+        return_value={"status": ModelStatus.NOT_INSTALLED, "message": "Not installed"},
+    ):
+        window.update_provider_status()
+        assert "Model Required" in window.lbl_provider_status.text()
+
+    # Test DEPENDENCY_MISSING
+    with patch.object(
+        ArgosSetupService,
+        "check_status",
+        return_value={"status": ModelStatus.DEPENDENCY_MISSING, "message": "Missing"},
+    ):
+        window.update_provider_status()
+        assert "Lib Missing" in window.lbl_provider_status.text()
+
+
+def test_translation_page_initial_disabled_and_navigation_boundaries(qapp, tmp_path):
+    state = AppState()
+    ws = tmp_path / "ws_trans_bounds"
+    state.open_workspace(ws)
+    conn = state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            ("default", "Default", "", "rpgmaker_mv_mz", "1.0", 0),
+        )
+        conn.execute(
+            "INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("f_bounds.json", "default", "data/Map.json", "json", "hb", 0, 0),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "u_b1",
+                "f_bounds.json",
+                "loc1",
+                "こんにちは",
+                "",
+                "[]",
+                "hb1",
+                "untranslated",
+            ),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "u_b2",
+                "f_bounds.json",
+                "loc2",
+                "さようなら",
+                "",
+                "[]",
+                "hb2",
+                "untranslated",
+            ),
+        )
+
+    window = MainWindow(state)
+    window.refresh_all()
+    window.nav_list.setCurrentRow(2)
+    page = window.pages[2]
+
+    # Initial state with no selection: editor disabled, placeholders clean, nav disabled
+    assert not page.txt_target.isEnabled()
+    assert not page.btn_save_unit.isEnabled()
+    assert not page.btn_approve_unit.isEnabled()
+    assert not page.btn_prev_unit.isEnabled()
+    assert not page.btn_next_unit.isEnabled()
+    assert page.lbl_meta_id.text() == "ID: -"
+
+    # Select first unit
+    page.list_units.setCurrentRow(0)
+    assert page.current_unit_id == "u_b1"
+    assert page.txt_target.isEnabled()
+    assert not page.btn_prev_unit.isEnabled()  # First row: cannot go prev
+    assert page.btn_next_unit.isEnabled()  # Can go next
+    assert page.lbl_meta_id.text() == "ID: u_b1"
+
+    # Navigate next
+    page.on_next_unit()
+    assert page.list_units.currentRow() == 1
+    assert page.current_unit_id == "u_b2"
+    assert page.btn_prev_unit.isEnabled()  # Can go prev
+    assert not page.btn_next_unit.isEnabled()  # Last row: cannot go next
+
+    # Clear selection: editor disables cleanly
+    page.list_units.clearSelection()
+    assert not page.txt_target.isEnabled()
+    assert not page.btn_prev_unit.isEnabled()
+    assert not page.btn_next_unit.isEnabled()
+    assert page.lbl_meta_id.text() == "ID: -"
+
+
+def test_review_page_placeholder_formatting_and_db_cleanup(qapp, tmp_path):
+    state = AppState()
+    ws = tmp_path / "ws_review_cleanup"
+    state.open_workspace(ws)
+    conn = state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            ("default", "Default", "", "rpgmaker_mv_mz", "1.0", 0),
+        )
+        conn.execute(
+            "INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("f_rc.json", "default", "data/Map.json", "json", "hrc", 0, 0),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("u_rc1", "f_rc.json", "loc1", "テスト", "", "[]", "hrc1", "draft"),
+        )
+
+    window = MainWindow(state)
+    window.refresh_all()
+    window.nav_list.setCurrentRow(3)
+    page = window.pages[3]
+
+    # Clean non-selected placeholder labels
+    assert page.lbl_id.text() == "ID: -"
+    assert page.lbl_status.text() == "Status: -"
+    assert not page.txt_target.isEnabled()
+
+    # Select unit
+    page.list_widget.setCurrentRow(0)
+    assert page.lbl_id.text() == "ID: u_rc1"
+    assert "DRAFT" in page.lbl_status.text()
+    assert page.txt_target.isEnabled()
+
+    # Clear DB connection on state (e.g. workspace close) and refresh
+    state.db = None
+    page.refresh()
+    assert page.list_widget.count() == 0
+    assert page.lbl_queue_count.text() == "0 units"
+    assert page.lbl_id.text() == "ID: -"
+    assert not page.txt_target.isEnabled()
+
+
+def test_dashboard_segmented_progress_legend_consistency(qapp, tmp_path):
+    state = AppState()
+    ws = tmp_path / "ws_dash_legend"
+    state.open_workspace(ws)
+    conn = state.db.connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO projects (id, title, install_path, adapter_id, profile_version, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            ("default", "Default", "", "rpgmaker_mv_mz", "1.0", 0),
+        )
+        conn.execute(
+            "INSERT INTO game_files (id, project_id, relative_path, format, source_hash, size, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("f_legend.json", "default", "data/Map.json", "json", "hl", 0, 0),
+        )
+        # 1 approved, 2 draft, 3 untranslated
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("u_l1", "f_legend.json", "loc1", "A", "", "[]", "hl1", "approved"),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("u_l2", "f_legend.json", "loc2", "B", "", "[]", "hl2", "draft"),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("u_l3", "f_legend.json", "loc3", "C", "", "[]", "hl3", "draft"),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("u_l4", "f_legend.json", "loc4", "D", "", "[]", "hl4", "untranslated"),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("u_l5", "f_legend.json", "loc5", "E", "", "[]", "hl5", "untranslated"),
+        )
+        conn.execute(
+            "INSERT INTO translation_units (id, file_id, locator, source_text, context, tokens_json, source_hash, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("u_l6", "f_legend.json", "loc6", "F", "", "[]", "hl6", "untranslated"),
+        )
+
+    window = MainWindow(state)
+    window.refresh_all()
+    dash = window.pages[0]
+
+    assert dash.lbl_legend_approved.text() == "● Approved: 1"
+    assert dash.lbl_legend_review.text() == "● In Review: 2"
+    assert dash.lbl_legend_untranslated.text() == "● Untranslated: 3"
+    assert dash.segmented_progress.approved_count == 1
+    assert dash.segmented_progress.review_count == 2
+    assert dash.segmented_progress.untranslated_count == 3

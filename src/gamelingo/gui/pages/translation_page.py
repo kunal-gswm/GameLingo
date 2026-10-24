@@ -370,7 +370,7 @@ class TranslationPage(QWidget):
         )
         insp_layout.addWidget(insp_title)
 
-        self.lbl_meta_id = QLabel("ID: None")
+        self.lbl_meta_id = QLabel("ID: -")
         self.lbl_meta_id.setFont(QFont("Segoe UI", 9))
         self.lbl_meta_id.setStyleSheet(
             f"color: {TEXT_SECONDARY}; background: transparent; border: none;"
@@ -403,7 +403,7 @@ class TranslationPage(QWidget):
         self.lbl_meta_context.setWordWrap(True)
         insp_layout.addWidget(self.lbl_meta_context)
 
-        self.lbl_meta_tokens = QLabel("Protected Tokens: None")
+        self.lbl_meta_tokens = QLabel("Protected Tokens: -")
         self.lbl_meta_tokens.setFont(QFont("Segoe UI", 9))
         self.lbl_meta_tokens.setStyleSheet(
             f"color: {TEXT_MUTED}; background: transparent; border: none;"
@@ -685,7 +685,13 @@ class TranslationPage(QWidget):
             self.lbl_unsaved_indicator.setVisible(False)
 
             self.set_editor_enabled(True)
+            curr = self.list_units.currentRow()
+            count = self.list_units.count()
+            self.btn_prev_unit.setEnabled(curr > 0)
+            self.btn_next_unit.setEnabled(0 <= curr < count - 1)
             self._is_switching_selection = False
+        else:
+            self.set_editor_enabled(False)
 
     def on_target_text_changed(self):
         if self._is_switching_selection:
@@ -838,17 +844,21 @@ class TranslationPage(QWidget):
         self.btn_approve_unit.setEnabled(enabled)
         self.btn_revert_unit.setEnabled(enabled)
         self.btn_translate_single.setEnabled(enabled)
+        curr = self.list_units.currentRow()
+        count = self.list_units.count()
+        self.btn_prev_unit.setEnabled(enabled and curr > 0)
+        self.btn_next_unit.setEnabled(enabled and 0 <= curr < count - 1)
         if not enabled:
             self.lbl_editor_status.setText("Select a unit from the left panel")
             self.txt_source.clear()
             self.txt_target.clear()
             self.lbl_src_chars.setText("0 chars")
             self.lbl_tgt_chars.setText("0 chars")
-            self.lbl_meta_id.setText("ID: None")
+            self.lbl_meta_id.setText("ID: -")
             self.lbl_meta_file.setText("File: -")
             self.lbl_meta_loc.setText("Locator: -")
             self.lbl_meta_context.setText("Context: -")
-            self.lbl_meta_tokens.setText("Protected Tokens: None")
+            self.lbl_meta_tokens.setText("Protected Tokens: -")
             self.lbl_validation.setText("")
             self.lbl_unsaved_indicator.setVisible(False)
 

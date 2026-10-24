@@ -139,7 +139,7 @@ class ReviewPage(QWidget):
         meta_layout.setSpacing(6)
 
         meta_top_row = QHBoxLayout()
-        self.lbl_id = QLabel("ID: None")
+        self.lbl_id = QLabel("ID: -")
         self.lbl_id.setFont(QFont("Segoe UI", 11, QFont.Bold))
         self.lbl_id.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.lbl_id.setStyleSheet("background: transparent; border: none;")
@@ -151,7 +151,7 @@ class ReviewPage(QWidget):
         self.lbl_unsaved.setVisible(False)
         meta_top_row.addWidget(self.lbl_unsaved)
 
-        self.lbl_status = QLabel("Status: None")
+        self.lbl_status = QLabel("Status: -")
         self.lbl_status.setFont(QFont("Segoe UI", 10, QFont.Bold))
         meta_top_row.addWidget(self.lbl_status)
         meta_layout.addLayout(meta_top_row)
@@ -173,7 +173,7 @@ class ReviewPage(QWidget):
         self.lbl_context.setWordWrap(True)
         meta_layout.addWidget(self.lbl_context)
 
-        self.lbl_tokens = QLabel("Required Tokens: None")
+        self.lbl_tokens = QLabel("Required Tokens: -")
         self.lbl_tokens.setFont(QFont("Segoe UI", 10))
         self.lbl_tokens.setStyleSheet(
             f"color: {TEXT_MUTED}; background: transparent; border: none;"
@@ -278,6 +278,13 @@ class ReviewPage(QWidget):
         if self.state.db:
             self.service = ReviewService(self.state.db)
             self.load_units()
+        else:
+            self.list_widget.clear()
+            self.lbl_queue_count.setText("0 units")
+            self.set_editor_enabled(False)
+            self.current_unit_id = None
+            self._original_text = ""
+            self.lbl_unsaved.setVisible(False)
 
     def on_refresh_clicked(self):
         if not self._check_unsaved_discard():
@@ -538,6 +545,8 @@ class ReviewPage(QWidget):
             self.lbl_validation.setText(flags_text)
             self.set_editor_enabled(True)
             self._is_switching_selection = False
+        else:
+            self.set_editor_enabled(False)
 
     def set_editor_enabled(self, enabled: bool):
         self.txt_target.setEnabled(enabled)
@@ -545,11 +554,11 @@ class ReviewPage(QWidget):
         self.btn_approve.setEnabled(enabled)
         self.btn_reject.setEnabled(enabled)
         if not enabled:
-            self.lbl_id.setText("ID: None")
-            self.lbl_status.setText("Status: None")
+            self.lbl_id.setText("ID: -")
+            self.lbl_status.setText("Status: -")
             self.lbl_locator.setText("File / Locator: -")
             self.lbl_context.setText("Context: -")
-            self.lbl_tokens.setText("Required Tokens: None")
+            self.lbl_tokens.setText("Required Tokens: -")
             self.lbl_tokens.setStyleSheet(
                 f"color: {TEXT_MUTED}; background: transparent; border: none;"
             )

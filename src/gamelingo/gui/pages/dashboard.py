@@ -265,19 +265,12 @@ class DashboardPage(QWidget):
         )
         legend_row.addWidget(self.lbl_legend_approved)
 
-        self.lbl_legend_review = QLabel("● Needs Review: 0")
+        self.lbl_legend_review = QLabel("● In Review: 0")
         self.lbl_legend_review.setFont(QFont("Segoe UI", 9, QFont.Bold))
         self.lbl_legend_review.setStyleSheet(
             f"color: {WARNING}; background: transparent; border: none;"
         )
         legend_row.addWidget(self.lbl_legend_review)
-
-        self.lbl_legend_draft = QLabel("● Draft: 0")
-        self.lbl_legend_draft.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        self.lbl_legend_draft.setStyleSheet(
-            "color: #8B7CFF; background: transparent; border: none;"
-        )
-        legend_row.addWidget(self.lbl_legend_draft)
 
         self.lbl_legend_untranslated = QLabel("● Untranslated: 0")
         self.lbl_legend_untranslated.setFont(QFont("Segoe UI", 9, QFont.Bold))
@@ -286,6 +279,10 @@ class DashboardPage(QWidget):
         )
         legend_row.addWidget(self.lbl_legend_untranslated)
         legend_row.addStretch()
+
+        # Kept for backward compatibility
+        self.lbl_legend_draft = QLabel("")
+        self.lbl_legend_draft.setVisible(False)
 
         prog_layout.addLayout(legend_row)
         self.main_layout.addWidget(self.progress_container)
