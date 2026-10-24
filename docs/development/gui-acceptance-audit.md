@@ -2,8 +2,10 @@
 
 **Audit Date:** October 24, 2026  
 **Audited Baseline SHA:** `51140df`  
-**Test Suite Status:** 538 Passed (0 Failures, 0 Regressions)  
-**Distribution Gate:** 25 Passed (`tests/integration/test_beta_release_file_safety.py`)  
+**Acceptance Hardened SHA:** `2ee1206`  
+**GitHub Actions CI Run:** [Run 40091341405](https://github.com/kunal-gswm/GameLingo/actions/runs/40091341405) (Status: SUCCESS)  
+**Test Suite Status:** 538 Passed in 41.77s (0 Failures, 0 Regressions)  
+**Distribution Gate:** 25 Passed in 1.06s (`tests/integration/test_beta_release_file_safety.py`)  
 **Packaged Executable:** `dist/GameLingo.exe` (123,186,093 bytes, verified via `--smoke-test`)  
 
 ---
