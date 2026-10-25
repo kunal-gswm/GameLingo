@@ -187,17 +187,18 @@ powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 ```
 
 ### Build Results
-- PyInstaller executable compiled cleanly: `dist/GameLingo.exe` (123,186,093 bytes)
-- Distribution archive packaged: `dist/GameLingo-Windows-x64.zip` (122,125,492 bytes)
-- Alias archive synchronized: `dist/GameLingo-v0.1-windows-x64.zip` (122,125,492 bytes)
+- PyInstaller executable compiled cleanly: `dist/GameLingo.exe` (268,788,149 bytes)
+- Distribution archive packaged: `dist/GameLingo-Windows-x64.zip` (266,535,009 bytes)
+- Alias archive synchronized: `dist/GameLingo-v0.1-windows-x64.zip` (266,535,009 bytes)
 - Standalone smoke test passed: `.\dist\GameLingo.exe gui --smoke-test`
 - Distribution file safety gate passed: 25/25 checks green (`test_beta_release_file_safety.py`).
+- Standalone Argos NMT translation engine verified: bundled `argostranslate`, `ctranslate2`, and `sentencepiece` dynamic libraries, resolving `● Argos NMT: Lib Missing` and `No module named 'ctranslate2'`.
 
 ### Checksum Manifest (`dist/SHA256SUMS.txt`)
 ```text
-B5B10AB4F6D2627A5A29269341BE1C970401C26F4275273DBEE57830990F56D6  GameLingo.exe
-A640446A2F5082006BDA044CC6896B8D306F02D6FE2221D1A4EB1BA96C608218  GameLingo-Windows-x64.zip
-A640446A2F5082006BDA044CC6896B8D306F02D6FE2221D1A4EB1BA96C608218  GameLingo-v0.1-windows-x64.zip
+2E8F202B1B2D771AF76E9636A22B6A99A169CF6983F954B7C19ACA745912B578  GameLingo.exe
+1D093121C320B2CC12BE81367C1DAD133826CE7214394BF2B533714CB3DC8287  GameLingo-Windows-x64.zip
+1D093121C320B2CC12BE81367C1DAD133826CE7214394BF2B533714CB3DC8287  GameLingo-v0.1-windows-x64.zip
 ```
 
 ---

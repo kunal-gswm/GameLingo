@@ -1,26 +1,48 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.utils.hooks import (
+    collect_data_files,
+    collect_dynamic_libs,
+    collect_submodules,
+)
 
 block_cipher = None
 
-hidden_imports = [
-    "PySide6",
-    "PySide6.QtCore",
-    "PySide6.QtGui",
-    "PySide6.QtWidgets",
-    "rpycdec",
-    "sqlite3",
-] + collect_submodules("gamelingo")
+hidden_imports = (
+    [
+        "PySide6",
+        "PySide6.QtCore",
+        "PySide6.QtGui",
+        "PySide6.QtWidgets",
+        "rpycdec",
+        "sqlite3",
+        "sentencepiece",
+        "ctranslate2",
+        "argostranslate",
+    ]
+    + collect_submodules("gamelingo")
+    + collect_submodules("argostranslate")
+    + collect_submodules("ctranslate2")
+    + collect_submodules("sentencepiece")
+    + collect_submodules("minisbd")
+)
+
+binaries = collect_dynamic_libs("ctranslate2")
+
+datas = (
+    [
+        ("src/gamelingo/assets", "gamelingo/assets"),
+        ("assets", "assets"),
+    ]
+    + collect_data_files("ctranslate2")
+    + collect_data_files("minisbd")
+)
 
 a = Analysis(
     ["src/gamelingo/app.py"],
     pathex=["src"],
-    binaries=[],
-    datas=[
-        ("src/gamelingo/assets", "gamelingo/assets"),
-        ("assets", "assets"),
-    ],
+    binaries=binaries,
+    datas=datas,
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
@@ -28,9 +50,7 @@ a = Analysis(
     excludes=[
         "tkinter",
         "matplotlib",
-        "torch",
         "transformers",
-        "ctranslate2",
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
