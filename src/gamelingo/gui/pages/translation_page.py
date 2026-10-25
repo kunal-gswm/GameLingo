@@ -1112,7 +1112,10 @@ class TranslationPage(QWidget):
             self,
             "Translation Complete",
             f"Translation finished with status: {st}.\n"
-            f"Processed {completed} of {total} units.",
+            f"Processed {completed} of {total} units.\n\n"
+            "Next Steps to translate your game:\n"
+            "1. Go to the 'Review' tab and approve your translated strings (or click 'Approve All').\n"
+            "2. Go to the 'Patch' tab, click 'Create Patch Plan', and then 'Apply Patch to Game'.",
         )
 
     def on_worker_error(self, err_msg: str):

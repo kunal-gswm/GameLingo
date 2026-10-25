@@ -112,7 +112,7 @@ class PatchPage(QWidget):
         )
         self.chk_activate_lang.setFont(QFont("Segoe UI", 10))
         self.chk_activate_lang.setStyleSheet(f"color: {TEXT_PRIMARY};")
-        self.chk_activate_lang.setChecked(False)
+        self.chk_activate_lang.setChecked(True)
         self.chk_activate_lang.setToolTip(
             "Generates an activation script in game/ to activate translations when the visual novel has no in-game language selector."
         )
@@ -445,7 +445,13 @@ class PatchPage(QWidget):
                     msg += f"Backup ID: {report['backup_id']}\n"
                     msg += f"Backup Location: {report['backup_dir']}\n\n"
 
-                msg += f"Successfully changed {len(report.get('successfully_changed_files', []))} files.\n"
+                changed_count = len(report.get("successfully_changed_files", []))
+                msg += f"Successfully changed {changed_count} files.\n"
+                if changed_count == 0 and report.get("status") == "success":
+                    msg += (
+                        "\nNotice: 0 files were modified! Please ensure your translations "
+                        "have been Approved in the 'Review' tab before generating and applying a patch.\n"
+                    )
 
                 if report.get("recovery_status"):
                     msg += f"\nRecovery Status: {report['recovery_status']}\n"
